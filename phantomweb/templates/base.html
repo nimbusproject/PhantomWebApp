@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>{% block title %}Nimbus{% endblock %}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <link rel='stylesheet' type='text/css' media='all' href='http://www.nimbusproject.org/css/ee.css' />
+    <link rel='stylesheet' type='text/css' media='all' href='http://www.nimbusproject.org/css/navbar.css' />
+    <link rel='stylesheet' type='text/css' media='all' href='http://www.nimbusproject.org/css/site.css' />
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom.css' />
+
+
+    <link rel="top" title="Nimbus v1.0 documentation" href="#" />
+	                
+    <script src="http://www.nimbusproject.org/js/jquery-1.3.1.js"></script>
+    <script src="http://www.nimbusproject.org/js/jquery.corner.js"></script>
+
+    {% block headscripts %}{% endblock %}
+
+</head>
+
+<body {% block bodytag %}{% endblock %}>
+
+
+<div id="nimbus_logo">
+<!--NIMBUS-->
+
+<img src="http://www.nimbusproject.org/images/nimbus_logo.png" />
+</div>
+
+<div id="container">
+	<div id="wrapper">
+		<div id="header">
+            <div id="navbar">
+            	<ul id="nav">
+                    <li class="main" id="home"><a href="/" title="Home"><span class="first">Home</span></a></li>
+                    <li class="main" id="about"><a href="http://www.nimbusproject.org/about/" title="About">About Nimbus</a></li>
+
+                    <li class="main" id="faq"><a href="/doc/nimbus/faq/" title="FAQ">FAQ</a></li>
+                    <li class="main" id="docs"><a href="/doc/nimbus/" title="Documentation">Documentation</a></li>
+                    <li class="main" id="software"><a href="http://www.nimbusproject.org/downloads/" title="Downloads">Download</a></li>
+                    <li class="main" id="contact"><a href="http://www.nimbusproject.org/contact/" title="Community Resources">Community Resources</a></li>
+                    <li class="main" id="pubs"><a href="http://www.nimbusproject.org/papers/" title="Publications">Publications</a></li>
+                    <li class="last"><a href="http://www.nimbusproject.org/news/" title="News">News</a></li>
+                </ul>
+            </div>
+         </div>
+          <div id="content">
+            <div id="content_container">
+
+                <div id="blog">
+                    <div class="content-wrapper">
+                        <div class="doccontent">
+                            <div class="document">
+                                <div class="documentwrapper">
+                                    <div class="body">
+
+<ul>
+    <li class="phantom_links"><a href="/phantom">Home</a></li>
+</ul>
+{% block nimbus_body %}{% endblock %}
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="clearer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          <br clear="all" />
+          </div>
+	</div>
+	<div id="content_bottom">&nbsp;</div>
+</div>
+<br class="clear" />
+<div id="footer">
+
+    <ul>
+      <li><a href="/" title="Home"><span class="first">Home</span></a></li>
+      <li><a href="http://www.nimbusproject.org/about/" title="About">About Nimbus</a></li>
+      <li><a href="/doc/nimbus/faq/" title="FAQ">FAQ</a></li>
+      <li><a href="/doc/nimbus/" title="Documentation">Documentation</a></li>
+      <li><a href="http://www.nimbusproject.org/contact/" title="Community Resources">Community Resources</a></li>
+      <li><a href="http://www.nimbusproject.org/downloads/" title="Software">Download</a></li>
+
+      <li><a href="http://www.nimbusproject.org/pubs/" title="Publications">Publications</a></li>
+      <li class="last"><a href="http://www.nimbusproject.org/news/" title="News">News</a></li>
+    </ul>
+<p>&copy; University of Chicago</p>
+</div>
+
+<br class="clear" />
+
+<div id="bottom"><p>&nbsp;</p></div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,127 @@
+{% extends "../templates/base.html" %}
+{% block headscripts %}
+    <script src="/static/js/phantom.js"></script>
+{% endblock %}
+{% block bodytag %}onload="loadPage();"{% endblock %}
+{% block nimbus_body  %}
+
+
+
+<div id="phantom_content">
+    <div id="loading_image_div">
+        <img src="static/images/loading1.gif"/>
+    </div>
+
+    <label id="error_status_text">Status</label>
+    <div id="phantom_loaded_content">
+        <div id="status_bar_div">
+            <img src="static/images/loading4.gif" id="main_loading_image"/>
+        </div>
+
+        <form name='myForm'>
+
+
+            <div id="main_combined_pane" class="form_pane">
+                <div class="phantom_section_div">
+                    <div id="domain_name_div" class="phantom_domain_row">
+                        <div class="combo_label">
+                            <label id="domain_name_lbl" >Domain Name:</label>
+                        </div>
+                        <div class="combo_value">
+                            <input type='text' id="domain_name_input" name='domain_name_text' label="domain_name_lbl"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="phantom_section_div">
+                    <div id="domain_size_div" class="phantom_domain_row">
+                        <div class="combo_label">
+                            <label id="domain_size_lbl" >Size:</label>
+                        </div>
+                        <div class="combo_value">
+                            <input type='text' id="domain_size_input" name='domain_size_text' label="domain_size_lbl"/>
+                        </div>
+                    </div>
+                </div>
+
+
+            <div class="phantom_section_div">
+                <div class="phantom_domain_row">
+                    <div class="combo_label">
+                        <input id="user_choice_checked" class="image_radio" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
+                        <label id="user_image_label">User Image</label>
+                    </div>
+                    <div class="combo_value">
+                        <select name="user_images" id="user_images_choices" class="imagechoice">
+                        </select>
+                    </div>
+                </div>
+
+                <div class="phantom_domain_row">
+                    <div class="combo_label">
+                        <input class="image_radio" id="common_choice_checked" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
+                        <label id="common_image_label">Common Image</label>
+                    </div>
+                    <div class="combo_value">
+                        <select name="user_images" id="common_images_choices" class="imagechoice">
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phantom_section_div">
+                <div class="phantom_domain_row">
+                    <div class="combo_label">
+                    <label id="allocation_choice_label" class="combo_label">Instance Size</label>
+                    </div>
+                    <div class="combo_value">
+                        <select name="allocation" id="allocation_choices" class="imagechoice" label="allocation_choice_label">
+                        {% for i in instance_types %}
+                        <option>{{i}}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phantom_section_div">
+                <div class="phantom_domain_row">
+                    <div class="combo_label">
+                        <label id="location_choice_label" class="combo_label">Cloud</label>
+                    </div>
+                    <div class="combo_value">
+                        <select name="location" id="location_choices" class="imagechoice" label="location_choice_label" onchange="populateIaaS()">
+                            {% for i in cloud_locations %}
+                            <option>{{i}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lc_button_div" class="phantom_domain_row">
+                <input type="button" id="start_domain_button" class="formbutton" value="Start" onclick="startDomain()"/>
+                <input type="button" id="terminate_domain_button" class="formbutton" value="Terminate" onclick="deleteDomain()"/>
+            </div>
+
+            <div class="phantom_section_div">
+                <div id="domain_list_div" class="phantom_domain_row">
+                    <select size="5" name="domain_list" id="domain_list_choices" class="imagechoice" onchange="loadDomainName()">
+                    </select>
+                </div>
+            </div>
+
+        </div>
+
+            <div id="domain_details_pane" class="form_pane">
+                <input type="button" id="refresh_instances_button" class="formbutton" value="Refresh" onclick="loadDomainName()"/>
+                <h3 id="domain_details_name"></h3>
+                <div id="domain_details_list_div">
+                    <ul id="instance_details">
+                    </ul>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
