@@ -23,7 +23,7 @@ setup(name='phantomweb',
       keywords = "Nimbus auto scale",
       long_description="""Some other time""",
       license="Apache2",
-      install_requires = ["django == 1.4", "boto == 2.0", "ceiclient", "pyhantom"],
+      install_requires = ["django == 1.4", "boto == 2.0", "mysql-python", "pyhantom"],
       
       classifiers=[
           'Development Status :: 4 - Beta',
