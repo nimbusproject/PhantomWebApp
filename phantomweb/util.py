@@ -2,7 +2,7 @@ from django.template import Context, loader
 from django.http import HttpResponse
 from phantomweb.models import UserPhantomInfoDB, UserCloudInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
-from pyhantom.authz.simple_sql_db import SimpleSQL
+from phantomsql import PhantomSQL
 from phantomweb.models import PhantomInfoDB, DefaultCloudsDB
 
 def get_key_name():
@@ -124,7 +124,7 @@ class UserObjectMySQL(UserObject):
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
 
         self.phantom_info = phantom_info_objects[0]
-        self._authz = SimpleSQL(self.phantom_info.dburl)
+        self._authz = PhantomSQL(self.phantom_info.dburl)
         self._user_dbobject = self._authz.get_user_object_by_display_name(username)
         if not self._user_dbobject:
             raise PhantomWebException('This user is not associated with cloud user database.  Please contact your sysadmin')
