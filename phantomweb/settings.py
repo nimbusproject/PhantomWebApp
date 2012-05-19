@@ -144,18 +144,39 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         }
     },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        }
+        'file_login': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler', 
+            'formatter': 'verbose',        
+            'filename': os.path.join(SITE_ROOT, 'usage.log')
+        },
+        'file_general': {                 # define and name a second handler
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler', # set the logging class to log to a file
+            'formatter': 'verbose',         # define the formatter to associate
+            'filename': os.path.join("/home/bresnaha", 'phantomweb.log')  # log file
+        },
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
+        'phantomweb.login': {              # define a logger - give it a name
+            'handlers': ['file_login'], # specify what handler to associate
+            'level': 'INFO',                 # specify the logging level
             'propagate': True,
-        },
-    }
+        },     
+
+        'phantomweb.general': {               # define another logger
+            'handlers': ['file_general'],  # associate a different handler
+            'level': 'DEBUG',                 # specify the logging level
+            'propagate': True,
+        },        
+    }       
 }

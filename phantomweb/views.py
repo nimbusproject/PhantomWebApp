@@ -6,11 +6,11 @@ import simplejson
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
-from phantomweb.util import PhantomWebDecorator, get_user_object
+from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
 from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info
 from django.contrib import admin
 
-
+@LogEntryDecorator
 @login_required
 def django_get_initial_info(request):
     user_obj = get_user_object(request.user.username)
@@ -20,6 +20,7 @@ def django_get_initial_info(request):
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
+@LogEntryDecorator
 @login_required
 def django_get_iaas_info(request):
     user_obj = get_user_object(request.user.username)
@@ -27,6 +28,7 @@ def django_get_iaas_info(request):
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
+@LogEntryDecorator
 @login_required
 def django_list_domain(request):
     user_obj = get_user_object(request.user.username)
@@ -34,6 +36,7 @@ def django_list_domain(request):
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
+@LogEntryDecorator
 @login_required
 def django_start_domain(request):
     user_obj = get_user_object(request.user.username)
@@ -41,6 +44,7 @@ def django_start_domain(request):
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
+@LogEntryDecorator
 @login_required
 def django_delete_domain(request):
     user_obj = get_user_object(request.user.username)
@@ -48,6 +52,7 @@ def django_delete_domain(request):
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
+@LogEntryDecorator
 @login_required
 def django_phantom(request):
     user_obj = get_user_object(request.user.username)
@@ -58,7 +63,6 @@ def django_phantom(request):
     except PhantomRedirectException, ex:
         return HttpResponseRedirect(ex.redir)
     return HttpResponse(t.render(c))
-
 
 class MyModelAdmin(admin.ModelAdmin):
     def get_urls(self):

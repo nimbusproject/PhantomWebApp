@@ -1,5 +1,6 @@
 from django.template import Context, loader
 from django.http import HttpResponse
+import logging
 from phantomweb.models import UserPhantomInfoDB, UserCloudInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
@@ -8,20 +9,32 @@ from phantomweb.models import PhantomInfoDB, DefaultCloudsDB
 def get_key_name():
     return "nimbusphantom"
 
-class PhantomWebDecorator(object):
 
-    def __init__(self, func):
-        self.func = func
-
-
-    def __call__(self, *args,**kwargs):
+def LogEntryDecorator(func):
+    general_log = logging.getLogger('phantomweb.general')
+    def wrapped(*args, **kw):
         try:
-            return self.func(*args,**kwargs)
+            general_log.debug("Entering %s." % (func.func_name))
+            return func(*args, **kw)
+        except Exception, ex:
+            general_log.debug("exiting %s with error: %s." % (func.func_name, str(ex)))
+            raise
+        finally:
+            general_log.debug("Exiting %s." % (func.func_name))
+    return wrapped
+
+def PhantomWebDecorator(func):
+
+    def wrapped(*args, **kw):
+        try:
+            return func(*args,**kw)
         except PhantomWebException, ex:
             response_dict = {
                 'error_message': ex.message,
             }
-            return response_dict
+        return response_dict
+    return wrapped
+
 
 def render_template(fname, d):
     t = loader.get_template(full_path)
