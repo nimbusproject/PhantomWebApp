@@ -17,7 +17,7 @@ def get_phantom_con(userobj):
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(uparts.hostname)
-    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_id, aws_secret_access_key=userobj._user_dbobject.secret_key, is_secure=is_secure, port=uparts.port, region=region)
+    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region)
     con.host = uparts.hostname
     return con
 
