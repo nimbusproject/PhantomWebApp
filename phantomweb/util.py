@@ -137,7 +137,7 @@ class UserObjectMySQL(UserObject):
         clouds = DefaultCloudsDB.objects.all()
         self.iaasclouds = {}
         for c in clouds:
-            uci = UserCloudInfo(c.name, self._user_dbobject.displayname, self._user_dbobject.access_id, self._user_dbobject.secret_key, c.url)
+            uci = UserCloudInfo(c.name, self._user_dbobject.displayname, self._user_dbobject.access_key, self._user_dbobject.access_secret, c.url)
             self.iaasclouds[c.name] = uci
 
     def get_cloud(self, name):
