@@ -1,19 +1,17 @@
 #!/usr/bin/env pythonv
 
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 import sys
-Version = "0.2"
+Version = "0.2.1"
+Name = "phantomweb"
 
 if float("%d.%d" % sys.version_info[:2]) < 2.6:
     sys.stderr.write("Your Python version %d.%d.%d is not supported.\n" % sys.version_info[:3])
-    sys.stderr.write("eeagent requires Python 2.6 or newer.\n")
+    sys.stderr.write("%s requires Python 2.6 or newer.\n" % (Name))
     sys.exit(1)
 
-setup(name='phantomweb',
+setup(name=Name,
       version=Version,
       description='A Django app for Nimbus Autoscale',
       author='Nimbus Development Team',
@@ -22,7 +20,10 @@ setup(name='phantomweb',
       keywords = "Nimbus auto scale",
       long_description="""Some other time""",
       license="Apache2",
-      install_requires = ["django == 1.4", "boto == 2.0", "mysql-python", "phantomsql"],
+      packages=['phantomweb'],
+      include_package_data=True,
+      package_data={ 'phantomweb': ['templates/registration/*.html', 'templates/*.html', 'static/css/*', 'static/js/*', 'static/images/*']  },
+      install_requires = ["django == 1.4", "boto == 2.0", "phantomsql"],
       
       classifiers=[
           'Development Status :: 4 - Beta',
