@@ -48,6 +48,7 @@ def get_iaas_info(request_params, userobj):
     iaas_cloud = userobj.get_cloud(cloud_name)
 
     ec2conn = get_iaas_compute_con(iaas_cloud)
+    g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
     l = ec2conn.get_all_images()
     common_images = [c.id for c in l if c.is_public]
     user_images = [u.id for u in l if not u.is_public]
@@ -68,6 +69,7 @@ def list_domains(request_params, userobj):
     if 'domain_name' in request_params:
         domain_name = request_params['domain_name']
         domain_names = [domain_name,]
+    g_general_log.debug("Looking up domains for user %s" % (userobj._user_dbobject.access_key))
     asgs = con.get_all_groups(names=domain_names)
     return_asgs = []
 
@@ -121,7 +123,7 @@ def _find_or_create_config(con, size, image, keyname, common, lc_name):
         lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image, key_name=keyname, security_groups='default', instance_type=size)
         con.create_launch_configuration(lc)
         return lc
-    return lcs[0]
+    return lcs[0]   
 
 
 @LogEntryDecorator
