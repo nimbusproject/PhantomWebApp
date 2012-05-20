@@ -163,7 +163,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler', # set the logging class to log to a file
             'formatter': 'verbose',         # define the formatter to associate
-            'filename': os.path.join("/home/bresnaha", 'phantomweb.log')  # log file
+            'filename': os.path.join(SITE_ROOT, 'phantomweb.log')  # log file
         },
     },
     'loggers': {
