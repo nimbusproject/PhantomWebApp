@@ -14,6 +14,8 @@ g_general_log = logging.getLogger('phantomweb.general')
 @LogEntryDecorator
 def get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
+    g_general_log.debug("Getting phantom can at %s" % (url))
+
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(uparts.hostname)

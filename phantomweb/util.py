@@ -19,7 +19,7 @@ def LogEntryDecorator(func):
             g_general_log.debug("Entering %s." % (func.func_name))
             return func(*args, **kw)
         except Exception, ex:
-            g_general_log.debug("exiting %s with error: %s." % (func.func_name, str(ex)))
+            g_general_log.exception("exiting %s with error: %s." % (func.func_name, str(ex)))
             raise
         finally:
             g_general_log.debug("Exiting %s." % (func.func_name))
@@ -31,12 +31,12 @@ def PhantomWebDecorator(func):
         try:
             return func(*args,**kw)
         except PhantomWebException, pex:
-            g_general_log.error("Phantom Error %s" % (pex.message))
+            g_general_log.exception("Phantom Error %s" % (pex.message))
             response_dict = {
                 'error_message': pex.message,
             }
         except BotoServerError, bex:
-            g_general_log.error("Boto Error %s : %s" % (bex.reason, bex.body))
+            g_general_log.exception("Boto Error %s : %s" % (bex.reason, bex.body))
             response_dict = {
                 'error_message': "Error communiting with the cloud service: %s" % (bex.reason),
             }
