@@ -1,3 +1,4 @@
+from boto.exception import BotoServerError
 from django.template import Context, loader
 from django.http import HttpResponse
 import logging
@@ -9,18 +10,19 @@ from phantomweb.models import PhantomInfoDB, DefaultCloudsDB
 def get_key_name():
     return "nimbusphantom"
 
+g_general_log = logging.getLogger('phantomweb.general')
+
 
 def LogEntryDecorator(func):
-    general_log = logging.getLogger('phantomweb.general')
     def wrapped(*args, **kw):
         try:
-            general_log.debug("Entering %s." % (func.func_name))
+            g_general_log.debug("Entering %s." % (func.func_name))
             return func(*args, **kw)
         except Exception, ex:
-            general_log.debug("exiting %s with error: %s." % (func.func_name, str(ex)))
+            g_general_log.debug("exiting %s with error: %s." % (func.func_name, str(ex)))
             raise
         finally:
-            general_log.debug("Exiting %s." % (func.func_name))
+            g_general_log.debug("Exiting %s." % (func.func_name))
     return wrapped
 
 def PhantomWebDecorator(func):
@@ -28,9 +30,15 @@ def PhantomWebDecorator(func):
     def wrapped(*args, **kw):
         try:
             return func(*args,**kw)
-        except PhantomWebException, ex:
+        except PhantomWebException, pex:
+            g_general_log.error("Phantom Error %s" % (pex.message))
             response_dict = {
-                'error_message': ex.message,
+                'error_message': pex.message,
+            }
+        except BotoServerError, bex:
+            g_general_log.error("Boto Error %s : %s" % (bex.reason, bex.body))
+            response_dict = {
+                'error_message': "Error communiting with the cloud service: %s" % (bex.reason),
             }
         return response_dict
     return wrapped
