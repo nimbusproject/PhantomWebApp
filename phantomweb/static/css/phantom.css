@@ -246,6 +246,7 @@
 .phantom_links
 {
     display: inline;
+    padding-right: 20px;
 }
 
 #public_key_input
@@ -269,3 +270,14 @@
     width: 100%;
 }
 
+#phantom_links_div
+{
+    display: inline;
+    width: 100%;
+    text-align: left;
+}
+
+#phantom_reset_pw_div li
+{
+    list-style-type: none;
+}
