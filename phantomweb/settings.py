@@ -9,8 +9,16 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    # ('Your Name', 'your_email@example.com'),
+    ('John', 'bresnaha@mcs.anl.gov'),
 )
+
+EMAIL_HOST      = 'zimbra.anl.gov'
+EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_USER = 'bresnaha-mcs'
+EMAIL_PORT      = 465
+EMAIL_USE_TLS   = True
+DEFAULT_FROM_EMAIL  = 'bresnaha@mcs.anl.gov '
+SERVER_EMAIL    = 'bresnaha@mcs.anl.gov'
 
 MANAGERS = ADMINS
 
