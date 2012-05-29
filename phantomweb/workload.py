@@ -11,9 +11,8 @@ import logging   # import the required logging module
 
 g_general_log = logging.getLogger('phantomweb.general')
 
-@PhantomWebDecorator
 @LogEntryDecorator
-def get_phantom_con(userobj):
+def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
     g_general_log.debug("Getting phantom can at %s" % (url))
 
@@ -24,16 +23,14 @@ def get_phantom_con(userobj):
     con.host = uparts.hostname
     return con
 
-@PhantomWebDecorator
 @LogEntryDecorator
-def get_iaas_compute_con(iaas_cloud):
+def _get_iaas_compute_con(iaas_cloud):
     uparts = urlparse.urlparse(iaas_cloud.cloud_url)
     is_secure = uparts.scheme == 'https'
     ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure)
     ec2conn.host = uparts.hostname
     return ec2conn
 
-@PhantomWebDecorator
 @LogEntryDecorator
 def _get_keys(ec2conn):
     r = ec2conn.get_all_key_pairs()
@@ -52,7 +49,7 @@ def get_iaas_info(request_params, userobj):
     cloud_name = request_params['cloud']
     iaas_cloud = userobj.get_cloud(cloud_name)
 
-    ec2conn = get_iaas_compute_con(iaas_cloud)
+    ec2conn = _get_iaas_compute_con(iaas_cloud)
     g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
     l = ec2conn.get_all_images()
     common_images = [c.id for c in l if c.is_public]
@@ -68,7 +65,7 @@ def get_iaas_info(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def list_domains(request_params, userobj):
-    con = get_phantom_con(userobj)
+    con = _get_phantom_con(userobj)
 
     domain_names = None
     if 'domain_name' in request_params:
@@ -104,7 +101,7 @@ def list_domains(request_params, userobj):
             if i_d['instance_id']:
                 # look up more info with boto.  this could be optimized for network communication
                 iaas_cloud = userobj.get_cloud(i_d['cloud'])
-                iaas_con = get_iaas_compute_con(iaas_cloud)
+                iaas_con = _get_iaas_compute_con(iaas_cloud)
                 boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
                 if boto_insts and boto_insts[0].instances:
                     boto_i = boto_insts[0].instances[0]
@@ -134,7 +131,7 @@ def _find_or_create_config(con, size, image, keyname, common, lc_name):
 @PhantomWebDecorator
 @LogEntryDecorator
 def start_domain(request_params, userobj):
-    con = get_phantom_con(userobj)
+    con = _get_phantom_con(userobj)
 
     params = ['size', 'name', 'image', 'cloud', 'common']
     for p in params:
@@ -155,7 +152,7 @@ def start_domain(request_params, userobj):
     key_name = get_key_name()
 
     iaas_cloud = userobj.get_cloud(cloud)
-    ec2con = get_iaas_compute_con(iaas_cloud)
+    ec2con = _get_iaas_compute_con(iaas_cloud)
     kps = _get_keys(ec2con)
     if key_name not in kps:
         raise PhantomWebException("The key name %s is not known.  Please provide a public key in the settings section." % (key_name))
@@ -172,7 +169,7 @@ def start_domain(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def delete_domain(request_params, userobj):
-    con = get_phantom_con(userobj)
+    con = _get_phantom_con(userobj)
 
     params = ['name']
     for p in params:
