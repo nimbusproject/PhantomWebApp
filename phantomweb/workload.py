@@ -11,6 +11,7 @@ import logging   # import the required logging module
 
 g_general_log = logging.getLogger('phantomweb.general')
 
+@PhantomWebDecorator
 @LogEntryDecorator
 def get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
@@ -23,6 +24,7 @@ def get_phantom_con(userobj):
     con.host = uparts.hostname
     return con
 
+@PhantomWebDecorator
 @LogEntryDecorator
 def get_iaas_compute_con(iaas_cloud):
     uparts = urlparse.urlparse(iaas_cloud.cloud_url)
@@ -31,14 +33,15 @@ def get_iaas_compute_con(iaas_cloud):
     ec2conn.host = uparts.hostname
     return ec2conn
 
+@PhantomWebDecorator
 @LogEntryDecorator
 def _get_keys(ec2conn):
     r = ec2conn.get_all_key_pairs()
     rs = [k.name for k in r]
     return rs
 
-@LogEntryDecorator
 @PhantomWebDecorator
+@LogEntryDecorator
 def get_iaas_info(request_params, userobj):
 
     params = ['cloud',]
@@ -62,8 +65,8 @@ def get_iaas_info(request_params, userobj):
     }
     return response_dict
 
-@LogEntryDecorator
 @PhantomWebDecorator
+@LogEntryDecorator
 def list_domains(request_params, userobj):
     con = get_phantom_con(userobj)
 
@@ -128,8 +131,8 @@ def _find_or_create_config(con, size, image, keyname, common, lc_name):
     return lcs[0]   
 
 
-@LogEntryDecorator
 @PhantomWebDecorator
+@LogEntryDecorator
 def start_domain(request_params, userobj):
     con = get_phantom_con(userobj)
 
@@ -166,8 +169,8 @@ def start_domain(request_params, userobj):
     }
     return response_dict
 
-@LogEntryDecorator
 @PhantomWebDecorator
+@LogEntryDecorator
 def delete_domain(request_params, userobj):
     con = get_phantom_con(userobj)
 
@@ -184,8 +187,8 @@ def delete_domain(request_params, userobj):
     return response_dict
 
 
-@LogEntryDecorator
 @PhantomWebDecorator
+@LogEntryDecorator
 def phantom_main_html(request_params, userobj):
     instance_types = ["m1.small", "m1.large"]
     cloud_locations = userobj.iaasclouds.keys()
