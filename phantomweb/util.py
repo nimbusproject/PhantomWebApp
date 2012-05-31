@@ -145,6 +145,7 @@ class UserObjectMySQL(UserObject):
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
 
         self.phantom_info = phantom_info_objects[0]
+        g_general_log.debug("Usign dburl %s" % (self.phantom_info.dburl))
         self._authz = PhantomSQL(self.phantom_info.dburl)
         self._user_dbobject = self._authz.get_user_object_by_display_name(username)
         if not self._user_dbobject:
