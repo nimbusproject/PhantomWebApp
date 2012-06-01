@@ -29,7 +29,7 @@ def PhantomWebDecorator(func):
 
     def wrapped(*args, **kw):
         try:
-            return func(*args,**kw)
+            response_dict = func(*args,**kw)
         except PhantomWebException, pex:
             g_general_log.exception("Phantom Error %s" % (pex.message))
             response_dict = {
@@ -40,6 +40,7 @@ def PhantomWebDecorator(func):
             response_dict = {
                 'error_message': "Error communiting with the cloud service: %s" % (bex.reason),
             }
+        g_general_log.debug("returning response_dict %s" % (str(response_dict)))
         return response_dict
     return wrapped
 

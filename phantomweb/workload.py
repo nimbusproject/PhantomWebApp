@@ -71,7 +71,8 @@ def list_domains(request_params, userobj):
     if 'domain_name' in request_params:
         domain_name = request_params['domain_name']
         domain_names = [domain_name,]
-    g_general_log.debug("Looking up domains for user %s" % (userobj._user_dbobject.access_key))
+    g_general_log.debug("Looking up domain names %s for user %s" % (str(domain_names), userobj._user_dbobject.access_key))
+
     asgs = con.get_all_groups(names=domain_names)
     return_asgs = []
 
@@ -133,7 +134,7 @@ def _find_or_create_config(con, size, image, keyname, common, lc_name):
 def start_domain(request_params, userobj):
     con = _get_phantom_con(userobj)
 
-    params = ['size', 'name', 'image', 'cloud', 'common']
+    params = ['size', 'name', 'image', 'cloud', 'common', 'desired_size']
     for p in params:
         if p not in request_params:
             raise PhantomWebDecorator('Missing parameter %s' % (p))
@@ -143,19 +144,26 @@ def start_domain(request_params, userobj):
     asg_name = request_params['name']
     cloud = request_params['cloud']
     common = request_params['common']
+
     try:
         desired_size = int(request_params['desired_size'])
     except:
-        raise PhantomWebException('Please set the desired size to an integer')
+        e_msg = 'Please set the desired size to an integer, not %s' % (str(request_params['desired_size']))
+        g_general_log.error(e_msg)
+        raise PhantomWebException(e_msg)
 
     lc_name = "WEB-%s-%s-%s" % (size, image_name, common)
     key_name = get_key_name()
+
+    g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
 
     iaas_cloud = userobj.get_cloud(cloud)
     ec2con = _get_iaas_compute_con(iaas_cloud)
     kps = _get_keys(ec2con)
     if key_name not in kps:
-        raise PhantomWebException("The key name %s is not known.  Please provide a public key in the settings section." % (key_name))
+        e_msg = "The key name %s is not known.  Please provide a public key in the settings section." % (key_name)
+        g_general_log.error(e_msg)
+        raise PhantomWebException(e_msg)
 
     lc_name = "%s@%s" % (lc_name, cloud)
     lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name)
@@ -177,6 +185,7 @@ def delete_domain(request_params, userobj):
             return None
 
     asg_name = request_params['name']
+    g_general_log.debug("deleting %s" % (asg_name))
     con.delete_auto_scaling_group(asg_name)
     response_dict = {
         'Success': True,
