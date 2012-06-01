@@ -235,8 +235,11 @@ function set_option_box(opt, name) {
 
 function loadDomainName() {
 
-    listAllDomains();
     var domainListOpt = document.getElementById('domain_list_choices');
+
+    if (domainListOpt.value == "" || domainListOpt.value == undefined) {
+        return;
+    }
     var url = make_url('domain/list?domain_name=');
     url = url.concat(domainListOpt.value)
 
