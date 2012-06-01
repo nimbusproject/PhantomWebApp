@@ -14,42 +14,57 @@ from django.contrib import admin
 @login_required
 def django_get_initial_info(request):
     user_obj = get_user_object(request.user.username)
-    response_dict = get_iaas_info(request.GET, user_obj)
-    domain_dict = list_domains(request.GET, user_obj)
-    response_dict.update(domain_dict)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    try:
+        response_dict = get_iaas_info(request.GET, user_obj)
+        domain_dict = list_domains(request.GET, user_obj)
+        response_dict.update(domain_dict)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
     return h
 
 @LogEntryDecorator
 @login_required
 def django_get_iaas_info(request):
     user_obj = get_user_object(request.user.username)
-    response_dict = get_iaas_info(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    try:
+        response_dict = get_iaas_info(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
     return h
 
 @LogEntryDecorator
 @login_required
 def django_list_domain(request):
     user_obj = get_user_object(request.user.username)
-    response_dict = list_domains(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    try:
+        response_dict = list_domains(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
     return h
 
 @LogEntryDecorator
 @login_required
 def django_start_domain(request):
     user_obj = get_user_object(request.user.username)
-    response_dict = start_domain(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    try:
+        response_dict = start_domain(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
     return h
 
 @LogEntryDecorator
 @login_required
 def django_delete_domain(request):
     user_obj = get_user_object(request.user.username)
-    response_dict = delete_domain(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    try:
+        response_dict = delete_domain(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
     return h
 
 @LogEntryDecorator
@@ -62,6 +77,8 @@ def django_phantom(request):
         c = Context(response_dict)
     except PhantomRedirectException, ex:
         return HttpResponseRedirect(ex.redir)
+    finally:
+        user_obj.close()
     return HttpResponse(t.render(c))
 
 class MyModelAdmin(admin.ModelAdmin):

@@ -153,6 +153,9 @@ class UserObjectMySQL(UserObject):
             raise PhantomWebException('The user %s is not associated with cloud user database.  Please contact your sysadmin' % (username))
         self._load_clouds()
 
+    def close(self):
+        self._authz.close()
+
     def has_phantom_data(self):
        return True
 
