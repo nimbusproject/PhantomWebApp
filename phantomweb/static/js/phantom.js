@@ -251,8 +251,8 @@ function loadDomainName() {
                 found = true;
             }
         }
-
         if (found == false){
+            disable_buttons(false);
             return;
         }
 
@@ -301,8 +301,8 @@ function loadDomainName() {
             }
             disable_buttons(false);
         }
-
     }
+    
     var msg = "loading ".concat(domainListOpt.value).concat("...");
     $("#domain_details_name").html(msg);
     $("#instance_details").empty();
