@@ -235,6 +235,7 @@ function set_option_box(opt, name) {
 
 function loadDomainName() {
 
+    listAllDomains();
     var domainListOpt = document.getElementById('domain_list_choices');
     var url = make_url('domain/list?domain_name=');
     url = url.concat(domainListOpt.value)
@@ -252,6 +253,8 @@ function loadDomainName() {
             }
         }
         if (found == false){
+            $("#domain_details_name").empty();
+            listAllDomains();
             disable_buttons(false);
             return;
         }
