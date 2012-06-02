@@ -290,6 +290,13 @@ function loadDomainName() {
             fields[3] = instance.hostname;
             fields[4] = domain.image_id;
 
+            var f_v = document.getElementById("filter_list_id");
+            if (f_v.value != "All") {
+                if (fields[0].indexOf(f_v.value) < 0) {
+                    continue
+                }
+            }
+
             var li = $('<li></li>');
             $("#instance_details").append(li);
             var div = $('<div></div>').addClass('instance_status_div');
@@ -305,8 +312,8 @@ function loadDomainName() {
                 subli.html(fields[j]);
                 ul.append(subli);
             }
-            disable_buttons(false);
         }
+        disable_buttons(false);
     }
     
     var msg = "loading ".concat(domainListOpt.value).concat("...");
