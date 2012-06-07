@@ -306,7 +306,7 @@ function loadDomainName() {
         userCheckOpt.checked = u_rc;
         commonCheckOpt.checked = c_rc;
 
-        $("#domain_details_name").html(domain.name.concat(" instance details."));
+        $("#domain_details_name").html(domain.name.concat(" domain details."));
 
         for(var i=0; i< domain.instances.length; i++) {
             var instance = domain.instances[i];
