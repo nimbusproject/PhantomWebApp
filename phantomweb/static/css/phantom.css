@@ -187,12 +187,17 @@
     margin-top: 5px;
 }
 
+#domain_details_filter_div
+{
+    padding-bottom: 5px;
+}
+
 #domain_details_pane
 {
     position: relative;
     width: 400px;
     float: right;
-    padding-top: 5px;
+    padding-top: 3px;
 }
 
 #domain_details_list_div
