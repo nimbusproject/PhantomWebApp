@@ -288,6 +288,10 @@
     width: 2pc;
 }
 
+#domain_details_list_div ul
+{
+    list-style-type: none;
+}
 
 #domain_details_list_div li:hover
 {

@@ -1,0 +1,10 @@
+{% extends "../templates/base.html" %}
+{% load url from future %}
+
+{% block nimbus_body %}
+
+<p>{% trans "Thanks for using the Nimbus Auto-Scale service." %}</p>
+
+<p><a href="/accounts/login/">{% trans 'Log in again' %}</a></p>
+
+{% endblock %}
