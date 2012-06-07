@@ -1,3 +1,4 @@
+
 function disable_buttons(bool, msg) {
     if(bool) {
         $("#error_status_text").html(msg);

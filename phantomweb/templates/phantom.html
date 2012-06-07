@@ -114,10 +114,8 @@
         </div>
 
             <div id="domain_details_pane" class="form_pane">
-                <h2 id="domain_details_name"></h2>
+                <h2 id="domain_details_name">Domain details.</h2>
                 <div id="domain_change_size_div">
-                    <input type="button" id="new_desired_size_button" class="formbutton" value="Resize" onclick="resizeDomain()"/>
-                    <input type='text' id="new_desired_size" name='new_desired_size'/>
                 </div>
                 <div id="domain_details_filter_div">
                     <label id="filter_list_label">Show:</label>
@@ -131,6 +129,8 @@
                         <option>FAILED</option>
                     </select>
                     <input type="button" id="refresh_instances_button" class="formbutton" value="Update" onclick="loadDomainName()"/>
+                    <input type="button" id="new_desired_size_button" class="formbutton" value="Resize" onclick="resizeDomain()"/>
+                    <input type='text' id="new_desired_size" name='new_desired_size'/>
                 </div>
                 <div id="domain_details_list_div">
                     <ul id="instance_details">

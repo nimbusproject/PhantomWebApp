@@ -192,6 +192,7 @@
     position: relative;
     width: 400px;
     float: right;
+    padding-top: 5px;
 }
 
 #domain_details_list_div
