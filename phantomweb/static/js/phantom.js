@@ -240,11 +240,11 @@ function resizeDomain() {
     var newDesiredSizeOpt = document.getElementById('new_desired_size');
 
     if (domainListOpt.value == "" || domainListOpt.value == undefined) {
-        alert("You must select a domain to resize");
+        loadDomainName();
         return;
     }
     if (newDesiredSizeOpt.value == "" || newDesiredSizeOpt.value == undefined) {
-        alert("You must select a new size");
+        loadDomainName();
         return;
     }
 

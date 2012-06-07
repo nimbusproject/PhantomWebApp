@@ -128,9 +128,9 @@
                         <option>TERMINATING</option>
                         <option>FAILED</option>
                     </select>
-                    <input type="button" id="refresh_instances_button" class="formbutton" value="Update" onclick="loadDomainName()"/>
-                    <input type="button" id="new_desired_size_button" class="formbutton" value="Resize" onclick="resizeDomain()"/>
+                    <label id="new_size_label">New Size:</label>
                     <input type='text' id="new_desired_size" name='new_desired_size'/>
+                    <input type="button" id="new_desired_size_button" class="formbutton" value="Update" onclick="resizeDomain()"/>
                 </div>
                 <div id="domain_details_list_div">
                     <ul id="instance_details">
