@@ -21,5 +21,6 @@ urlpatterns = patterns('',
     url(r'^phantom/domain/list$', 'phantomweb.views.django_list_domain'),
     url(r'^phantom/domain/start$', 'phantomweb.views.django_start_domain'),
     url(r'^phantom/domain/delete$', 'phantomweb.views.django_delete_domain'),
-    url(r'^phantom$', 'phantomweb.views.django_phantom'),   
+    url(r'^phantom/domain/resize$', 'phantomweb.views.django_update_desired_size'),
+    url(r'^phantom$', 'phantomweb.views.django_phantom'),
 )

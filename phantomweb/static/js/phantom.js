@@ -233,6 +233,34 @@ function set_option_box(opt, name) {
     return false;
 }
 
+function resizeDomain() {
+
+    var domainListOpt = document.getElementById('domain_list_choices');
+    var newDesiredSizeOpt = document.getElementById('new_desired_size');
+
+    if (domainListOpt.value == "" || domainListOpt.value == undefined) {
+        alert("You must select a domain to resize");
+        return;
+    }
+    if (newDesiredSizeOpt.value == "" || newDesiredSizeOpt.value == undefined) {
+        alert("You must select a new size");
+        return;
+    }
+
+    var domainName = domainListOpt.value;
+    var newSize = newDesiredSizeOpt.value;
+
+    var url = make_url('domain/resize?name=');
+    url = url.concat(domainName).concat('&new_desired_size=').concat(newSize);
+
+    var func = function(obj){
+        loadDomainName();
+        disable_buttons(false);
+    }
+    disable_buttons(true);
+    ajaxCallREST(url, func, std_error_handler);
+}
+
 function loadDomainName() {
 
     var domainListOpt = document.getElementById('domain_list_choices');

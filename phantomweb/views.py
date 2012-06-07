@@ -1,4 +1,3 @@
-# Cr# Create your views here.
 from django.conf.urls.defaults import patterns
 from django.core.urlresolvers import reverse
 from django.template import Context, loader
@@ -7,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
 from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info
+from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info, update_desired_size
 from django.contrib import admin
 
 @LogEntryDecorator
@@ -22,6 +21,19 @@ def django_get_initial_info(request):
     finally:
         user_obj.close()
     return h
+
+
+@LogEntryDecorator
+@login_required
+def django_update_desired_size(request):
+    user_obj = get_user_object(request.user.username)
+    try:
+        response_dict = update_desired_size(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
+    return h
+
 
 @LogEntryDecorator
 @login_required

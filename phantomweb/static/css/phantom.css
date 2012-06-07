@@ -130,7 +130,7 @@
 #domain_list_choices
 {
     width: 400px;
-    height: 150px;
+    height: 200px;
 }
 
 .phantom_section_div
@@ -197,7 +197,8 @@
 #domain_details_list_div
 {
     overflow-y: scroll;
-    height: 90%;
+    height: 80%;
+    background-color: #f6f6ff;
 }
 
 
@@ -280,4 +281,15 @@
 #phantom_reset_pw_div li
 {
     list-style-type: none;
+}
+
+#new_desired_size
+{
+    width: 2pc;
+}
+
+
+#domain_details_list_div li:hover
+{
+    background-color: #e6e6fa;
 }

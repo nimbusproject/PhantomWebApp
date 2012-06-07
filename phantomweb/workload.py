@@ -195,6 +195,38 @@ def delete_domain(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
+def update_desired_size(request_params, userobj):
+    con = _get_phantom_con(userobj)
+
+    params = ['name', 'new_desired_size']
+    for p in params:
+        if p not in request_params:
+            return None
+    asg_name = request_params['name']
+
+    try:
+        asg_new_desired_size = int(request_params['new_desired_size'])
+    except:
+        e_msg = 'Please set the desired size to an integer, not %s' % (str(request_params['new_desired_size']))
+        g_general_log.error(e_msg)
+        raise PhantomWebException(e_msg)
+
+    g_general_log.debug("updating %s to be size %d" % (asg_name, asg_new_desired_size))
+
+    asgs = con.get_all_groups(names=[asg_name,])
+    if not asgs:
+        e_msg = "The domain %s does not exist." % (asg_name)
+        raise PhantomWebException(e_msg)
+    asgs[0].set_capacity(asg_new_desired_size)
+
+    response_dict = {
+        'Success': True,
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
 def phantom_main_html(request_params, userobj):
     instance_types = ["m1.small", "m1.large"]
     cloud_locations = userobj.iaasclouds.keys()
