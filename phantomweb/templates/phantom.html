@@ -101,6 +101,7 @@
 
             <div id="lc_button_div" class="phantom_domain_row">
                 <input type="button" id="start_domain_button" class="formbutton" value="Start" onclick="startDomain()"/>
+                <input type="button" id="new_desired_size_button" class="formbutton" value="Resize" onclick="resizeDomain()"/>
                 <input type="button" id="terminate_domain_button" class="formbutton" value="Terminate" onclick="deleteDomain()"/>
             </div>
 
@@ -128,9 +129,7 @@
                         <option>TERMINATING</option>
                         <option>FAILED</option>
                     </select>
-                    <label id="new_size_label">New Size:</label>
-                    <input type='text' id="new_desired_size" name='new_desired_size'/>
-                    <input type="button" id="new_desired_size_button" class="formbutton" value="Update" onclick="resizeDomain()"/>
+                    <input type="button" id="update_button" class="formbutton" value="Update" onclick="loadDomainName()"/>
                 </div>
                 <div id="domain_details_list_div">
                     <ul id="instance_details">

@@ -237,7 +237,7 @@ function set_option_box(opt, name) {
 function resizeDomain() {
 
     var domainListOpt = document.getElementById('domain_list_choices');
-    var newDesiredSizeOpt = document.getElementById('new_desired_size');
+    var newDesiredSizeOpt = document.getElementById('domain_size_text');
 
     if (domainListOpt.value == "" || domainListOpt.value == undefined) {
         loadDomainName();
