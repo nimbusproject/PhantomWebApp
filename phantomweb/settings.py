@@ -18,7 +18,7 @@ EMAIL_HOST_USER = 'bresnaha-mcs'
 EMAIL_PORT      = 465
 EMAIL_USE_TLS   = True
 DEFAULT_FROM_EMAIL  = 'bresnaha@mcs.anl.gov '
-SERVER_EMAIL    = 'bresnaha@mcs.anl.gov'
+SERVER_EMAIL    = 'bresnaha@mcs.anl.gov' 
 
 MANAGERS = ADMINS
 
