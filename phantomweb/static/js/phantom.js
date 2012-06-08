@@ -6,6 +6,7 @@ function disable_buttons(bool, msg) {
         $("#terminate_domain_button").attr("disabled", "disabled");
         $("#domain_list_choices").attr("disabled", "disabled");
         $("#location_choices").attr("disabled", "disabled");
+        $("#new_desired_size_button").attr("disabled", "disabled");
         $('#main_loading_image').show();
     }
     else {
@@ -14,6 +15,7 @@ function disable_buttons(bool, msg) {
         $("#terminate_domain_button").removeAttr("disabled", "disabled");
         $("#domain_list_choices").removeAttr("disabled", "disabled");
         $("#location_choices").removeAttr("disabled", "disabled");
+        $("#new_desired_size_button").removeAttr("disabled", "disabled");
         $('#main_loading_image').hide();
     }
 }
