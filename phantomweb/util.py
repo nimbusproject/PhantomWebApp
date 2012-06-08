@@ -7,9 +7,6 @@ from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
 from phantomweb.models import PhantomInfoDB, DefaultCloudsDB
 
-def get_key_name():
-    return "nimbusphantom"
-
 g_general_log = logging.getLogger('phantomweb.general')
 
 

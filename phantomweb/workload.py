@@ -5,7 +5,8 @@ import logging
 import urlparse
 import boto.ec2.autoscale
 from phantomweb.phantom_web_exceptions import PhantomWebException
-from phantomweb.util import PhantomWebDecorator, get_key_name, LogEntryDecorator
+from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
+from phantomsql import phantom_get_default_key_name
 
 import logging   # import the required logging module
 
@@ -153,7 +154,7 @@ def start_domain(request_params, userobj):
         raise PhantomWebException(e_msg)
 
     lc_name = "WEB-%s-%s-%s" % (size, image_name, common)
-    key_name = get_key_name()
+    key_name = phantom_get_default_key_name()
 
     g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
 
