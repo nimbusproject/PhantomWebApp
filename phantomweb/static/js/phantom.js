@@ -256,7 +256,6 @@ function resizeDomain() {
 
     var func = function(obj){
         loadDomainName();
-        disable_buttons(false);
     }
     disable_buttons(true);
     ajaxCallREST(url, func, std_error_handler);
