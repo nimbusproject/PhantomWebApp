@@ -322,7 +322,7 @@ function loadDomainName() {
 
             var f_v = document.getElementById("filter_list_id");
             if (f_v.value != "All") {
-                if(f_v.value == "Healthy" && (fields[0].indexOf("RUNNING") > 0 || fields[0].indexOf("PENDING") > 0)) {
+                if(f_v.value == "Healthy" && (fields[0].indexOf("RUNNING") > 0 || fields[0].indexOf("PENDING") > 0 || fields[0].indexOf("REQUESTING") > 0)) {
                 }
                 else if (fields[0].indexOf(f_v.value) < 0) {
                     continue;
