@@ -45,11 +45,26 @@
                 </div>
 
 
+                <div class="phantom_section_div">
+                    <div class="phantom_domain_row">
+                        <div class="combo_label">
+                            <label id="location_choice_label" class="combo_label">Cloud</label>
+                        </div>
+                        <div class="combo_value">
+                            <select name="location" id="location_choices" class="imagechoice" label="location_choice_label" onchange="populateIaaS()">
+                                {% for i in cloud_locations %}
+                                <option>{{i}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
             <div class="phantom_section_div">
                 <div class="phantom_domain_row">
                     <div class="combo_label">
                         <input id="user_choice_checked" class="image_radio" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
-                        <label id="user_image_label">User Image</label>
+                        <label id="user_image_label">Personal Image</label>
                     </div>
                     <div class="combo_value">
                         <select name="user_images" id="user_images_choices" class="imagechoice">
@@ -60,7 +75,7 @@
                 <div class="phantom_domain_row">
                     <div class="combo_label">
                         <input class="image_radio" id="common_choice_checked" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
-                        <label id="common_image_label">Common Image</label>
+                        <label id="common_image_label">Public Image</label>
                     </div>
                     <div class="combo_value">
                         <select name="user_images" id="common_images_choices" class="imagechoice">
@@ -84,20 +99,6 @@
                 </div>
             </div>
 
-            <div class="phantom_section_div">
-                <div class="phantom_domain_row">
-                    <div class="combo_label">
-                        <label id="location_choice_label" class="combo_label">Cloud</label>
-                    </div>
-                    <div class="combo_value">
-                        <select name="location" id="location_choices" class="imagechoice" label="location_choice_label" onchange="populateIaaS()">
-                            {% for i in cloud_locations %}
-                            <option>{{i}}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
 
             <div id="lc_button_div" class="phantom_domain_row">
                 <table>
