@@ -338,15 +338,11 @@ function loadDomainName() {
             li.append(div);
             div.append(h4);
             div.append(ul);
+            li.attr("id", instance.instance_id);
+            li.click({param1: instance.instance_id, param2: instance.cloud}, contextMenu);
 
             for(var j = 0; j < fields.length; j++) {
                 var subli = $('<li></li>').addClass('instance_status_details_item');
-
-
-
-
-                var func_name = "contextMenu(".concat(instance.instance_id).concat(", ").concat(instance.cloud).concat(")")
-                subli.setAttribute('onclick', func_name);
                 subli.html(fields[j]);
                 ul.append(subli);
             }
@@ -361,7 +357,7 @@ function loadDomainName() {
     ajaxCallREST(url, func, std_error_handler);
 }
 
-function contextMenu(instanceid, cloud) {
+function contextMenu(e) {
     var obj = $("#phantomInstanceContextMenu");
 
     var o = {
@@ -370,24 +366,31 @@ function contextMenu(instanceid, cloud) {
             };
 
     function nestedterminateClick() {
-        terminateClick(instanceid, cloud);
+            terminateClick(e.data.param1, e.data.param2);
     }
+    obj.unbind("click");
     obj.click(nestedterminateClick);
 
+    event.stopPropagation();
     obj.css(o);
     obj.show();
+    obj.css('zIndex', 2000);
 }
-
 
 function terminateClick(instanceid, cloudname) {
     //phantom/
-    var u = make_url('domain/terminate_instance?cloud=');
+    var url = make_url('domain/terminate_instance?cloud=').concat(cloudname).concat('&instance=').concat(instanceid);
 
     var obj = $("#phantomInstanceContextMenu");
-    var msg = "You are going to kill a VM ".concat(instanceid);
-    alert(msg);
+    var msg = "Do you want to kill the VM instance ".concat(instanceid).concat("?");
+    var answer = confirm (msg);
+    if (answer) {
+        var func = function(obj){
+            loadDomainName();
+        }
+        ajaxCallREST(url, func, std_error_handler);
+    }
 }
-
 
 function noncontextMouseDown() {
     var obj = $("#phantomInstanceContextMenu");

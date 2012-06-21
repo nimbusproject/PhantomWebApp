@@ -4,12 +4,7 @@
     <script src="/static/js/phantom.js"></script>
 {% endblock %}
 
-{% block bodytag %}onclick="noncontextMouseDown();"{% endblock %}
 {% block nimbus_body %}
-
-<ul id="phantomInstanceContextMenu">
-    <li><div>Terminate</div></li>
-</ul>
 
 {% if form.errors %}
 <p>Your username and password didn't match. Please try again.</p>
@@ -33,10 +28,5 @@
 </form>
 <p><a href="/accounts/reset_password/">Forgot password</a></p>
 
-<div id="testblock" onmousedown="contextMenu('hello', 'there')">
-
-<p>Hello there how are you</p>
-
-</div>
 
 {% endblock %}

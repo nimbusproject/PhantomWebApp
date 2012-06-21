@@ -5,13 +5,14 @@
 {% block bodytag %}onload="loadPage();" onclick="noncontextMouseDown();"{% endblock %}
 {% block nimbus_body  %}
 
-<!-- hidden html for context menu -->
-    <ul id="phantomInstanceContextMenu" onclick="terminateClick()">
+<div id="phantom_instance_context_menu_div">
+    <ul id="phantomInstanceContextMenu">
         <li><div>Terminate</div></li>
     </ul>
-<!-- end -->
+</div>  
 
 <div id="phantom_content">
+
     <div id="loading_image_div">
         <img src="static/images/loading1.gif"/>
     </div>
@@ -22,11 +23,11 @@
             <img src="static/images/loading4.gif" id="main_loading_image"/>
         </div>
 
-        <form name='myForm'>
+
 
             <div id="main_combined_pane" class="form_pane">
                 <div class="phantom_section_div">
-                    <div id="domain_name_div" class="phantom_domain_row">
+                    <div id="domain_name_div" class="phantom_domain_row" >
                         <div class="combo_label">
                             <label id="domain_name_lbl" >Domain Name:</label>
                         </div>
@@ -128,6 +129,7 @@
         </div>
 
             <div id="domain_details_pane" class="form_pane">
+
                 <h2 id="domain_details_name">Domain details.</h2>
                 <div id="domain_change_size_div">
                 </div>
@@ -149,7 +151,7 @@
                     </ul>
                 </div>
             </div>
-        </form>
+
     </div>
 </div>
 {% endblock %}
