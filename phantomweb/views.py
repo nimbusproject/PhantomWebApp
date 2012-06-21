@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
 from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info, update_desired_size
+from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info, update_desired_size, terminate_iaas_instance
 from django.contrib import admin
 
 @LogEntryDecorator
@@ -41,6 +41,17 @@ def django_get_iaas_info(request):
     user_obj = get_user_object(request.user.username)
     try:
         response_dict = get_iaas_info(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
+    return h
+
+@LogEntryDecorator
+@login_required
+def django_terminate_iaas_instance(request):
+    user_obj = get_user_object(request.user.username)
+    try:
+        response_dict = terminate_iaas_instance(request.GET, user_obj)
         h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     finally:
         user_obj.close()

@@ -303,3 +303,45 @@
 {
     background-color: #e6e6fa;
 }
+
+#phantomInstanceContextMenu
+{
+    background: #5d78a5;
+    box-shadow: 0 0 12px rgba( 0, 0, 0, .3 );
+    border: 1px solid white;
+    display: none;
+    position: absolute;
+    top: 0; left: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 100px;
+}
+
+#phantomInstanceContextMenu li
+{
+    position: relative;
+    border-bottom-color: white;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+#phantomInstanceContextMenu li:hover
+{
+    background: #83a0d3;
+}
+
+#phantomInstanceContextMenu div
+{
+    color: #fffbef;
+    display: inline-block;
+    padding: 8px;
+    text-decoration: none;
+    width: 80%;
+    text-align: center;
+}
+
+#testblock
+{
+    
+}

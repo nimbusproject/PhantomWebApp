@@ -229,10 +229,36 @@ def update_desired_size(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_main_html(request_params, userobj):
-    instance_types = ["m1.small", "m1.large"]
+    instance_types = ["m1.small", "m1.large", "m1.xlarge"]
     cloud_locations = userobj.iaasclouds.keys()
     response_dict = {
         'instance_types': instance_types,
         'cloud_locations': cloud_locations,
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def terminate_iaas_instance(request_params, userobj):
+
+    params = ['cloud','instance']
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebDecorator('Missing parameter %s' % (p))
+
+    cloud_name = request_params['cloud']
+    iaas_cloud = userobj.get_cloud(cloud_name)
+    instance = request_params['instance']
+
+    ec2conn = _get_iaas_compute_con(iaas_cloud)
+    g_general_log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
+    ec2conn.terminate_instances(instance_ids=[instance,])
+
+    response_dict = {
+        'name': 'terminating',
+        'success': 'success',
+        'instance': instance,
+        'cloud': cloud_name
     }
     return response_dict

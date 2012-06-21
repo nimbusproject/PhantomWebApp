@@ -2,10 +2,14 @@
 {% block headscripts %}
     <script src="/static/js/phantom.js"></script>
 {% endblock %}
-{% block bodytag %}onload="loadPage();"{% endblock %}
+{% block bodytag %}onload="loadPage();" onclick="noncontextMouseDown();"{% endblock %}
 {% block nimbus_body  %}
 
-
+<!-- hidden html for context menu -->
+    <ul id="phantomInstanceContextMenu" onclick="terminateClick()">
+        <li><div>Terminate</div></li>
+    </ul>
+<!-- end -->
 
 <div id="phantom_content">
     <div id="loading_image_div">
@@ -19,7 +23,6 @@
         </div>
 
         <form name='myForm'>
-
 
             <div id="main_combined_pane" class="form_pane">
                 <div class="phantom_section_div">
@@ -43,7 +46,6 @@
                         </div>
                     </div>
                 </div>
-
 
                 <div class="phantom_section_div">
                     <div class="phantom_domain_row">

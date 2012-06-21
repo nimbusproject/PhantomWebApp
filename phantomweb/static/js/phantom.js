@@ -341,6 +341,12 @@ function loadDomainName() {
 
             for(var j = 0; j < fields.length; j++) {
                 var subli = $('<li></li>').addClass('instance_status_details_item');
+
+
+
+
+                var func_name = "contextMenu(".concat(instance.instance_id).concat(", ").concat(instance.cloud).concat(")")
+                subli.setAttribute('onclick', func_name);
                 subli.html(fields[j]);
                 ul.append(subli);
             }
@@ -355,6 +361,40 @@ function loadDomainName() {
     ajaxCallREST(url, func, std_error_handler);
 }
 
+function contextMenu(instanceid, cloud) {
+    var obj = $("#phantomInstanceContextMenu");
+
+    var o = {
+                left: event.pageX,
+                top: event.pageY
+            };
+
+    function nestedterminateClick() {
+        terminateClick(instanceid, cloud);
+    }
+    obj.click(nestedterminateClick);
+
+    obj.css(o);
+    obj.show();
+}
+
+
+function terminateClick(instanceid, cloudname) {
+    //phantom/
+    var u = make_url('domain/terminate_instance?cloud=');
+
+    var obj = $("#phantomInstanceContextMenu");
+    var msg = "You are going to kill a VM ".concat(instanceid);
+    alert(msg);
+}
+
+
+function noncontextMouseDown() {
+    var obj = $("#phantomInstanceContextMenu");
+    if (obj.is(':visible') ) {
+        obj.hide();
+    }
+}
 
 function loadPage(){
     $("#error_status_text").html("Ready.");
