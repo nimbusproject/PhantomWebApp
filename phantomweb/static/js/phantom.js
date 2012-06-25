@@ -361,8 +361,8 @@ function contextMenu(e) {
     var obj = $("#phantomInstanceContextMenu");
 
     var o = {
-                left: event.pageX,
-                top: event.pageY
+                left: e.pageX,
+                top: e.pageY
             };
 
     function nestedterminateClick() {
@@ -371,7 +371,7 @@ function contextMenu(e) {
     obj.unbind("click");
     obj.click(nestedterminateClick);
 
-    event.stopPropagation();
+    e.stopPropagation();
     obj.css(o);
     obj.show();
     obj.css('zIndex', 2000);

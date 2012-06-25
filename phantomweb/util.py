@@ -19,7 +19,7 @@ def LogEntryDecorator(func):
             g_general_log.exception("exiting %s with error: %s." % (func.func_name, str(ex)))
             raise
         finally:
-            g_general_log.debug("Exiting %s." % (func.func_name))
+                g_general_log.debug("Exiting %s." % (func.func_name))
     return wrapped
 
 def PhantomWebDecorator(func):
