@@ -66,30 +66,26 @@ function load_error_handler(url, error_msg) {
 
 
 function ajaxCallREST(url, func, error_func) {
-    var ajaxRequest = get_ajax_obj();
-    ajaxRequest.onreadystatechange = function(){
-        // We still need to write some code here
-        if(ajaxRequest.readyState == 4){
-            var error_msg = "";
-            if (ajaxRequest.status == 200){
-                var obj = eval('(' + ajaxRequest.responseText + ')');
-                if(obj.error_message != undefined) {
-                    error_msg = obj.error_message;
-                }
-                else {
-                    func(obj);
-                }
-            }
-            else {
-                error_msg = ajaxRequest.statusText
-            }
-            if (error_msg != "") {
+    $.ajax({
+        type : "GET",
+        url : url,
+        dataType : "json",
+        cache: false,
+        success: function(data) {
+            var obj = data;
+            if(obj.error_message != undefined) {
+                var error_msg = obj.error_message;
                 error_func(url, error_msg);
             }
+            else {
+                func(obj);
+            }
+        },
+        error : function() {
+            var error_msg = "ajax error";
+            error_func(url, error_msg);
         }
-    }
-    ajaxRequest.open("GET", url, true);
-    ajaxRequest.send(null);
+    });
 }
 
 function loadDomainBox(obj) {
