@@ -66,6 +66,7 @@ function load_error_handler(url, error_msg) {
 
 
 function ajaxCallREST(url, func, error_func) {
+    $.ajaxSetup({ cache: false });
     $.ajax({
         type : "GET",
         url : url,
