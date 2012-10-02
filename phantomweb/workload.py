@@ -121,10 +121,10 @@ def list_domains(request_params, userobj):
 
 
 @LogEntryDecorator
-def _find_or_create_config(con, size, image, keyname, common, lc_name):
+def _find_or_create_config(con, size, image, keyname, common, lc_name, user_data):
     lcs = con.get_all_launch_configurations(names=[lc_name,])
     if not lcs:
-        lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image, key_name=keyname, security_groups='default', instance_type=size)
+        lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image, key_name=keyname, security_groups='default', instance_type=size, user_data=user_data)
         con.create_launch_configuration(lc)
         return lc
     return lcs[0]   
@@ -135,7 +135,7 @@ def _find_or_create_config(con, size, image, keyname, common, lc_name):
 def start_domain(request_params, userobj):
     con = _get_phantom_con(userobj)
 
-    params = ['size', 'name', 'image', 'cloud', 'common', 'desired_size']
+    params = ['size', 'name', 'image', 'cloud', 'common', 'desired_size', 'user_data']
     for p in params:
         if p not in request_params:
             raise PhantomWebDecorator('Missing parameter %s' % (p))
@@ -145,6 +145,7 @@ def start_domain(request_params, userobj):
     asg_name = request_params['name']
     cloud = request_params['cloud']
     common = request_params['common']
+    user_data = request_params['user_data']
 
     try:
         desired_size = int(request_params['desired_size'])
@@ -167,7 +168,7 @@ def start_domain(request_params, userobj):
         raise PhantomWebException(e_msg)
 
     lc_name = "%s@%s" % (lc_name, cloud)
-    lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name)
+    lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name, user_data)
     asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size)
     con.create_auto_scaling_group(asg)
     response_dict = {
