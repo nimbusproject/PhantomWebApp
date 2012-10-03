@@ -143,6 +143,7 @@ function listAllDomains() {
 function startDomain() {
     var asgNameOpt = document.getElementById('domain_name_input');
     var asgSizeOpt = document.getElementById('domain_size_input');
+    var userData = document.getElementById('user_data');
     var allocOpt = document.getElementById('allocation_choices');
     var locationOpt = document.getElementById('location_choices');
     var userImageOpt = document.getElementById('user_images_choices');
@@ -165,6 +166,7 @@ function startDomain() {
     u = u.concat('&cloud=').concat(locationOpt.value);
     u = u.concat('&common=').concat(common_check);
     u = u.concat('&desired_size=').concat(asgSizeOpt.value);
+    u = u.concat('&user_data=').concat(encodeURIComponent(userData.value));
 
     var func = function(obj){
         listAllDomains();
