@@ -21,7 +21,7 @@ def _get_phantom_con(userobj):
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(uparts.hostname)
-    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region)
+    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
 
@@ -29,7 +29,7 @@ def _get_phantom_con(userobj):
 def _get_iaas_compute_con(iaas_cloud):
     uparts = urlparse.urlparse(iaas_cloud.cloud_url)
     is_secure = uparts.scheme == 'https'
-    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure)
+    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False)
     ec2conn.host = uparts.hostname
     return ec2conn
 
@@ -171,7 +171,7 @@ def start_domain(request_params, userobj):
 
     lc_name = "%s@%s" % (lc_name, cloud)
     lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name, user_data)
-    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size)
+    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size, validate_certs=False)
     con.create_auto_scaling_group(asg)
     response_dict = {
         'Success': True,
