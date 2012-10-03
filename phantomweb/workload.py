@@ -1,3 +1,4 @@
+import hashlib
 import boto
 from boto.ec2.connection import EC2Connection
 from boto.regioninfo import RegionInfo
@@ -20,7 +21,7 @@ def _get_phantom_con(userobj):
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(uparts.hostname)
-    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region)
+    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
 
@@ -28,7 +29,7 @@ def _get_phantom_con(userobj):
 def _get_iaas_compute_con(iaas_cloud):
     uparts = urlparse.urlparse(iaas_cloud.cloud_url)
     is_secure = uparts.scheme == 'https'
-    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure)
+    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False)
     ec2conn.host = uparts.hostname
     return ec2conn
 
@@ -146,6 +147,7 @@ def start_domain(request_params, userobj):
     cloud = request_params['cloud']
     common = request_params['common']
     user_data = request_params['user_data']
+    user_data_digest = hashlib.md5(user_data).hexdigest()
 
     try:
         desired_size = int(request_params['desired_size'])
@@ -154,7 +156,7 @@ def start_domain(request_params, userobj):
         g_general_log.error(e_msg)
         raise PhantomWebException(e_msg)
 
-    lc_name = "WEB-%s-%s-%s" % (size, image_name, common)
+    lc_name = "WEB-%s-%s-%s-%s" % (size, image_name, common, user_data_digest)
     key_name = phantom_get_default_key_name()
 
     g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
@@ -169,7 +171,7 @@ def start_domain(request_params, userobj):
 
     lc_name = "%s@%s" % (lc_name, cloud)
     lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name, user_data)
-    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size)
+    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size, validate_certs=False)
     con.create_auto_scaling_group(asg)
     response_dict = {
         'Success': True,
