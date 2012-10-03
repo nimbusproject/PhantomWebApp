@@ -1,3 +1,4 @@
+import hashlib
 import boto
 from boto.ec2.connection import EC2Connection
 from boto.regioninfo import RegionInfo
@@ -146,6 +147,7 @@ def start_domain(request_params, userobj):
     cloud = request_params['cloud']
     common = request_params['common']
     user_data = request_params['user_data']
+    user_data_digest = hashlib.md5(user_data).hexdigest()
 
     try:
         desired_size = int(request_params['desired_size'])
@@ -154,7 +156,7 @@ def start_domain(request_params, userobj):
         g_general_log.error(e_msg)
         raise PhantomWebException(e_msg)
 
-    lc_name = "WEB-%s-%s-%s" % (size, image_name, common)
+    lc_name = "WEB-%s-%s-%s-%s" % (size, image_name, common, user_data_digest)
     key_name = phantom_get_default_key_name()
 
     g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
