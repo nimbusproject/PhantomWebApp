@@ -183,7 +183,7 @@ class UserObjectMySQL(UserObject):
         self.iaasclouds = {}
         for site_name in sites:
             try:
-                site_desc = site_client.describe_site(site_name)
+                site_desc = dtrs_client.describe_site(site_name)
 
                 site_url = "INVALID"
                 if site_desc['driver_class'] == "libcloud.compute.drivers.ec2.NimbusNodeDriver":
@@ -194,7 +194,7 @@ class UserObjectMySQL(UserObject):
                         scheme = "http"
                     site_url = "%s://%s:%s" % (scheme, dets['host'], str(dets['port']))
 
-                desc = cred_client.describe_credentials(self._user_dbobject.access_key, site_name)
+                desc = dtrs_client.describe_credentials(self._user_dbobject.access_key, site_name)
                 uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], site_url, desc['key_name'])
                 self.iaasclouds[site_name] = uci
             except Exception, ex:
