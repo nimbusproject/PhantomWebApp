@@ -5,7 +5,7 @@ import logging
 from phantomweb.models import UserPhantomInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
-from phantomweb.models import PhantomInfoDB
+from phantomweb.models import PhantomInfoDB, RabbitInfoDB
 from ceiclient.client import DTRSClient
 from ceiclient.connection import DashiCeiConnection
 
@@ -150,16 +150,20 @@ class UserObjectMySQL(UserObject):
         phantom_info_objects = PhantomInfoDB.objects.all()
         if not phantom_info_objects:
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
+        rabbit_info_objects = RabbitInfoDB.objects.all()
+        if not rabbit_info_objects:
+            raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
 
         self.phantom_info = phantom_info_objects[0]
+        self.rabbit_info = rabbit_info_objects[0]
         g_general_log.debug("Using dburl %s" % (self.phantom_info.dburl))
         self._authz = PhantomSQL(self.phantom_info.dburl)
         self._user_dbobject = self._authz.get_user_object_by_display_name(username)
         if not self._user_dbobject:
             raise PhantomWebException('The user %s is not associated with cloud user database.  Please contact your sysadmin' % (username))
 
-        ssl = self.phantom_info.rabbitssl
-        self._dashi_conn = DashiCeiConnection(self.phantom_info.rabbithost, self.phantom_info.rabbituser, self.phantom_info.rabbitpassword, exchange=self.phantom_info.rabbitexchange, timeout=60, port=self.phantom_info.rabbitport, ssl=ssl)
+        ssl = self.rabbit_info.rabbitssl
+        self._dashi_conn = DashiCeiConnection(self.rabbit_info.rabbithost, self.rabbit_info.rabbituser, self.rabbit_info.rabbitpassword, exchange=self.rabbit_info.rabbitexchange, timeout=60, port=self.rabbit_info.rabbitport, ssl=ssl)
 
         self._load_clouds()
 
