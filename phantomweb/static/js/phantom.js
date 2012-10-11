@@ -62,8 +62,8 @@ function ajaxCallREST(url, func, error_func) {
                 func(obj);
             }
         },
-        error : function() {
-            var error_msg = "ajax error";
+        error : function(request, status, error) {
+            var error_msg = "Error communicating with the service ".concat(request.statusText);
             error_func(url, error_msg);
         }
     });

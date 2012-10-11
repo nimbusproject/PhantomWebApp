@@ -1,3 +1,5 @@
+from django.core.context_processors import csrf
+from django.shortcuts import render_to_response
 from django.conf.urls.defaults import patterns
 from django.core.urlresolvers import reverse
 from django.template import Context, loader
@@ -136,6 +138,7 @@ def django_cloud_edit(request):
     user_obj = get_user_object(request.user.username)
     try:
         response_dict = phantom_cloud_edit_html(request.GET, user_obj)
+        response_dict.update(csrf(request))
         t = loader.get_template('../templates/cloudedit.html')
         c = Context(response_dict)
     except PhantomRedirectException, ex:
@@ -172,7 +175,8 @@ def django_delete_site(request):
 def django_add_site(request):
     user_obj = get_user_object(request.user.username)
     try:
-        response_dict = phantom_add_site(request.GET, user_obj)
+        response_dict = phantom_add_site(request.REQUEST, user_obj)
+#        response_dict.update(csrf(request))
         h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     finally:
         user_obj.close()

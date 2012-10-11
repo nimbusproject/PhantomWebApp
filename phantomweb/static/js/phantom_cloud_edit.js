@@ -18,6 +18,7 @@ function cloud_edit_disable_buttons(enable) {
 
 function phantomAjaxPost(url, data_vals, func, error_func) {
 
+    data_vals['csrfmiddlewaretoken'] = csrf_token;
     var success_func = function (success_data){
             var obj = success_data;
             if(obj.error_message != undefined) {
@@ -38,7 +39,7 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
     $.ajaxSetup({ cache: false });
     $.ajax({
         cache: false,
-        type : "GET",
+        type : "POST",
         url : url,
         dataType : "json",
         data: data_vals,
@@ -46,8 +47,6 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
         error: l_error_func
     });
 }
-
-
 
 function cloud_edit_add() {
 
