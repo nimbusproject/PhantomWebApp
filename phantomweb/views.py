@@ -176,7 +176,6 @@ def django_add_site(request):
     user_obj = get_user_object(request.user.username)
     try:
         response_dict = phantom_add_site(request.REQUEST, user_obj)
-#        response_dict.update(csrf(request))
         h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     finally:
         user_obj.close()

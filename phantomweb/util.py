@@ -6,7 +6,7 @@ from phantomweb.models import UserPhantomInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
 from phantomweb.models import PhantomInfoDB
-from ceiclient.client import DTRSCredentialsClient, DTRSSiteClient
+from ceiclient.client import DTRSClient
 from ceiclient.connection import DashiCeiConnection
 
 
@@ -174,9 +174,8 @@ class UserObjectMySQL(UserObject):
         self._load_clouds()
 
     def _load_clouds(self):
-        cred_client = DTRSCredentialsClient(self._dashi_conn)
-        site_client = DTRSSiteClient(self._dashi_conn)
-        sites = cred_client.list_credentials(self._user_dbobject.access_key)
+        dtrs_client = DTRSClient(self._dashi_conn)
+        sites = dtrs_client.list_credentials(self._user_dbobject.access_key)
         self.iaasclouds = {}
         for site_name in sites:
             try:
@@ -206,12 +205,12 @@ class UserObjectMySQL(UserObject):
         return self.iaasclouds
 
     def get_possible_sites(self):
-        site_client = DTRSSiteClient(self._dashi_conn)
+        site_client = DTRSClient(self._dashi_conn)
         l = site_client.list_sites()
         return l
 
     def add_site(self, site_name, access_key, secret_key, key_name):
-        cred_client = DTRSCredentialsClient(self._dashi_conn)
+        cred_client = DTRSClient(self._dashi_conn)
         site_credentials = {
             'access_key': access_key,
             'secret_key': secret_key,
@@ -224,7 +223,7 @@ class UserObjectMySQL(UserObject):
         self._load_clouds()
 
     def delete_site(self, site_name):
-        cred_client = DTRSCredentialsClient(self._dashi_conn)
+        cred_client = DTRSClient(self._dashi_conn)
         cred_client.remove_credentials(self._user_dbobject.access_key, site_name)
         self._load_clouds()
 
