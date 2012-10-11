@@ -22,7 +22,10 @@ function disable_buttons(bool, msg) {
 
 function make_url(p) {
     var base_url = document.location.href.concat("/");
-    return base_url.concat(p);
+
+    var first_slash = base_url.indexOf("/", 8);
+    base_url = base_url.substring(0, first_slash);
+    return base_url.concat('/phantom/').concat(p);
 }
 
 function std_error_handler(url, error_msg) {

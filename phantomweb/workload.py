@@ -237,6 +237,23 @@ def phantom_main_html(request_params, userobj):
     }
     return response_dict
 
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_html(request_params, userobj):
+    response_dict = {
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_cloud_edit_html(request_params, userobj):
+    sites = userobj.get_possible_sites()
+    response_dict = {
+        'sites': sites
+    }
+    return response_dict
+
 
 @PhantomWebDecorator
 @LogEntryDecorator
@@ -260,5 +277,72 @@ def terminate_iaas_instance(request_params, userobj):
         'success': 'success',
         'instance': instance,
         'cloud': cloud_name
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_get_sites(request_params, userobj):
+    sites = userobj.get_clouds()
+    response_dict = {
+        'sites': sites
+    }
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_delete_site(request_params, userobj):
+    params = ['cloud',]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebDecorator('Missing parameter %s' % (p))
+
+    site_name = request_params['cloud']
+
+    userobj.delete_site(site_name)
+    userobj._load_clouds()
+    response_dict = {
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_add_site(request_params, userobj):
+    params = ['cloud', "keyname", "access", "secret"]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebDecorator('Missing parameter %s' % (p))
+
+    site_name = request_params['cloud']
+    keyname = request_params['keyname']
+    access = request_params['access']
+    secret = request_params['secret']
+
+    userobj.add_site(site_name, access, secret, keyname)
+    response_dict = {
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_get_user_site_info(request_params, userobj):
+    sites = userobj.get_clouds()
+
+    out_info = {}
+    for site_name in sites:
+        ci = sites[site_name]
+        ci_dict = {
+            'username': ci.username,
+            'access_key': ci.iaas_key,
+            'secret_key': "XXXX",
+            'keyname': ci.keyname
+        }
+        out_info[site_name] = ci_dict
+
+    response_dict = {
+        'sites': out_info
     }
     return response_dict

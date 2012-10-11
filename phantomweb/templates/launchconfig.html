@@ -1,0 +1,47 @@
+{% extends "../templates/base.html" %}
+{% block title %}Phantom Launch Configurations{% endblock %}
+{% block headscripts %}
+    <script src="/static/js/phantom.js"></script>
+{% endblock %}
+{% block bodytag %}{% endblock %}
+{% block nimbus_body  %}
+
+    <div>
+        
+    </div>
+
+    <div class="phantom_section_div">
+        <div class="phantom_domain_row">
+            <table>
+                <tr>
+                    <td>
+                        <div class="combo_label">
+                            <label id="location_choice_label" class="combo_label">Cloud</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="combo_value">
+                            <select name="location" id="location_choices" class="imagechoice" label="location_choice_label" onchange="populateIaaS()">
+                                {% for i in cloud_locations %}
+                                <option>{{i}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="combo_label">
+                            <label class="combo_label">Max VMs</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="combo_label">
+                            <input type="text">1</input>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+{% endblock %}

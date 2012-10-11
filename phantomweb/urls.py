@@ -26,5 +26,12 @@ urlpatterns = patterns('',
     url(r'^phantom/domain/delete$', 'phantomweb.views.django_delete_domain'),
     url(r'^phantom/domain/resize$', 'phantomweb.views.django_update_desired_size'),
     url(r'^phantom/domain/terminate_instance$', 'phantomweb.views.django_terminate_iaas_instance'),
-    url(r'^phantom$', 'phantomweb.views.django_phantom'),   
+    url(r'^phantom$', 'phantomweb.views.django_phantom'),
+    url(r'^phantom/launchconfig$', 'phantomweb.views.django_lc'),
+    url(r'^phantom/cloudedit$', 'phantomweb.views.django_cloud_edit'),
+    url(r'^phantom/get_sites$', 'phantomweb.views.django_get_sites'),
+    url(r'^phantom/get_user_sites$', 'phantomweb.views.django_get_user_site_info'),
+    url(r'^phantom/delete_cloud$', 'phantomweb.views.django_delete_site'),
+    url(r'^phantom/add_cloud$', 'phantomweb.views.django_add_site'),
 )
+

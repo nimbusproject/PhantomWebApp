@@ -2,10 +2,13 @@ from boto.exception import BotoServerError
 from django.template import Context, loader
 from django.http import HttpResponse
 import logging
-from phantomweb.models import UserPhantomInfoDB, UserCloudInfoDB
+from phantomweb.models import UserPhantomInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
-from phantomweb.models import PhantomInfoDB, DefaultCloudsDB
+from phantomweb.models import PhantomInfoDB
+from ceiclient.client import DTRSCredentialsClient, DTRSSiteClient
+from ceiclient.connection import DashiCeiConnection
+
 
 g_general_log = logging.getLogger('phantomweb.general')
 
@@ -19,7 +22,7 @@ def LogEntryDecorator(func):
             g_general_log.exception("exiting %s with error: %s." % (func.func_name, str(ex)))
             raise
         finally:
-                g_general_log.debug("Exiting %s." % (func.func_name))
+            g_general_log.debug("Exiting %s." % (func.func_name))
     return wrapped
 
 def PhantomWebDecorator(func):
@@ -62,12 +65,13 @@ def get_user_object(username):
 
 class UserCloudInfo(object):
 
-    def __init__(self, cloudname, username, iaas_key, iaas_secret, cloud_url):
+    def __init__(self, cloudname, username, iaas_key, iaas_secret, cloud_url, keyname):
         self.cloudname = cloudname
         self.username = username
         self.iaas_key = iaas_key
         self.iaas_secret = iaas_secret
         self.cloud_url = cloud_url
+        self.keyname = keyname
 
 class UserObject(object):
     pass
@@ -98,6 +102,9 @@ class UserObjectDJangoDB(UserObject):
         self.iaasclouds = {}
         for c in clouds:
             self.iaasclouds[c.cloudname] = c
+
+    def load_clouds(self):
+        self._load_clouds()
 
     def get_cloud(self, name):
         if name not in self.iaasclouds:
@@ -133,6 +140,8 @@ class UserObjectDJangoDB(UserObject):
         self._change_cloud(name, url, key, secret)
         self.iaasclouds[cloud_info.cloudname] = cloud_info
 
+    def delete_cloud(self, site_name):
+        pass
 
 class UserObjectMySQL(UserObject):
 
@@ -143,12 +152,17 @@ class UserObjectMySQL(UserObject):
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
 
         self.phantom_info = phantom_info_objects[0]
-        g_general_log.debug("Usign dburl %s" % (self.phantom_info.dburl))
+        g_general_log.debug("Using dburl %s" % (self.phantom_info.dburl))
         self._authz = PhantomSQL(self.phantom_info.dburl)
         self._user_dbobject = self._authz.get_user_object_by_display_name(username)
         if not self._user_dbobject:
             raise PhantomWebException('The user %s is not associated with cloud user database.  Please contact your sysadmin' % (username))
+
+        ssl = self.phantom_info.rabbitssl
+        self._dashi_conn = DashiCeiConnection(self.phantom_info.rabbithost, self.phantom_info.rabbituser, self.phantom_info.rabbitpassword, exchange=self.phantom_info.rabbitexchange, timeout=60, port=self.phantom_info.rabbitport, ssl=ssl)
+
         self._load_clouds()
+
 
     def close(self):
         self._authz.close()
@@ -156,17 +170,63 @@ class UserObjectMySQL(UserObject):
     def has_phantom_data(self):
        return True
 
+    def load_clouds(self):
+        self._load_clouds()
+
     def _load_clouds(self):
-        clouds = DefaultCloudsDB.objects.all()
+        cred_client = DTRSCredentialsClient(self._dashi_conn)
+        site_client = DTRSSiteClient(self._dashi_conn)
+        sites = cred_client.list_credentials(self._user_dbobject.access_key)
         self.iaasclouds = {}
-        for c in clouds:
-            uci = UserCloudInfo(c.name, self._user_dbobject.displayname, self._user_dbobject.access_key, self._user_dbobject.access_secret, c.url)
-            self.iaasclouds[c.name] = uci
+        for site_name in sites:
+            try:
+                site_desc = site_client.describe_site(site_name)
+
+                site_url = "INVALID"
+                if site_desc['driver_class'] == "libcloud.compute.drivers.ec2.NimbusNodeDriver":
+                    dets = site_desc['driver_kwargs']
+                    if dets['secure']:
+                        scheme = "https"
+                    else:
+                        scheme = "http"
+                    site_url = "%s://%s:%s" % (scheme, dets['host'], str(dets['port']))
+
+                desc = cred_client.describe_credentials(self._user_dbobject.access_key, site_name)
+                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], site_url, desc['key_name'])
+                self.iaasclouds[site_name] = uci
+            except Exception, ex:
+                g_general_log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self._user_dbobject.displayname, str(ex)))
 
     def get_cloud(self, name):
         if name not in self.iaasclouds:
             raise PhantomWebException("No cloud named %s associated with the user" % (name))
         return self.iaasclouds[name]
+
+    def get_clouds(self):
+        return self.iaasclouds
+
+    def get_possible_sites(self):
+        site_client = DTRSSiteClient(self._dashi_conn)
+        l = site_client.list_sites()
+        return l
+
+    def add_site(self, site_name, access_key, secret_key, key_name):
+        cred_client = DTRSCredentialsClient(self._dashi_conn)
+        site_credentials = {
+            'access_key': access_key,
+            'secret_key': secret_key,
+            'key_name': key_name
+        }
+        if site_name in self.iaasclouds:
+            cred_client.update_credentials(self._user_dbobject.access_key, site_name, site_credentials)
+        else:
+            cred_client.add_credentials(self._user_dbobject.access_key, site_name, site_credentials)
+        self._load_clouds()
+
+    def delete_site(self, site_name):
+        cred_client = DTRSCredentialsClient(self._dashi_conn)
+        cred_client.remove_credentials(self._user_dbobject.access_key, site_name)
+        self._load_clouds()
 
 
 def get_user_object(username):
