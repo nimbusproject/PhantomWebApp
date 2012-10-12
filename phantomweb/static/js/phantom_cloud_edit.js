@@ -16,37 +16,6 @@ function cloud_edit_disable_buttons(enable) {
     }
 }
 
-function phantomAjaxPost(url, data_vals, func, error_func) {
-
-    data_vals['csrfmiddlewaretoken'] = csrf_token;
-    var success_func = function (success_data){
-            var obj = success_data;
-            if(obj.error_message != undefined) {
-                var error_msg = obj.error_message;
-                error_func(url, error_msg);
-            }
-            else {
-                func(obj);
-            }
-    };
-
-    var l_error_func = function(request, status, error)  {
-
-            var error_msg = "Error communicating with the service ".concat(request.statusText);
-            error_func(url, error_msg);
-        };
-
-    $.ajaxSetup({ cache: false });
-    $.ajax({
-        cache: false,
-        type : "POST",
-        url : url,
-        dataType : "json",
-        data: data_vals,
-        success: success_func,
-        error: l_error_func
-    });
-}
 
 function cloud_edit_add() {
 

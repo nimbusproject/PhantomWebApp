@@ -1,5 +1,4 @@
 from django.core.context_processors import csrf
-from django.shortcuts import render_to_response
 from django.conf.urls.defaults import patterns
 from django.core.urlresolvers import reverse
 from django.template import Context, loader
@@ -8,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
 from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info, update_desired_size, terminate_iaas_instance, phantom_lc_html, phantom_cloud_edit_html, phantom_get_sites, phantom_get_user_site_info, phantom_delete_site, phantom_add_site
+from phantomweb.workload import delete_domain, phantom_main_html, start_domain, list_domains, get_iaas_info, update_desired_size, terminate_iaas_instance, phantom_lc_load, phantom_cloud_edit_html, phantom_get_sites, phantom_get_user_site_info, phantom_delete_site, phantom_add_site
 from django.contrib import admin
 
 @LogEntryDecorator
@@ -120,16 +119,27 @@ def django_phantom(request):
 @LogEntryDecorator
 @login_required
 def django_lc(request):
-    user_obj = get_user_object(request.user.username)
     try:
-        response_dict = phantom_lc_html(request.GET, user_obj)
+        # no need to talk to the workload app here
+        response_dict = {}
+        response_dict.update(csrf(request))
         t = loader.get_template('../templates/launchconfig.html')
         c = Context(response_dict)
     except PhantomRedirectException, ex:
         return HttpResponseRedirect(ex.redir)
+    return HttpResponse(t.render(c))
+
+
+@LogEntryDecorator
+@login_required
+def django_lc_load(request):
+    user_obj = get_user_object(request.user.username)
+    try:
+        response_dict = phantom_lc_load(request.GET, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     finally:
         user_obj.close()
-    return HttpResponse(t.render(c))
+    return h
 
 
 @LogEntryDecorator
@@ -180,10 +190,6 @@ def django_add_site(request):
     finally:
         user_obj.close()
     return h
-
-
-#render_to_response('contact.html', {'form': form},
-#                   context_instance=RequestContext(request))
 
 
 

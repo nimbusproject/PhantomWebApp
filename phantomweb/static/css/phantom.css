@@ -397,3 +397,108 @@
 {
     
 }
+
+#phantom_lc_content
+{
+    width: 800px;
+    height: 500px;
+    padding: 10px;
+}
+
+#phantom_lc_heading_div
+{
+    width: 100%;
+    padding: 10px;
+    display: table;
+}
+
+#phantom_lc_heading_label
+{
+    font-size: x-large;
+    padding-right: 10px;
+}
+
+#phantom_lc_name_input
+{
+}
+
+.phantom_lc_checkbox_label
+{
+}
+
+.phantom_lc_checkbox
+{
+}
+
+#phantom_lc_info_area
+{
+    width: 250px;
+    padding: 10px;
+}
+
+#phantom_lc_userdata
+{
+    width: 100%;
+}
+
+.phantom_lc_info_label
+{
+    width: 50%;
+    float: left;
+    text-align: left;
+    margin-top: 5px;
+}
+
+.phantom_lc_info_combo
+{
+    width: 50%;
+}
+
+#phantom_lc_max_vm
+{
+    width: 10%;
+}
+
+#phantom_lc_cloud
+{
+}
+
+.phantom_lc_info_row
+{
+    width: 100%;
+    padding-top: 5px;
+    display: table;
+}
+
+.phantom_lc_button_row
+{
+    width: 100%;
+    padding-top: 10px;
+    display: table;
+}
+
+#phantom_lc_button_area
+{
+    width: 125px;
+    padding-top: 50px;
+    display: table;
+    text-align: center;
+}
+
+.phantom_lc_button
+{
+    width: 100px;
+}
+
+#phantom_lc_order_area
+{
+    width: 250px;
+    padding: 10px;
+    height: 350px;
+}
+
+#phantom_lc_order
+{
+    margin-top: 25px;
+    width: 100%;
+}

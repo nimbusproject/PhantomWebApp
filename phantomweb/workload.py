@@ -12,6 +12,9 @@ import logging   # import the required logging module
 
 g_general_log = logging.getLogger('phantomweb.general')
 
+# at some point this should come from some sort of DB
+g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
+
 @LogEntryDecorator
 def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
@@ -28,7 +31,7 @@ def _get_phantom_con(userobj):
 def _get_iaas_compute_con(iaas_cloud):
     uparts = urlparse.urlparse(iaas_cloud.cloud_url)
     is_secure = uparts.scheme == 'https'
-    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure)
+    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure,  validate_certs=False)
     ec2conn.host = uparts.hostname
     return ec2conn
 
@@ -229,18 +232,47 @@ def update_desired_size(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_main_html(request_params, userobj):
-    instance_types = ["m1.small", "m1.large", "m1.xlarge"]
+    global g_instance_types
     cloud_locations = userobj.iaasclouds.keys()
     response_dict = {
-        'instance_types': instance_types,
+        'instance_types': g_instance_types,
         'cloud_locations': cloud_locations,
     }
     return response_dict
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_lc_html(request_params, userobj):
+def phantom_lc_load(request_params, userobj):
+    global g_instance_types
+
+    clouds_d = userobj.get_clouds()
+
+    iaas_info = {}
+    for cloud_name in clouds_d:
+        try:
+            cloud_info = {}
+            cloud = clouds_d[cloud_name]
+            ec2conn = _get_iaas_compute_con(cloud)
+            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+            l = ec2conn.get_all_images()
+            common_images = [c.id for c in l if c.is_public]
+            user_images = [u.id for u in l if not u.is_public]
+            keypairs = ec2conn.get_all_key_pairs()
+            keynames = [k.name for k in keypairs]
+            cloud_info['public_images'] = common_images
+            cloud_info['personal_images'] = user_images
+            cloud_info['keynames'] = keynames
+            cloud_info['instances'] = g_instance_types
+            cloud_info['status'] = 0
+        except Exception, ex:
+            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            cloud_info = {'error': str(ex)}
+            cloud_info['status'] = 1
+        iaas_info[cloud_name] = cloud_info
+
+
     response_dict = {
+        'cloud_info': iaas_info,
     }
     return response_dict
 
@@ -253,7 +285,6 @@ def phantom_cloud_edit_html(request_params, userobj):
         'sites': sites
     }
     return response_dict
-
 
 @PhantomWebDecorator
 @LogEntryDecorator
