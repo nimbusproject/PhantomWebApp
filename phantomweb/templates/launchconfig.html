@@ -18,16 +18,30 @@
         </div>
 
    <form action="." method="post">{% csrf_token %}
-
         <div id="phantom_lc_heading_div">
-            <label id="phantom_lc_heading_label" for="phantom_lc_name_input">Launch Configuration Name:</label>
-            <input id="phantom_lc_name_input" type="text"/>
+            <table>
+                <tr>
+                    <td>
+                        <div id="phantom_lc_name_label_div">
+                            <label id="phantom_lc_heading_label" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
+                        </div>
+                    </td>
+                    <td>    
+                        <div id="phantom_lc_name_combo_div">
+                            <input id="phantom_lc_name_input" type="text"/>
+                            <select id="phantom_lc_name_select">
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <table>
             <tr>
                 <td>
                     <div id="phantom_lc_info_area">
+                        <label class="phantom_lc_area_header">Cloud Options</label>
                         <div class="phantom_lc_info_row">
                             <label for="phantom_lc_cloud" class="phantom_lc_info_label">Cloud:</label>
                             <select id="phantom_lc_cloud" class="phantom_lc_info_combo" onchange="phantom_lc_select_new_cloud()">
@@ -92,7 +106,14 @@
 
                 <td>
                     <div id="phantom_lc_order_area">
-                        <select size="16" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
+                        <label class="phantom_lc_area_header">Cloud Order</label>
+                        <div class="phantom_lc_area_row">
+                            <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
+                        </div>
+                        <div class="phantom_lc_area_row">
+                            <input id="phantom_lc_save" class="phantom_lc_button"  type="button" value="Save"/>
+                            <input id="phantom_lc_delete" class="phantom_lc_button"  type="button" value="Delete"/>
+                        </div>
                     </div>
                 </td>
             </tr>

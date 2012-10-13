@@ -30,7 +30,6 @@ function phantom_lc_buttons(enabled) {
         $("#phantom_lc_down").attr("disabled", "disabled");
         $('#phantom_lc_loading_image').show();
     }
-
 }
 
 function phantom_lc_select_new_cloud() {
@@ -128,7 +127,6 @@ function phantom_lc_load() {
 
     phantom_lc_buttons(false);
     phantomAjaxPost(url, {}, success_func, error_func);
-
 }
 
 function phantom_lc_add_click() {
