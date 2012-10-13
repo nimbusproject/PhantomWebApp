@@ -67,8 +67,7 @@
                             <label for="phantom_lc_userdata">User Data</label>
                         </div>
                         <div class="phantom_lc_info_row">
-                            <textarea rows="5" id="phantom_lc_userdata">
-                            </textarea>
+                            <textarea rows="5" id="phantom_lc_userdata"></textarea>
                         </div>
 
                     </div>
@@ -77,24 +76,23 @@
                 <td>
                     <div id="phantom_lc_button_area">
                         <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_add" class="phantom_lc_button"  type="button" value="Add ->"/>
+                            <input id="phantom_lc_add" class="phantom_lc_button"  type="button" value="Add ->" onclick="phantom_lc_add_click()"/>
                         </div>
                         <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_remove" class="phantom_lc_button" type="button" value="Remove X"/>
+                            <input id="phantom_lc_remove" class="phantom_lc_button" type="button" value="Remove X" onclick="phantom_lc_remove_click()"/>
                         </div>
                         <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up"/>
+                            <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up" onclick="phantom_lc_up_click()"/>
                         </div>
                         <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_down" class="phantom_lc_button" type="button" value="Down"/>
+                            <input id="phantom_lc_down" class="phantom_lc_button" type="button" value="Down" onclick="phantom_lc_down_click()"/>
                         </div>
                     </div>
                 </td>
 
                 <td>
                     <div id="phantom_lc_order_area">
-                        <select size="16" name="phantom_lc_order" id="phantom_lc_order">
-                        </select>
+                        <select size="16" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
                     </div>
                 </td>
             </tr>

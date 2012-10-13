@@ -1,4 +1,5 @@
 var cloud_map = {};
+var g_arranged_cloud_values = {};
 
 function phantom_lc_buttons(enabled) {
 
@@ -128,4 +129,109 @@ function phantom_lc_load() {
     phantom_lc_buttons(false);
     phantomAjaxPost(url, {}, success_func, error_func);
 
+}
+
+function phantom_lc_add_click() {
+    var cloud_name = $("#phantom_lc_cloud").val().trim();
+    var max_vm = $("#phantom_lc_max_vm").val().trim();
+    var instance_type = $("#phantom_lc_instance").val().trim();
+    var keyname = $("#phantom_lc_keyname").val().trim();
+
+    var common;
+    var image = "";
+    if ($("#phantom_lc_common_choice_checked").is(':checked')) {
+        image = $("#phantom_lc_common_images_choices").val().trim();
+        common = true;
+    }
+    else {
+        image = $("#phantom_lc_user_images_choices").val().trim();
+        common = false;
+    }
+
+    if (cloud_name == undefined || cloud_name == "") {
+        alert("You must select a cloud.");
+        return;
+    }
+    if (max_vm == undefined || max_vm == "") {
+        alert("You must select a maximum number of VMs for this cloud.");
+        return;
+    }
+    if (image == undefined || image == "") {
+        alert("You must select a image.");
+        return;
+    }
+    if (instance_type == undefined || instance_type == "") {
+        alert("You must select an instance type.");
+        return;
+    }
+    if (keyname == undefined || keyname == "") {
+        alert("You must select a key name.");
+        return;
+    }
+    if (max_vm < -1 || max_vm > 32000) {
+        alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
+        return;
+    }
+
+    var entry = {
+        'cloud': cloud_name,
+        'max_vm': max_vm,
+        'image': image,
+        'instance_type': instance_type,
+        'keyname': keyname,
+        'common': common,
+        'user_data': $("#phantom_lc_userdata").val()
+    };
+
+    g_arranged_cloud_values[cloud_name] = entry;
+
+    $("#phantom_lc_order option[value='".concat(cloud_name).concat("']")).remove();
+
+    var new_opt = $('<option>', {'name': cloud_name, value: cloud_name, text: cloud_name});
+    $("#phantom_lc_order").append(new_opt);
+}
+
+function phantom_lc_remove_click() {
+    var cloud_name = $("#phantom_lc_order").val();
+    $("#phantom_lc_order option:selected").remove();
+    delete g_arranged_cloud_values[cloud_name];
+}
+
+function phantom_lc_up_click() {
+    $('#phantom_lc_order option:selected').each(function(){
+        $(this).insertBefore($(this).prev()) });
+}
+
+function phantom_lc_down_click() {
+    $('#phantom_lc_order option:selected').each(function(){
+            $(this).insertAfter($(this).next()); });
+}
+
+function phantom_lc_cloud_selected_click() {
+    try {
+        var cloud_name = $("#phantom_lc_order").val();
+        var cloud_val_dict = g_arranged_cloud_values[cloud_name];
+
+        $("#phantom_lc_cloud").val(cloud_val_dict['cloud']);
+
+        phantom_lc_select_new_cloud_internal();
+
+        $("#phantom_lc_max_vm").val(cloud_val_dict['max_vm']);
+        $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
+        $("#phantom_lc_keyname").val(cloud_val_dict['keyname']);
+        $("#phantom_lc_userdata").val(cloud_val_dict['user_data']);
+
+        if (cloud_val_dict['common']) {
+            $("#phantom_lc_common_images_choices").val(cloud_val_dict['image']);
+            $("#phantom_lc_common_choice_checked").attr('checked',true);
+        }
+        else {
+            $("#phantom_lc_user_images_choices").val(cloud_val_dict['image']);
+            $("#phantom_lc_user_choice_checked").attr('checked',true);
+        }
+        phantom_lc_change_image_type();
+    }
+    catch (err) {
+        alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
+    }
 }
