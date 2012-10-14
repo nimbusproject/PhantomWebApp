@@ -13,47 +13,39 @@
     <script src="/static/js/phantom_common.js"></script>
     <script src="/static/js/phantom_cloud_edit.js"></script>
 {% endblock %}
-{% block bodytag %}onload="cloud_edit_loadPage();"{% endblock %}
+{% block bodytag %}onload="phantom_cloud_edit_load_page();"{% endblock %}
 {% block nimbus_body  %}
 
     <div id="phantom_cloud_edit_content">
+        <div class="phantom_headings">
+            <label>Manage Clouds</label>
+        </div>
+
         <div id="status_bar_div">
             <img src="/static/images/loading4.gif" id="phantom_cloud_edit_loading_image"/>
         </div>
        <form action="." method="post">{% csrf_token %}
             <div class="phantom_cloud_edit_row">
-                <div class="phantom_cloud_edit_label">
-                    <label for="phantom_cloud_edit_name">Cloud Name:</label>
-                </div>
-                <div class="phantom_cloud_edit_input">
-                    <select id="phantom_cloud_edit_name" onchange="cloud_edit_loadPage()">
-                        {% for i in sites %}
-                        <option>{{i}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <label for="phantom_cloud_edit_name" class="phantom_cloud_edit_label">Cloud Name:</label>
+                <select id="phantom_cloud_edit_name" class="phantom_cloud_edit_input"  onchange="phantom_cloud_edit_change_cloud()">
+                </select>
             </div>
             <div class="phantom_cloud_edit_row">
-                <div class="phantom_cloud_edit_label">
-                    <label for="phantom_cloud_edit_access">Access Key:</label>
-                </div>
-                <div class="phantom_cloud_edit_input">
-                    <input id="phantom_cloud_edit_access"  type="text"/>
-                </div>
+                <label class="phantom_cloud_edit_label" for="phantom_cloud_edit_access">Access Key:</label>
+                <input id="phantom_cloud_edit_access" class="phantom_cloud_edit_input" type="text"/>
             </div>
+           <div class="phantom_cloud_edit_row">
+               <label class="phantom_cloud_edit_label" for="phantom_cloud_edit_secret">Secret Key:</label>
+               <input id="phantom_cloud_edit_secret" class="phantom_cloud_edit_input" type="text"/>
+           </div>
+           <div class="phantom_cloud_edit_row">
+               <label class="phantom_cloud_edit_label" for="phantom_cloud_edit_keyname">Key Name:</label>
+               <input id="phantom_cloud_edit_keyname" class="phantom_cloud_edit_input" type="text"/>
+           </div>
             <div class="phantom_cloud_edit_row">
-                <div class="phantom_cloud_edit_label">
-                    <label for="phantom_cloud_edit_secret">Secret Key:</label>
-                </div>
-                <div class="phantom_cloud_edit_input">
-                    <input id="phantom_cloud_edit_secret" type="text"></input>
-                </div>
+                <input id="phantom_cloud_edit_add" type="button" class="phantom_cloud_edit_button" value="Add" onclick="phantom_cloud_edit_add_click()"/>
+                <input id="phantom_cloud_edit_remove" type="button" class="phantom_cloud_edit_button" value="Remove" onclick="phantom_cloud_edit_remove_click()"/>
             </div>
-            <div class="phantom_cloud_edit_row">
-                <input id="phantom_cloud_edit_add" type="button" class="phantom_cloud_edit_button" value="Add" onclick="cloud_edit_add()"/>
-                <input id="phantom_cloud_edit_remove" type="button" class="phantom_cloud_edit_button" value="Remove" onclick="cloud_edit_remove()"/>
-            </div>
-
 
             <div class="phantom_cloud_edit_row">
                 <div class="phantom_cloud_edit_configured_list">

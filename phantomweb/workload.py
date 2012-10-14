@@ -48,7 +48,7 @@ def get_iaas_info(request_params, userobj):
     params = ['cloud',]
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     cloud_name = request_params['cloud']
     iaas_cloud = userobj.get_cloud(cloud_name)
@@ -141,7 +141,7 @@ def start_domain(request_params, userobj):
     params = ['size', 'name', 'image', 'cloud', 'common', 'desired_size']
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     image_name = request_params['image']
     size = request_params['size']
@@ -276,16 +276,6 @@ def phantom_lc_load(request_params, userobj):
     }
     return response_dict
 
-
-@PhantomWebDecorator
-@LogEntryDecorator
-def phantom_cloud_edit_html(request_params, userobj):
-    sites = userobj.get_possible_sites()
-    response_dict = {
-        'sites': sites
-    }
-    return response_dict
-
 @PhantomWebDecorator
 @LogEntryDecorator
 def terminate_iaas_instance(request_params, userobj):
@@ -293,7 +283,7 @@ def terminate_iaas_instance(request_params, userobj):
     params = ['cloud','instance']
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     cloud_name = request_params['cloud']
     iaas_cloud = userobj.get_cloud(cloud_name)
@@ -316,8 +306,10 @@ def terminate_iaas_instance(request_params, userobj):
 @LogEntryDecorator
 def phantom_get_sites(request_params, userobj):
     sites = userobj.get_clouds()
+    all_sites = userobj.get_possible_sites()
     response_dict = {
-        'sites': sites
+        'sites': sites,
+        'all_sites': all_sites
     }
     return response_dict
 
@@ -327,7 +319,7 @@ def phantom_delete_site(request_params, userobj):
     params = ['cloud',]
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     site_name = request_params['cloud']
 
@@ -341,10 +333,10 @@ def phantom_delete_site(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_add_site(request_params, userobj):
-    params = ['cloud', "keyname", "access", "secret"]
+    params = ['cloud', "access", "secret", "keyname"]
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     site_name = request_params['cloud']
     keyname = request_params['keyname']
@@ -361,6 +353,7 @@ def phantom_add_site(request_params, userobj):
 @LogEntryDecorator
 def phantom_get_user_site_info(request_params, userobj):
     sites = userobj.get_clouds()
+    all_sites = userobj.get_possible_sites()
 
     out_info = {}
     for site_name in sites:
@@ -374,6 +367,7 @@ def phantom_get_user_site_info(request_params, userobj):
         out_info[site_name] = ci_dict
 
     response_dict = {
-        'sites': out_info
+        'sites': out_info,
+        'all_sites': all_sites
     }
     return response_dict
