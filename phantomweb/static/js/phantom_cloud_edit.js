@@ -71,8 +71,9 @@ function phantom_cloud_edit_change_cloud_internal ()  {
     var selected_cloud_name = $("#phantom_cloud_edit_name").val();
     var val = g_cloud_map[selected_cloud_name];
 
-    $("#phantom_cloud_edit_key_message").val("");
+    $("#phantom_cloud_edit_key_message").text("");
     $("#phantom_cloud_edit_keyname_list").empty();
+    $("#phantom_cloud_edit_status").text("");
     if (val == undefined) {
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
