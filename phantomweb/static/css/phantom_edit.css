@@ -1,7 +1,7 @@
 #phantom_cloud_edit_content
 {
     display: table;
-    width: 500px;
+    width: 800px;
     height: 500px;
 }
 
@@ -44,4 +44,22 @@
 .phantom_cloud_edit_configured_list
 {
 
+}
+
+#phantom_cloud_edit_main
+{
+    width: 60%;
+    float: left;
+}
+
+#phantom_cloud_edit_status_message_div
+{
+    width: 30%;
+    float: right;
+    display: block;
+}
+
+.phantom_cloud_edit_warning_message
+{
+    color: red;
 }

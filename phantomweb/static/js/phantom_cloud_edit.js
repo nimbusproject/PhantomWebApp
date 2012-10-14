@@ -15,7 +15,7 @@ function phantom_cloud_edit_enable(enable) {
         $('#phantom_cloud_edit_loading_image').show();
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname").val("");
+        $("#phantom_cloud_edit_keyname_list").empty();
     }
 }
 
@@ -25,7 +25,7 @@ function phantom_cloud_edit_add_click() {
     var nameCtl = $("#phantom_cloud_edit_name").val().trim();
     var accessCtl = $("#phantom_cloud_edit_access").val().trim();
     var secretCtl = $("#phantom_cloud_edit_secret").val().trim();
-    var keyCtl = $("#phantom_cloud_edit_keyname").val().trim();
+    var keyCtl = $("#phantom_cloud_edit_keyname_list").val();
 
     var error_msg = undefined;
     if(nameCtl == undefined || nameCtl == "") {
@@ -37,8 +37,8 @@ function phantom_cloud_edit_add_click() {
     if(secretCtl == undefined || secretCtl == "") {
         error_msg = "You must provide a EC2 compatible secret key query token";
     }
-    if(keyCtl == undefined || keyCtl == "") {
-        error_msg = "You must provide a EC2 compatible key name";
+    if(keyCtl == undefined) {
+        keyCtl = "";
     }
 
     if (error_msg != undefined) {
@@ -51,7 +51,7 @@ function phantom_cloud_edit_add_click() {
         $("#phantom_cloud_edit_name").empty();
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname").val("");
+        $("#phantom_cloud_edit_keyname_list").empty();
 
         phantom_cloud_edit_load_sites();
     }
@@ -71,15 +71,28 @@ function phantom_cloud_edit_change_cloud_internal ()  {
     var selected_cloud_name = $("#phantom_cloud_edit_name").val();
     var val = g_cloud_map[selected_cloud_name];
 
+    $("#phantom_cloud_edit_key_message").val("");
+    $("#phantom_cloud_edit_keyname_list").empty();
     if (val == undefined) {
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname").val("");
+        $("#phantom_cloud_edit_status").text("Add your credentials and save this cloud.  Then add a key.");
     }
     else {
         $("#phantom_cloud_edit_access").val(val['access_key']);
         $("#phantom_cloud_edit_secret").val(val['secret_key']);
-        $("#phantom_cloud_edit_keyname").val(val['keyname']);
+        $("#phantom_cloud_edit_status").val(val.status_msg);
+        $("#phantom_cloud_edit_status").text(val.status_msg);
+        for (keyndx in val.keyname_list) {
+            found = true;
+            $("#phantom_cloud_edit_key_message").val("");
+            key = val.keyname_list[keyndx]
+            var new_choice = $('<option>',  {'name': key, value: key, text: key});
+            $("#phantom_cloud_edit_keyname_list").append(new_choice);
+        }
+        if(val.keyname == undefined || val.keyname == "") {
+            $("#phantom_cloud_edit_key_message").text("There is no key set for this cloud.  Please select one and click \"Add\"");
+        }
     }
 }
 
@@ -150,7 +163,7 @@ function phantom_cloud_edit_remove_click() {
         $("#phantom_cloud_edit_name").empty();
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname").val("");
+        $("#phantom_cloud_edit_keyname_list").empty();
 
         phantom_cloud_edit_load_sites();
     }

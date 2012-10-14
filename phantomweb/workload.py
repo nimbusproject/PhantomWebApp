@@ -362,8 +362,23 @@ def phantom_get_user_site_info(request_params, userobj):
             'username': ci.username,
             'access_key': ci.iaas_key,
             'secret_key': "XXXX",
-            'keyname': ci.keyname
+            'keyname': ci.keyname,
+            'status': 0,
+            'status_msg': ""
         }
+
+        ec2conn = _get_iaas_compute_con(ci)
+        try:
+            keypairs = ec2conn.get_all_key_pairs()
+            keyname_list = [k.name for k in keypairs]
+            ci_dict['keyname_list'] = keyname_list
+            ci_dict['status_msg'] = ""
+        except Exception, boto_ex:
+            g_general_log.error("Error connecting to the service %s" % (str(boto_ex)))
+            ci_dict['keyname_list'] = []
+            ci_dict['status_msg'] = "Error communication with the specific cloud %s.  Please check your credentials." % (site_name)
+            ci_dict['status'] = 1
+
         out_info[site_name] = ci_dict
 
     response_dict = {
