@@ -1,12 +1,16 @@
 {% extends "../templates/base.html" %}
 {% block title %}Phantom Cloud Configurations{% endblock %}
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_edit.css' />
+{% endblock %}
+
 {% block headscripts %}
     <script type="text/javascript">
     <!--
     var csrf_token = "{{ csrf_token }}";
     // -->
     </script>
-    <script src="/static/js/phantom.js"></script>
+    <script src="/static/js/phantom_common.js"></script>
     <script src="/static/js/phantom_cloud_edit.js"></script>
 {% endblock %}
 {% block bodytag %}onload="cloud_edit_loadPage();"{% endblock %}
@@ -27,14 +31,6 @@
                         <option>{{i}}</option>
                         {% endfor %}
                     </select>
-                </div>
-            </div>
-            <div class="phantom_cloud_edit_row">
-                <div class="phantom_cloud_edit_label">
-                    <label for="phantom_cloud_edit_key">Key Name:</label>
-                </div>
-                <div  class="phantom_cloud_edit_input">
-                    <input id="phantom_cloud_edit_key" type="text"/>
                 </div>
             </div>
             <div class="phantom_cloud_edit_row">
@@ -69,6 +65,5 @@
         </form>
 
     </div>
-
 
 {% endblock %}

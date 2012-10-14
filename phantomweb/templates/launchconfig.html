@@ -1,5 +1,10 @@
 {% extends "../templates/base.html" %}
 {% block title %}Phantom Launch Configurations{% endblock %}
+
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_lc.css' />
+{% endblock %}
+
 {% block headscripts %}
     <script type="text/javascript">
     <!--
@@ -23,7 +28,7 @@
                 <tr>
                     <td>
                         <div id="phantom_lc_name_label_div">
-                            <label id="phantom_lc_heading_label" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
+                            <label id="phantom_lc_heading_label" class="phantom_headings" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
                         </div>
                     </td>
                     <td>    
@@ -41,7 +46,7 @@
             <tr>
                 <td>
                     <div id="phantom_lc_info_area">
-                        <label class="phantom_lc_area_header">Cloud Options</label>
+                        <label class="phantom_area_header">Cloud Options</label>
                         <div class="phantom_lc_info_row">
                             <label for="phantom_lc_cloud" class="phantom_lc_info_label">Cloud:</label>
                             <select id="phantom_lc_cloud" class="phantom_lc_info_combo" onchange="phantom_lc_select_new_cloud()">
@@ -106,7 +111,7 @@
 
                 <td>
                     <div id="phantom_lc_order_area">
-                        <label class="phantom_lc_area_header">Cloud Order</label>
+                        <label class="phantom_area_header">Cloud Order</label>
                         <div class="phantom_lc_area_row">
                             <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
                         </div>

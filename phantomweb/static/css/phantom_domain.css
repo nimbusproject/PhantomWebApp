@@ -1,0 +1,124 @@
+#phantom_domain_content
+{
+    display: table;
+    width: 900px;
+    height: 500px;
+}
+
+#phantom_domain_status_bar_div
+{
+    height: 25px;
+}
+
+#phantom_domain_main_combined_pane
+{
+    float: left;
+    position: relative;
+}
+
+.phantom_domain_section_div
+{
+    border-bottom: solid;
+    border-bottom-width: 1px;
+    padding-top: 0px;
+    padding-bottom: 4px;
+}
+
+.phantom_domain_row
+{
+    width: 100%;
+    padding-top: 5px;
+    display: inherit;
+}
+
+.phantom_domain_label
+{
+    display: inline-block;
+    width: 40%;
+}
+
+.phantom_domain_value
+{
+    display: inline-block;
+    width: 40%;
+}
+
+#phantom_domain_lc_div
+{
+    
+}
+#phantom_domain_lc_div:hover
+{
+    background-color: #e6e6fa;
+}
+
+.phantom_domain_button
+{
+    width: 80px;
+    text-align: Center;
+}
+
+#phantom_domain_button_div
+{
+    padding-top: 5px;
+    margin-top: 5px;
+}
+
+#phantom_domain_details_pane
+{
+    position: relative;
+    float: right;
+}
+
+#phantom_domain_details_filter_div
+{
+    padding-bottom: 5px;
+}
+
+#phantom_domain_details_list_div
+{
+    overflow-y: scroll;
+    height: 80%;
+    background-color: #f6f6ff;
+}
+
+#phantom_domain_instance_details
+{
+
+}
+
+.phantom_domain_form_pane
+{
+    border: solid;
+    border-color: black;
+    border-width: 1px;
+    padding: 10px;
+    margin: 4px;
+    height: 400px;
+    width: 45%;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.phantom_domain_control_buttons
+{
+    margin-left: 75px;
+}
+
+#phantom_domain_button_list_choices
+{
+    width: 400px;
+    height: 200px;
+}
+
+.phantom_domain_combo
+{
+    position: relative;
+    left: 0px;
+    width: 150px;
+}
+
+#phantom_domain_size_input
+{
+    width: 2pc;
+}

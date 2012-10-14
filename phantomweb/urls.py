@@ -34,5 +34,6 @@ urlpatterns = patterns('',
     url(r'^phantom/delete_cloud$', 'phantomweb.views.django_delete_site'),
     url(r'^phantom/add_cloud$', 'phantomweb.views.django_add_site'),
     url(r'^phantom/load_lc$', 'phantomweb.views.django_lc_load'),
+    url(r'^phantom/phantom2$', 'phantomweb.views.django_phantom2'),
 )
 

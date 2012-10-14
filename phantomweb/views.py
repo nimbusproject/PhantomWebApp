@@ -132,6 +132,21 @@ def django_lc(request):
 
 @LogEntryDecorator
 @login_required
+def django_phantom2(request):
+    try:
+        # no need to talk to the workload app here
+        response_dict = {}
+        response_dict.update(csrf(request))
+        t = loader.get_template('phantom_domain.html')
+        c = Context(response_dict)
+    except PhantomRedirectException, ex:
+        return HttpResponseRedirect(ex.redir)
+    return HttpResponse(t.render(c))
+
+
+
+@LogEntryDecorator
+@login_required
 def django_lc_load(request):
     user_obj = get_user_object(request.user.username)
     try:

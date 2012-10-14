@@ -1,0 +1,36 @@
+#phantom_content
+{
+    display: table;
+    width: 900px;
+    height: 500px;
+}
+
+.phantom_links
+{
+    display: inline;
+    padding-right: 20px;
+}
+
+#phantom_links_div
+{
+    display: inline;
+    width: 100%;
+    text-align: left;
+}
+
+#phantom_reset_pw_div li
+{
+    list-style-type: none;
+}
+
+.phantom_headings
+{
+    font-size: x-large;
+    padding-top: 20px;
+    padding-right: 25px;
+}
+
+.phantom_area_header
+{
+    font-size: 1pc;
+}

@@ -1,0 +1,12 @@
+{% extends "../templates/base.html" %}
+{% block headscripts %}
+    <script src="/static/js/phantom.js"></script>
+{% endblock %}
+{% block bodytag %}onload="loadPage();"{% endblock %}
+{% block nimbus_body  %}
+
+    <h1>Error</h1>
+    <h2>{{ error_message }}</h2>
+    <P>Please contact the site admin if this problem persists.</P>
+
+{% endblock %}

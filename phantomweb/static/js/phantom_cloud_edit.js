@@ -10,7 +10,6 @@ function cloud_edit_disable_buttons(enable) {
         $("#phantom_cloud_edit_remove").attr("disabled", "disabled");
         $("#phantom_cloud_edit_name").attr("disabled", "disabled");
         $('#phantom_cloud_edit_loading_image').show();
-        $("#phantom_cloud_edit_key").val("");
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
     }
@@ -20,16 +19,12 @@ function cloud_edit_disable_buttons(enable) {
 function cloud_edit_add() {
 
     var nameCtl = $("#phantom_cloud_edit_name").val().trim();
-    var keyCtl = $("#phantom_cloud_edit_key").val().trim();
     var accessCtl = $("#phantom_cloud_edit_access").val().trim();
     var secretCtl = $("#phantom_cloud_edit_secret").val().trim();
 
     var error_msg = undefined;
     if(nameCtl == undefined || nameCtl == "") {
         error_msg = "You must name your cloud."
-    }
-    if(keyCtl == undefined || keyCtl == "") {
-        error_msg = "Your cloud must have a key name";
     }
     if(accessCtl == undefined || accessCtl == "") {
         error_msg = "You must provide a EC2 compatible access key query token";
@@ -55,7 +50,7 @@ function cloud_edit_add() {
 
     var url = make_url('add_cloud');
     cloud_edit_disable_buttons(false);
-    phantomAjaxPost(url, {'cloud': nameCtl, 'keyname': keyCtl,  'access': accessCtl, 'secret': secretCtl}, success_func, error_func);
+    phantomAjaxPost(url, {'cloud': nameCtl, 'access': accessCtl, 'secret': secretCtl}, success_func, error_func);
 }
 
 
@@ -69,7 +64,6 @@ function load_sites() {
         for(var site in obj.sites) {
             if (site == selected_cloud_name) {
                 var val = obj.sites[site];
-                $("#phantom_cloud_edit_key").val(val['keyname']);
                 $("#phantom_cloud_edit_access").val(val['access_key']);
                 $("#phantom_cloud_edit_secret").val(val['secret_key']);
             }
