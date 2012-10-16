@@ -62,8 +62,7 @@
                                 <input class="phantom_lc_checkbox" id="phantom_lc_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_lc_change_image_type()"/>
                                 <label class="phantom_lc_checkbox_label" for="phantom_lc_common_choice_checked">Public Image</label>
                             </div>
-                            <select name="user_images" id="phantom_lc_common_images_choices" class="phantom_lc_info_combo">
-                            </select>
+                            <input type="text" id="phantom_lc_common_image_input"/>
                         </div>
                         <div class="phantom_lc_info_row">
                             <div class="phantom_lc_info_label">
@@ -98,7 +97,7 @@
                     <div id="phantom_lc_order_area">
                         <label class="phantom_area_header">Cloud Order</label>
                         <div class="phantom_lc_area_row">
-                            <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
+                            <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_order_selected_click()"></select>
                         </div>
                         <div class="phantom_lc_area_row">
                             <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up" onclick="phantom_lc_up_click()"/>

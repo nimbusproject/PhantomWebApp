@@ -1,5 +1,6 @@
 import boto
 from boto.ec2.connection import EC2Connection
+from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
 import logging
 import urlparse
@@ -417,12 +418,11 @@ def phantom_lc_load(request_params, userobj):
             cloud = clouds_d[cloud_name]
             ec2conn = cloud.get_iaas_compute_con()
             g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
-            l = ec2conn.get_all_images()
-            common_images = [c.id for c in l if c.is_public]
+            # This does not seem to be working l = ec2conn.get_all_images(filters={'is-public': False})
+            l = ec2conn.get_all_images(filters={'is-public': False})
             user_images = [u.id for u in l if not u.is_public]
             keypairs = ec2conn.get_all_key_pairs()
             keynames = [k.name for k in keypairs]
-            cloud_info['public_images'] = common_images
             cloud_info['personal_images'] = user_images
             cloud_info['keynames'] = keynames
             cloud_info['instances'] = g_instance_types
@@ -472,6 +472,16 @@ def phantom_lc_save(request_params, userobj):
         for site_name in lc_dict:
             lc_conf_name = "%s@%s" % (lc_name, site_name)
             entry = lc_dict[site_name]
+
+            # check for valid image
+            cloud_object = userobj.get_cloud(site_name)
+            ec2conn = cloud_object.get_iaas_compute_con()
+            try:
+                tmp_img = ec2conn.get_all_images(image_ids=[entry['image_id']])
+            except EC2ResponseError, boto_image_ex:
+                tmp_img = None
+            if not tmp_img:
+                raise PhantomWebException("No such image %s for cloud %s" % (entry['image_id'], site_name))
 
             try:
                 # we probably need to list everything with the base name and delete it

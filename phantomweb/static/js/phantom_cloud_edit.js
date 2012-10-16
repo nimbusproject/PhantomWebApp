@@ -85,7 +85,6 @@ function phantom_cloud_edit_change_cloud_internal ()  {
         $("#phantom_cloud_edit_status").val(val.status_msg);
         $("#phantom_cloud_edit_status").text(val.status_msg);
         for (keyndx in val.keyname_list) {
-            found = true;
             $("#phantom_cloud_edit_key_message").val("");
             key = val.keyname_list[keyndx]
             var new_choice = $('<option>',  {'name': key, value: key, text: key});
@@ -93,6 +92,9 @@ function phantom_cloud_edit_change_cloud_internal ()  {
         }
         if(val.keyname == undefined || val.keyname == "") {
             $("#phantom_cloud_edit_key_message").text("There is no key set for this cloud.  Please select one and click \"Add\"");
+        }
+        else {
+            $("#phantom_cloud_edit_keyname_list").val(val.keyname);
         }
     }
 }

@@ -120,6 +120,11 @@
     height: 350px;
 }
 
+#phantom_lc_common_image_input
+{
+    width: 100px;
+}
+
 #phantom_lc_order
 {
     margin-bottom: 25px;

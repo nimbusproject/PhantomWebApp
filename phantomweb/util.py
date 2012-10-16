@@ -67,14 +67,15 @@ def get_user_object(username):
 
 class UserCloudInfo(object):
 
-    def __init__(self, cloudname, username, iaas_key, iaas_secret, keyname, driver_class, driver_specific=None):
+    def __init__(self, cloudname, username, iaas_key, iaas_secret, keyname, driver_class, site_desc=None):
         self.cloudname = cloudname
         self.username = username
         self.iaas_key = iaas_key
         self.iaas_secret = iaas_secret
         self.keyname = keyname
         self.driver_class = driver_class
-        self.driver_specific = driver_specific.copy()
+        if site_desc:
+            self.site_desc = site_desc.copy()
 
     def get_iaas_compute_con(self):
         site_url = "INVALID"
@@ -86,7 +87,9 @@ class UserCloudInfo(object):
         raise PhantomWebException("Unknown driver type")
 
     def _connect_nimbus(self):
-        dets = self.driver_specific
+        if 'driver_kwargs' not in self.site_desc:
+            raise PhantomWebException("The site %s is misconfigured." % (self.cloudname))
+        dets = self.site_desc['driver_kwargs']
         if dets['secure']:
             scheme = "https"
         else:
@@ -100,7 +103,7 @@ class UserCloudInfo(object):
         return ec2conn
 
     def _connect_ec2(self):
-        ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret)
+        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret)
         return ec2conn
 
 
@@ -149,7 +152,7 @@ class UserObjectMySQL(UserObject):
             try:
                 site_desc = dtrs_client.describe_site(site_name)
                 desc = dtrs_client.describe_credentials(self._user_dbobject.access_key, site_name)
-                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc['driver_class'], driver_specific=site_desc['driver_kwargs'])
+                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc['driver_class'], site_desc=site_desc)
                 self.iaasclouds[site_name] = uci
             except Exception, ex:
                 g_general_log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self._user_dbobject.displayname, str(ex)))
