@@ -17,7 +17,11 @@
 
 #phantom_lc_name_select
 {
-    width: 100%;
+    width: 150px;
+}
+
+.phantom_lc_name_item
+{
 }
 
 #phantom_lc_header_table
@@ -26,7 +30,7 @@
 
 #phantom_lc_name_input
 {
-    width: 100%
+    width: 150px;
 }
 
 .phantom_lc_checkbox_label
@@ -97,14 +101,14 @@
 #phantom_lc_button_area
 {
     width: 125px;
-    padding-top: 50px;
+    padding-top: 75px;
     display: table;
     text-align: center;
 }
 
 .phantom_lc_button
 {
-    width: 100px;
+    width: 90px;
 }
 
 #phantom_lc_order_area
@@ -125,17 +129,29 @@
 
 #phantom_lc_save
 {
-    float: left;
 }
 
 #phantom_lc_delete
 {
+}
+
+#phantom_lc_up
+{
+    float: left;
+}
+
+#phantom_lc_down
+{
     float: right;
 }
 
+
 #phantom_lc_name_combo_div
 {
-    width: 150px;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: table;
 }
 
 #phantom_lc_name_label_div

@@ -18,28 +18,19 @@
 {% block nimbus_body  %}
 
     <div id="phantom_lc_content">
+        <div id="phantom_lc_name_label_div">
+            <label id="phantom_lc_heading_label" class="phantom_headings" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
+        </div>
         <div>
             <img src="/static/images/loading4.gif" id="phantom_lc_loading_image"/>
         </div>
 
-   <form action="." method="post">{% csrf_token %}
-        <div id="phantom_lc_heading_div">
-            <table>
-                <tr>
-                    <td>
-                        <div id="phantom_lc_name_label_div">
-                            <label id="phantom_lc_heading_label" class="phantom_headings" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
-                        </div>
-                    </td>
-                    <td>    
-                        <div id="phantom_lc_name_combo_div">
-                            <input id="phantom_lc_name_input" type="text"/>
-                            <select id="phantom_lc_name_select">
-                            </select>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+        <div id="phantom_lc_name_combo_div">
+            <input id="phantom_lc_name_input" class="phantom_lc_name_item" type="text"/>
+            <select id="phantom_lc_name_select" class="phantom_lc_name_item" onchange="phantom_lc_change_lc_click()">
+            </select>
+            <input id="phantom_lc_save" class="phantom_lc_button phantom_lc_name_item"  type="button" value="Save" onclick="phantom_lc_save_click()"/>
+            <input id="phantom_lc_delete" class="phantom_lc_button phantom_lc_name_item"  type="button" value="Delete" onclick="phantom_lc_delete_click()"/>
         </div>
 
         <table>
@@ -100,12 +91,6 @@
                         <div class="phantom_lc_button_row">
                             <input id="phantom_lc_remove" class="phantom_lc_button" type="button" value="Remove X" onclick="phantom_lc_remove_click()"/>
                         </div>
-                        <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up" onclick="phantom_lc_up_click()"/>
-                        </div>
-                        <div class="phantom_lc_button_row">
-                            <input id="phantom_lc_down" class="phantom_lc_button" type="button" value="Down" onclick="phantom_lc_down_click()"/>
-                        </div>
                     </div>
                 </td>
 
@@ -116,8 +101,8 @@
                             <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_cloud_selected_click()"></select>
                         </div>
                         <div class="phantom_lc_area_row">
-                            <input id="phantom_lc_save" class="phantom_lc_button"  type="button" value="Save"/>
-                            <input id="phantom_lc_delete" class="phantom_lc_button"  type="button" value="Delete"/>
+                            <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up" onclick="phantom_lc_up_click()"/>
+                            <input id="phantom_lc_down" class="phantom_lc_button" type="button" value="Down" onclick="phantom_lc_down_click()"/>
                         </div>
                     </div>
                 </td>

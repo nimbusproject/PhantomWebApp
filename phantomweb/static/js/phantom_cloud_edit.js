@@ -61,7 +61,7 @@ function phantom_cloud_edit_add_click() {
         phantom_cloud_edit_enable(true);
     }
 
-    var url = make_url('add_cloud');
+    var url = make_url('api/sites/add');
     phantom_cloud_edit_enable(false);
     phantomAjaxPost(url, {'cloud': nameCtl, 'access': accessCtl, 'secret': secretCtl, 'keyname': keyCtl}, success_func, error_func);
 }
@@ -107,7 +107,7 @@ function phantom_cloud_edit_change_cloud ()  {
 }
 
 function phantom_cloud_edit_load_sites() {
-    var url = make_url('get_user_sites');
+    var url = make_url('api/sites/load');
 
     var success_func = function(obj){
 
@@ -156,7 +156,7 @@ function phantom_cloud_edit_remove_click() {
         return;
     }
 
-    var url = make_url("delete_cloud");
+    var url = make_url("api/sites/delete");
     url = url.concat("?cloud=").concat(cloud_name);
 
     var success_func = function (obj) {

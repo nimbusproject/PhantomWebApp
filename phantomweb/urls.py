@@ -19,6 +19,7 @@ urlpatterns = patterns('',
     url(r'^accounts/password/rest_complete/$', password_reset_complete),
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
     (r'^accounts/logout/$', 'django.contrib.auth.views.logout'),
+
     url(r'^phantom/get_iaas$', 'phantomweb.views.django_get_iaas_info'),
     url(r'^phantom/get_initial$', 'phantomweb.views.django_get_initial_info'),
     url(r'^phantom/domain/list$', 'phantomweb.views.django_list_domain'),
@@ -27,13 +28,17 @@ urlpatterns = patterns('',
     url(r'^phantom/domain/resize$', 'phantomweb.views.django_update_desired_size'),
     url(r'^phantom/domain/terminate_instance$', 'phantomweb.views.django_terminate_iaas_instance'),
     url(r'^phantom$', 'phantomweb.views.django_phantom'),
-    url(r'^phantom/launchconfig$', 'phantomweb.views.django_lc'),
-    url(r'^phantom/cloudedit$', 'phantomweb.views.django_cloud_edit'),
-    url(r'^phantom/get_sites$', 'phantomweb.views.django_get_sites'),
-    url(r'^phantom/get_user_sites$', 'phantomweb.views.django_get_user_site_info'),
-    url(r'^phantom/delete_cloud$', 'phantomweb.views.django_delete_site'),
-    url(r'^phantom/add_cloud$', 'phantomweb.views.django_add_site'),
-    url(r'^phantom/load_lc$', 'phantomweb.views.django_lc_load'),
+
+    url(r'^phantom/sites$', 'phantomweb.views.django_sites_html'),
+    url(r'^phantom/api/sites/load$', 'phantomweb.views.django_sites_load'),
+    url(r'^phantom/api/sites/delete$', 'phantomweb.views.django_sites_delete'),
+    url(r'^phantom/api/sites/add$', 'phantomweb.views.django_sites_add'),
+
+    url(r'^phantom/launchconfig$', 'phantomweb.views.django_lc_html'),
+    url(r'^phantom/api/launchconfig/load$', 'phantomweb.views.django_lc_load'),
+    url(r'^phantom/api/launchconfig/save$', 'phantomweb.views.django_lc_save'),
+    url(r'^phantom/api/launchconfig/delete$', 'phantomweb.views.django_lc_delete'),
+
     url(r'^phantom/phantom2$', 'phantomweb.views.django_phantom2'),
 )
 

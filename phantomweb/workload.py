@@ -4,6 +4,7 @@ from boto.regioninfo import RegionInfo
 import logging
 import urlparse
 import boto.ec2.autoscale
+from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
 from phantomsql import phantom_get_default_key_name
@@ -22,8 +23,8 @@ def _get_phantom_con(userobj):
 
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
-    region = RegionInfo(uparts.hostname)
-    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region)
+    region = RegionInfo(endpoint=uparts.hostname)
+    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
 
@@ -124,10 +125,10 @@ def list_domains(request_params, userobj):
 
 
 @LogEntryDecorator
-def _find_or_create_config(con, size, image, keyname, common, lc_name):
+def _find_or_create_config(con, size, image_id, keyname, common, lc_name):
     lcs = con.get_all_launch_configurations(names=[lc_name,])
     if not lcs:
-        lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image, key_name=keyname, security_groups='default', instance_type=size)
+        lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image_d, key_name=keyname, security_groups='default', instance_type=size)
         con.create_launch_configuration(lc)
         return lc
     return lcs[0]   
@@ -240,41 +241,6 @@ def phantom_main_html(request_params, userobj):
     }
     return response_dict
 
-@PhantomWebDecorator
-@LogEntryDecorator
-def phantom_lc_load(request_params, userobj):
-    global g_instance_types
-
-    clouds_d = userobj.get_clouds()
-
-    iaas_info = {}
-    for cloud_name in clouds_d:
-        try:
-            cloud_info = {}
-            cloud = clouds_d[cloud_name]
-            ec2conn = _get_iaas_compute_con(cloud)
-            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
-            l = ec2conn.get_all_images()
-            common_images = [c.id for c in l if c.is_public]
-            user_images = [u.id for u in l if not u.is_public]
-            keypairs = ec2conn.get_all_key_pairs()
-            keynames = [k.name for k in keypairs]
-            cloud_info['public_images'] = common_images
-            cloud_info['personal_images'] = user_images
-            cloud_info['keynames'] = keynames
-            cloud_info['instances'] = g_instance_types
-            cloud_info['status'] = 0
-        except Exception, ex:
-            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
-            cloud_info = {'error': str(ex)}
-            cloud_info['status'] = 1
-        iaas_info[cloud_name] = cloud_info
-
-
-    response_dict = {
-        'cloud_info': iaas_info,
-    }
-    return response_dict
 
 @PhantomWebDecorator
 @LogEntryDecorator
@@ -301,21 +267,12 @@ def terminate_iaas_instance(request_params, userobj):
     }
     return response_dict
 
-
+#
+#  cloud site management pages
+#
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_get_sites(request_params, userobj):
-    sites = userobj.get_clouds()
-    all_sites = userobj.get_possible_sites()
-    response_dict = {
-        'sites': sites,
-        'all_sites': all_sites
-    }
-    return response_dict
-
-@PhantomWebDecorator
-@LogEntryDecorator
-def phantom_delete_site(request_params, userobj):
+def phantom_sites_delete(request_params, userobj):
     params = ['cloud',]
     for p in params:
         if p not in request_params:
@@ -332,7 +289,7 @@ def phantom_delete_site(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_add_site(request_params, userobj):
+def phantom_sites_add(request_params, userobj):
     params = ['cloud', "access", "secret", "keyname"]
     for p in params:
         if p not in request_params:
@@ -351,7 +308,7 @@ def phantom_add_site(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_get_user_site_info(request_params, userobj):
+def phantom_sites_load(request_params, userobj):
     sites = userobj.get_clouds()
     all_sites = userobj.get_possible_sites()
 
@@ -361,7 +318,7 @@ def phantom_get_user_site_info(request_params, userobj):
         ci_dict = {
             'username': ci.username,
             'access_key': ci.iaas_key,
-            'secret_key': "XXXX",
+            'secret_key': ci.iaas_secret,
             'keyname': ci.keyname,
             'status': 0,
             'status_msg': ""
@@ -385,4 +342,204 @@ def phantom_get_user_site_info(request_params, userobj):
         'sites': out_info,
         'all_sites': all_sites
     }
+    return response_dict
+
+def _parse_param_name(needle, haystack, request_params, lc_dict):
+    ndx = haystack.find("." + needle)
+    if ndx < 0:
+        return lc_dict
+    site_name = haystack[:ndx]
+    val = request_params[haystack]
+
+    if site_name in lc_dict:
+        entry = lc_dict[site_name]
+    else:
+        entry = {}
+    entry[needle] = val
+    lc_dict[site_name] = entry
+
+    return lc_dict
+
+#
+#  cloud launch config functions
+#
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_load(request_params, userobj):
+    global g_instance_types
+
+    clouds_d = userobj.get_clouds()
+
+    phantom_con = _get_phantom_con(userobj)
+    try:
+        lcs = phantom_con.get_all_launch_configurations()
+    except Exception, ex:
+        raise PhantomWebException("Error communication with Phantom REST: %s" % (str(ex)))
+
+    all_lc_dict = {}
+    rank_ctr = 1
+    for lc in lcs:
+        ndx = lc.name.find("@")
+        if ndx < 0:
+            g_general_log.error("Invalid LC name %s" % (lc.name))
+        lc_name = lc.name[:ndx]
+        site_name = lc.name[ndx+1:]
+
+        lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+        if not lc_db_object or len(lc_db_object) < 1:
+            g_general_log.info("No local information for %s, must have been configured outside of the web app" % (lc_name))
+            lc_db_object = LaunchConfigurationDB.objects.create(name=lc_name)
+        else:
+            lc_db_object = lc_db_object[0]
+        host_vm_db = HostMaxPairDB.objects.filter(cloud_name=site_name, launch_config=lc_db_object)
+        if not host_vm_db:
+            g_general_log.info("No local information for the host %s on lc %s must have been configured outside of the web app" % (site_name, lc_name))
+            rank = rank_ctr
+            max_vms = -1
+        else:
+            rank = host_vm_db[0].rank
+            max_vm = host_vm_db[0].max_vms
+        site_entry = {
+            'cloud': site_name,
+            'image_id': lc.image_id,
+            'instance_type': lc.instance_type,
+            'keyname': lc.key_name,
+            'user_data': lc.user_data,
+            'common': True,
+            'max_vm': max_vm,
+            'rank': rank
+        }
+        lc_dict = {}
+        if lc_name in all_lc_dict:
+            lc_dict = all_lc_dict[lc_name]
+
+        lc_dict[site_name] = site_entry
+        all_lc_dict[lc_name] = lc_dict
+
+        rank_ctr = rank_ctr + 1
+
+    iaas_info = {}
+    for cloud_name in clouds_d:
+        try:
+            cloud_info = {}
+            cloud = clouds_d[cloud_name]
+            ec2conn = _get_iaas_compute_con(cloud)
+            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+            l = ec2conn.get_all_images()
+            common_images = [c.id for c in l if c.is_public]
+            user_images = [u.id for u in l if not u.is_public]
+            keypairs = ec2conn.get_all_key_pairs()
+            keynames = [k.name for k in keypairs]
+            cloud_info['public_images'] = common_images
+            cloud_info['personal_images'] = user_images
+            cloud_info['keynames'] = keynames
+            cloud_info['instances'] = g_instance_types
+            cloud_info['status'] = 0
+        except Exception, ex:
+            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            cloud_info = {'error': str(ex)}
+            cloud_info['status'] = 1
+        iaas_info[cloud_name] = cloud_info
+
+    response_dict = {
+        'cloud_info': iaas_info,
+        'lc_info': all_lc_dict
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_save(request_params, userobj):
+    lc_name = request_params['name']
+
+    lc_dict = {}
+    # we need to convert params to a usable dict
+    for param_name in request_params:
+        _parse_param_name("cloud", param_name, request_params, lc_dict)
+        _parse_param_name("keyname", param_name, request_params, lc_dict)
+        _parse_param_name("image_id", param_name, request_params, lc_dict)
+        _parse_param_name("instance_type", param_name, request_params, lc_dict)
+        _parse_param_name("max_vm", param_name, request_params, lc_dict)
+        _parse_param_name("common", param_name, request_params, lc_dict)
+        _parse_param_name("rank", param_name, request_params, lc_dict)
+
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+    if not lc_db_object:
+        lc_db_object = LaunchConfigurationDB.objects.create(name=lc_name)
+    else:
+        lc_db_object = lc_db_object[0]
+    lc_db_object.save()
+
+    phantom_con = _get_phantom_con(userobj)
+
+    # manually unrolling due to need to interact with REST API
+    successfully_added = []
+    success_host_db_list = []
+    try:
+        for site_name in lc_dict:
+            lc_conf_name = "%s@%s" % (lc_name, site_name)
+            entry = lc_dict[site_name]
+
+            try:
+                # we probably need to list everything with the base name and delete it
+                phantom_con.delete_launch_configuration(lc_conf_name)
+            except Exception, boto_del_ex:
+                # delete in case this is an update
+                pass
+            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=entry['keyname'], security_groups=['default'], instance_type=entry['instance_type'])
+            phantom_con.create_launch_configuration(lc)
+            successfully_added.append(lc_conf_name)
+
+            host_max_db = HostMaxPairDB.objects.create(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']))
+            success_host_db_list.append(host_max_db)
+            host_max_db.save()
+    except Exception, boto_ex:
+        g_general_log.error("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
+        for host_max_db in success_host_db_list:
+            host_max_db.delete()
+        for lc_conf_name in successfully_added:
+            phantom_con.delete_launch_configuration(lc_conf_name)
+        lc_db_object.delete()
+        raise
+
+    response_dict = {}
+    
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_delete(request_params, userobj):
+    params = ["name",]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    lc_name = request_params['name']
+
+    phantom_con = _get_phantom_con(userobj)
+    try:
+        lcs = phantom_con.get_all_launch_configurations()
+    except Exception, ex:
+        raise PhantomWebException("Error communication with Phantom REST: %s" % (str(ex)))
+
+
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+    if not lc_db_object or len(lc_db_object) < 1:
+        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc.name))
+    lc_db_object = lc_db_object[0]
+    host_vm_db_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
+    if not host_vm_db_a:
+        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc_name))
+
+    for lc in lcs:
+        ndx = lc.name.find(lc_name)
+        if ndx == 0:
+            lc.delete()
+    for host_vm_db in host_vm_db_a:
+        host_vm_db.delete()
+    lc_db_object.delete()
+
+    response_dict = {}
+
     return response_dict
