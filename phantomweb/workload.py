@@ -29,14 +29,6 @@ def _get_phantom_con(userobj):
     return con
 
 @LogEntryDecorator
-def _get_iaas_compute_con(iaas_cloud):
-    uparts = urlparse.urlparse(iaas_cloud.cloud_url)
-    is_secure = uparts.scheme == 'https'
-    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure,  validate_certs=False)
-    ec2conn.host = uparts.hostname
-    return ec2conn
-
-@LogEntryDecorator
 def _get_keys(ec2conn):
     r = ec2conn.get_all_key_pairs()
     rs = [k.name for k in r]
@@ -54,7 +46,7 @@ def get_iaas_info(request_params, userobj):
     cloud_name = request_params['cloud']
     iaas_cloud = userobj.get_cloud(cloud_name)
 
-    ec2conn = _get_iaas_compute_con(iaas_cloud)
+    ec2conn = iaas_cloud.get_iaas_compute_con()
     g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
     l = ec2conn.get_all_images()
     common_images = [c.id for c in l if c.is_public]
@@ -107,7 +99,7 @@ def list_domains(request_params, userobj):
             if i_d['instance_id']:
                 # look up more info with boto.  this could be optimized for network communication
                 iaas_cloud = userobj.get_cloud(i_d['cloud'])
-                iaas_con = _get_iaas_compute_con(iaas_cloud)
+                iaas_con = iaas_cloud.get_iaas_compute_con()
                 boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
                 if boto_insts and boto_insts[0].instances:
                     boto_i = boto_insts[0].instances[0]
@@ -163,7 +155,7 @@ def start_domain(request_params, userobj):
     g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
 
     iaas_cloud = userobj.get_cloud(cloud)
-    ec2con = _get_iaas_compute_con(iaas_cloud)
+    ec2con = iaas_cloud.get_iaas_compute_con()
     kps = _get_keys(ec2con)
     if key_name not in kps:
         e_msg = "The key name %s is not known.  Please provide a public key in the settings section." % (key_name)
@@ -255,7 +247,7 @@ def terminate_iaas_instance(request_params, userobj):
     iaas_cloud = userobj.get_cloud(cloud_name)
     instance = request_params['instance']
 
-    ec2conn = _get_iaas_compute_con(iaas_cloud)
+    ec2conn = iaas_cloud.get_iaas_compute_con()
     g_general_log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
     ec2conn.terminate_instances(instance_ids=[instance,])
 
@@ -324,7 +316,7 @@ def phantom_sites_load(request_params, userobj):
             'status_msg': ""
         }
 
-        ec2conn = _get_iaas_compute_con(ci)
+        ec2conn = ci.get_iaas_compute_con()
         try:
             keypairs = ec2conn.get_all_key_pairs()
             keyname_list = [k.name for k in keypairs]
@@ -423,7 +415,7 @@ def phantom_lc_load(request_params, userobj):
         try:
             cloud_info = {}
             cloud = clouds_d[cloud_name]
-            ec2conn = _get_iaas_compute_con(cloud)
+            ec2conn = cloud.get_iaas_compute_con()
             g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
             l = ec2conn.get_all_images()
             common_images = [c.id for c in l if c.is_public]
@@ -441,7 +433,7 @@ def phantom_lc_load(request_params, userobj):
             cloud_info['status'] = 1
         iaas_info[cloud_name] = cloud_info
 
-    response_dict = {
+        response_dict = {
         'cloud_info': iaas_info,
         'lc_info': all_lc_dict
     }

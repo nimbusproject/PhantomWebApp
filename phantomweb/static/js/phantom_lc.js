@@ -40,7 +40,6 @@ function phantom_lc_buttons(enabled) {
     }
 }
 
-
 function phantom_lc_reload_success_func(obj) {
     try {
         $("#phantom_lc_name_select").empty();
@@ -74,7 +73,6 @@ function phantom_lc_load_error_func(obj, message) {
     alert(message);
 }
 
-
 function phantom_lc_select_new_cloud() {
     try
     {
@@ -100,7 +98,7 @@ function phantom_lc_change_image_type() {
 }
 
 function phantom_lc_select_new_cloud_internal() {
-    var cloud_name = $("#phantom_lc_cloud").val();
+    var cloud_name = $("#phantom_lc_order").val();
 
     if (cloud_name == undefined || cloud_name == null || cloud_name == "") {
         return;
