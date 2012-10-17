@@ -8,6 +8,11 @@ class HostMaxPairDB(models.Model):
     max_vms = models.IntegerField()
     launch_config = models.ForeignKey(LaunchConfigurationDB)
     rank = models.IntegerField()
+    common_image = models.BooleanField()
+
+    class Meta(object):
+        unique_together = ("cloud_name", "launch_config")
+
 
 class PhantomInfoDB(models.Model):
     phantom_url = models.CharField(max_length=128)

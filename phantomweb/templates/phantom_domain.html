@@ -11,8 +11,9 @@
     </script>
 
     <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_domain.js"></script>
 {% endblock %}
-{% block bodytag %}{% endblock %}
+{% block bodytag %}onload="phantom_domain_load();"{% endblock %}
 {% block nimbus_body  %}
 
 <div id="phantom_domain_content">
@@ -20,8 +21,8 @@
     <div class="phantom_headings">
         <label id="phantom_domain_heading_label" >Domains</label>
     </div>
-    <div id="phantom_domain_status_bar_div">
-        <img src="static/images/loading4.gif"/>
+    <div>
+        <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
     </div>
 
     <div id="phantom_domain_main_combined_pane" class="phantom_domain_form_pane">
@@ -46,20 +47,20 @@
             <table class="phantom_domain_control_buttons">
                 <tr>
                     <td>
-                        <input type="button" id="phantom_domain_button_start" class="phantom_domain_button" value="Start"/>
+                        <input type="button" id="phantom_domain_button_start" class="phantom_domain_button" value="Start" onclick="phantom_domain_start_click()"/>
                     </td>
                     <td>
-                        <input type="button" id="phantom_domain_button_resize" class="phantom_domain_button" value="Resize"/>
+                        <input type="button" id="phantom_domain_button_resize" class="phantom_domain_button" value="Resize" onclick="phantom_domain_resize_click()"/>
                     </td>
                     <td>
-                        <input type="button" id="phantom_domain_button_terminate" class="phantom_domain_button" value="Terminate"/>
+                        <input type="button" id="phantom_domain_button_terminate" class="phantom_domain_button" value="Terminate" onclick="phantom_domain_terminate_click()"/>
                     </td>
                 </tr>
             </table>
         </div>
 
         <div class="phantom_domain_section_div">
-            <select size="5" id="phantom_domain_button_list_choices" class="phantom_domain_row">
+            <select size="5" id="phantom_domain_list_domains" class="phantom_domain_row" onchange="phantom_domain_select_domain()">
             </select>
         </div>
 
