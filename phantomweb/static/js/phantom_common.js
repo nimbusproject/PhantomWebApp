@@ -51,6 +51,7 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
 
     data_vals['csrfmiddlewaretoken'] = csrf_token;
     var success_func = function (success_data){
+        try {
             var obj = success_data;
             if(obj.error_message != undefined) {
                 var error_msg = obj.error_message;
@@ -59,6 +60,10 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
             else {
                 func(obj);
             }
+        }
+        catch(err) {
+            alert(err);
+        }
     };
 
     var l_error_func = function(request, status, error)  {

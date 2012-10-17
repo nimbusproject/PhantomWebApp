@@ -122,3 +122,42 @@
 {
     width: 2pc;
 }
+
+.phantom_domain_instance_status_div
+{
+}
+
+.phantom_domain_instance_status_name
+{
+}
+
+.phantom_domain_instance_status_details_list
+{
+}
+
+.phantom_domain_instance_status_details_item
+{
+}
+
+#phantom_domain_instance_context_menu li
+{
+    position: relative;
+    border-bottom-color: white;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+#phantom_domain_instance_context_menu li:hover
+{
+    background: #83a0d3;
+}
+
+#phantom_domain_instance_context_menu div
+{
+    color: #fffbef;
+    display: inline-block;
+    padding: 8px;
+    text-decoration: none;
+    width: 80%;
+    text-align: center;
+}

@@ -20,39 +20,41 @@ g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
 #
 # we are only dealing with launch configurations that were made with the web app
 #
-def _get_all_launch_configurations(phantom_con):
+def _get_launch_configuration(phantom_con, lc_db_object):
+    lc_name = lc_db_object.name
+    site_dict = {}
+    host_vm_db_objs_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
+    for host_vm_db_obj in host_vm_db_objs_a:
+        site_name = host_vm_db_obj.cloud_name
+        shoe_horn_lc_name = "%s@%s" % (lc_name, site_name)
+        try:
+            lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name,])
+        except Exception, ex:
+            lcs = []
+        if len(lcs) != 1:
+            raise PhantomWebException("Error communication with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
+        lc = lcs[0]
+        site_entry = {
+            'cloud': site_name,
+            'image_id': lc.image_id,
+            'instance_type': lc.instance_type,
+            'keyname': lc.key_name,
+            'user_data': lc.user_data,
+            'common': host_vm_db_obj.common_image,
+            'max_vm': host_vm_db_obj.max_vms,
+            'rank': host_vm_db_obj.rank
+        }
+        site_dict[site_name] = site_entry
 
+    return site_dict
+
+def _get_all_launch_configurations(phantom_con):
     all_lc_dict = {}
     lc_db_objects_a = LaunchConfigurationDB.objects.all()
     for lc_db_object in lc_db_objects_a:
-        lc_name = lc_db_object.name
-        site_dict = {}
-        host_vm_db_objs_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
-        for host_vm_db_obj in host_vm_db_objs_a:
-            site_name = host_vm_db_obj.cloud_name
-            shoe_horn_lc_name = "%s@%s" % (lc_name, site_name)
-            try:
-                lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name,])
-            except Exception, ex:
-                lcs = []
-            if len(lcs) != 1:
-                raise PhantomWebException("Error communication with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
-            lc = lcs[0]
-            site_entry = {
-                'cloud': site_name,
-                'image_id': lc.image_id,
-                'instance_type': lc.instance_type,
-                'keyname': lc.key_name,
-                'user_data': lc.user_data,
-                'common': host_vm_db_obj.common_image,
-                'max_vm': host_vm_db_obj.max_vms,
-                'rank': host_vm_db_obj.rank
-            }
-            site_dict[site_name] = site_entry
-        all_lc_dict[lc_name] = site_dict
-
+        site_dict = _get_launch_configuration(phantom_con, lc_db_object)
+        all_lc_dict[lc_db_object.name] = site_dict
     return all_lc_dict
-
 
 def _get_all_domains(phantom_con):
 
@@ -63,7 +65,7 @@ def _get_all_domains(phantom_con):
         ent = {}
         ent['name'] = a.name
         ent['vm_size'] = a.desired_capacity
-        ent['lc_name'] = a.launch_config_name.replace("[LaunchConfiguration:", "")
+        ent['lc_name'] = a.launch_config_name # .replace("[LaunchConfiguration:", "")
         return_asgs[a.name] = ent
 
     return return_asgs
@@ -89,6 +91,8 @@ def _start_domain(phantom_con, domain_name, lc_name, vm_count, host_list_str, a_
         lc = None
     if not lc:
         raise PhantomWebException("The LC %s no longer exists." % (lc_name))
+
+    lc = lc[0]
 
     policy_name_key = 'PHANTOM_DEFINTION'
     policy_name = 'error_overflow_n_preserving'
@@ -340,7 +344,7 @@ def phantom_lc_save(request_params, userobj):
 
             try:
                 # we probably need to list everything with the base name and delete it
-                phantom_con.delete_launch_configuration(lc_conf_name)
+                    phantom_con.delete_launch_configuration(lc_conf_name)
             except Exception, boto_del_ex:
                 # delete in case this is an update
                 pass
@@ -483,3 +487,80 @@ def phantom_domain_terminate(request_params, userobj):
 @LogEntryDecorator
 def phantom_domain_update(request_params, userobj):
     pass
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_details(request_params, userobj):
+    params = ['name',]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    domain_name = request_params["name"]
+
+    phantom_con = _get_phantom_con(userobj)
+
+    g_general_log.debug("Looking up domain name %s for user %s" % (str(domain_name), userobj._user_dbobject.access_key))
+
+    try:
+        asgs = phantom_con.get_all_groups(names=[domain_name,])
+    except Exception, ex:
+        raise PhantomWebException("There was a problem finding the domain %s: %s" % (domain_name, str(ex)))
+    if not asgs:
+        raise PhantomWebException("No domain named %s was found" % (domain_name))
+
+    asg = asgs[0]
+
+    lc_name = asg.launch_config_name
+    lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name)
+    if not lc_db_objects_a:
+        msg = "Could not find the launch configuration '%s' associated with the domain '%s'" % (lc_name, domain_name)
+        g_general_log.error(msg)
+        raise PhantomWebException(msg)
+
+    lc_db_object = lc_db_objects_a[0]
+    site_dict = _get_launch_configuration(phantom_con, lc_db_object)
+
+    inst_list = []
+    for instance in asg.instances:
+        i_d = {}
+        i_d['health_status'] = instance.health_status
+        i_d['instance_id'] = instance.instance_id.strip()
+        i_d['lifecycle_state'] = instance.lifecycle_state
+        i_d['hostname'] = "unknown"
+        if not instance.availability_zone or instance.availability_zone not in site_dict.keys():
+            error_msg = "No availabilty zone for %s in domain %s" % (str(instance), domain_name)
+            g_general_log.error(error_msg)
+            raise PhantomWebException(error_msg)
+        cloud_name = instance.availability_zone
+        i_d['cloud'] = cloud_name
+
+        site = site_dict[cloud_name]
+        i_d['image_id'] = site['image_id']
+        i_d['instance_type'] = site['instance_type']
+        i_d['keyname'] = site['keyname']
+        i_d['user_data'] = site['user_data']
+
+        if i_d['instance_id']:
+            # look up more info with boto. this could be optimized for network communication
+            iaas_cloud = userobj.get_cloud(cloud_name)
+            if not iaas_cloud:
+                error_msg = "The user %s does not have a cloud configured %s.  They must have deleted it after starting the domain." % (userobj._user_dbobject.access_key, cloud_name)
+                g_general_log.error(error_msg)
+                raise PhantomWebException(error_msg)
+            
+            iaas_con = iaas_cloud.get_iaas_compute_con()
+            boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
+            if boto_insts and boto_insts[0].instances:
+                boto_i = boto_insts[0].instances[0]
+                i_d['hostname'] = boto_i.dns_name
+        inst_list.append(i_d)
+
+    response_dict = {
+        'instances': inst_list,
+        'lc_name': asg.launch_config_name,
+        'domain_size': asg.desired_capacity
+    }
+    return response_dict
+
+

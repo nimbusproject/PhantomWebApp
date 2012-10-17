@@ -7,31 +7,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
 from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add, phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save, phantom_domain_load, phantom_domain_terminate, phantom_domain_resize, phantom_domain_start, phantom_domain_update
+from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add, phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save, phantom_domain_load, phantom_domain_terminate, phantom_domain_resize, phantom_domain_start, phantom_domain_update, phantom_domain_details
 from django.contrib import admin
 
-@LogEntryDecorator
-@login_required
-def django_update_desired_size(request):
-    user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = update_desired_size(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
-    return h
 
-
-@LogEntryDecorator
-@login_required
-def django_get_iaas_info(request):
-    user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = get_iaas_info(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
-    return h
 
 @LogEntryDecorator
 @login_required
@@ -39,17 +18,6 @@ def django_terminate_iaas_instance(request):
     user_obj = get_user_object(request.user.username)
     try:
         response_dict = terminate_iaas_instance(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
-    return h
-
-@LogEntryDecorator
-@login_required
-def django_list_domain(request):
-    user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = list_domains(request.GET, user_obj)
         h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     finally:
         user_obj.close()
@@ -113,6 +81,17 @@ def django_domain_update(request):
         user_obj.close()
     return h
 
+@LogEntryDecorator
+@login_required
+def django_domain_details(request):
+    user_obj = get_user_object(request.user.username)
+    try:
+        response_dict = phantom_domain_details(request.POST, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
+    return h
+
 
 @LogEntryDecorator
 @login_required
@@ -124,8 +103,6 @@ def django_domain_terminate(request):
     finally:
         user_obj.close()
     return h
-
-
 
 #
 #  launch configuration options
