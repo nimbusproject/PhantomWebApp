@@ -1,0 +1,30 @@
+.phantom_home_number_div
+{
+    display: table;
+}
+
+.phantom_home_number_image
+{
+
+}
+
+.phantom_home_number_label
+{
+    position: relative;
+    top: -25px;
+    font-family: Helvetica;
+    font-size: 12pt;
+    text-align: left;
+    padding-left: 10px;
+    height: 60px;
+}
+
+#phantom_home_action_list
+{
+    list-style-type: none;
+}
+
+#phantom_home_action_list li
+{
+}
+

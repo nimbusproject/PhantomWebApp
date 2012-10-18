@@ -104,7 +104,18 @@ def django_instance_terminate(request):
         user_obj.close()
     return h
 
-
+@LogEntryDecorator
+@login_required
+def django_phantom_html(request):
+    try:
+        # no need to talk to the workload app here
+        response_dict = {}
+        response_dict.update(csrf(request))
+        t = loader.get_template('../templates/phantom.html')
+        c = Context(response_dict)
+    except PhantomRedirectException, ex:
+        return HttpResponseRedirect(ex.redir)
+    return HttpResponse(t.render(c))
 
 #
 #  launch configuration options

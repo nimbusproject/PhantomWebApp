@@ -25,6 +25,8 @@ urlpatterns = patterns('',
     url(r'^phantom/api/sites/delete$', 'phantomweb.views.django_sites_delete'),
     url(r'^phantom/api/sites/add$', 'phantomweb.views.django_sites_add'),
 
+    url(r'^phantom$', 'phantomweb.views.django_phantom_html'),
+
     url(r'^phantom/launchconfig$', 'phantomweb.views.django_lc_html'),
     url(r'^phantom/api/launchconfig/load$', 'phantomweb.views.django_lc_load'),
     url(r'^phantom/api/launchconfig/save$', 'phantomweb.views.django_lc_save'),
@@ -39,6 +41,3 @@ urlpatterns = patterns('',
 
     url(r'^phantom/api/instance/termiante$', 'phantomweb.views.django_instance_terminate'),
 )
-
-
-

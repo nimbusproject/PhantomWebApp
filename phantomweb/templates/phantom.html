@@ -1,167 +1,41 @@
 {% extends "../templates/base.html" %}
+{% block title %}Phantom Home{% endblock %}
 {% block headscripts %}
-    <script src="/static/js/phantom.js"></script>
+{% endblock %}
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_home.css' />
 {% endblock %}
 {% block bodytag %}onload="loadPage();" onclick="noncontextMouseDown();"{% endblock %}
 {% block nimbus_body  %}
 
-<div id="phantom_instance_context_menu_div">
-    <ul id="phantomInstanceContextMenu">
-        <li><div>Terminate</div></li>
-    </ul>
-</div>  
 
 <div id="phantom_content">
+    <h1>Nimbus Platform Phantom</h1>
 
-    <div id="loading_image_div">
-        <img src="static/images/loading1.gif"  height="128" width="128"/>
-    </div>
+    <h2>Scaling your cloud applications is as easy as:</h2>
 
-    <label id="error_status_text">Status</label>
-    <div id="phantom_loaded_content">
-        <div id="status_bar_div">
-            <img src="static/images/loading4.gif" id="main_loading_image"/>
-        </div>
-
-
-
-            <div id="main_combined_pane" class="form_pane">
-                <div class="phantom_section_div">
-                    <div id="domain_name_div" class="phantom_domain_row" >
-                        <div class="combo_label">
-                            <label id="domain_name_lbl" >Domain Name:</label>
-                        </div>
-                        <div class="combo_value">
-                            <input type='text' id="domain_name_input" name='domain_name_text' label="domain_name_lbl"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="phantom_section_div">
-                    <div id="domain_size_div" class="phantom_domain_row">
-                        <div class="combo_label">
-                            <label id="domain_size_lbl" >Size:</label>
-                        </div>
-                        <div class="combo_value">
-                            <input type='text' id="domain_size_input" name='domain_size_text' label="domain_size_lbl"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="phantom_section_div">
-                    <div class="phantom_domain_row">
-                        <div class="combo_label">
-                            <label id="location_choice_label" class="combo_label">Cloud</label>
-                        </div>
-                        <div class="combo_value">
-                            <select name="location" id="location_choices" class="imagechoice" label="location_choice_label" onchange="populateIaaS()">
-                                {% for i in cloud_locations %}
-                                <option>{{i}}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-            <div class="phantom_section_div">
-                <div class="phantom_domain_row">
-                    <div class="combo_label">
-                        <input id="user_choice_checked" class="image_radio" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
-                        <label id="user_image_label">Personal Image</label>
-                    </div>
-                    <div class="combo_value">
-                        <select name="user_images" id="user_images_choices" class="imagechoice">
-                        </select>
-                    </div>
-                </div>
-
-                <div class="phantom_domain_row">
-                    <div class="combo_label">
-                        <input class="image_radio" id="common_choice_checked" type="radio" label="user_image_label" name="common_or_user" value="user_image_selected" checked="checked"/>
-                        <label id="common_image_label">Public Image</label>
-                    </div>
-                    <div class="combo_value">
-                        <select name="user_images" id="common_images_choices" class="imagechoice">
-                        </select>
-                    </div>
-                </div>
+    <ul id="phantom_home_action_list">
+        <li>
+            <div class="phantom_home_number_div">
+                <img height="60" width="70" src="/static/images/1.png" class="phantom_home_number_image"/>
+                <a href="/phantom/sites" class="phantom_home_number_label">Add your site credentials.</a>
             </div>
-
-            <div class="phantom_section_div">
-                <div class="phantom_domain_row">
-                    <div class="combo_label">
-                    <label id="allocation_choice_label" class="combo_label">Instance Size</label>
-                    </div>
-                    <div class="combo_value">
-                        <select name="allocation" id="allocation_choices" class="imagechoice" label="allocation_choice_label">
-                        {% for i in instance_types %}
-                        <option>{{i}}</option>
-                        {% endfor %}
-                        </select>
-                    </div>
-                </div>
+        </li>
+        <li>
+            <div class="phantom_home_number_div">
+                <img height="60" width="70" src="/static/images/2.png" class="phantom_home_number_image"/>
+                <a href="/phantom/launchconfig" class="phantom_home_number_label">Create a launch configuration.</a>
             </div>
-
-            <div class="phantom_section_div">
-                <div id="domain_name_div" class="phantom_domain_row" >
-                    <div class="combo_label">
-                        <label id="user_data_lbl" >User Data:</label>
-                    </div>
-                    <div class="combo_value">
-                        <textarea id="user_data" name='user_data_text' label="user_data_lbl"></textarea>
-                    </div>
-                </div>
+        </li>
+        <li>
+            <div class="phantom_home_number_div">
+                <img height="60" width="70" src="/static/images/3.png" class="phantom_home_number_image"/>
+                <a href="/phantom/domain" class="phantom_home_number_label">Launch your domain.</a>
             </div>
+        </li>
+    </ul>
 
-            <div id="lc_button_div" class="phantom_domain_row">
-                <table>
-                    <tr>
-                        <td>
-                            <input type="button" id="start_domain_button" class="formbutton" value="Start" onclick="startDomain()"/>
-                        </td>
-                        <td>
-                            <input type="button" id="new_desired_size_button" class="formbutton" value="Resize" onclick="resizeDomain()"/>
-                        </td>
-                        <td>
-                            <input type="button" id="terminate_domain_button" class="formbutton" value="Terminate" onclick="deleteDomain()"/>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+    For more information click <a href="http://www.nimbusproject.org/doc/phantom/latest/">here.</a>
 
-            <div class="phantom_section_div">
-                <div id="domain_list_div" class="phantom_domain_row">
-                    <select size="5" name="domain_list" id="domain_list_choices" class="imagechoice" onchange="loadDomainName()">
-                    </select>
-                </div>
-            </div>
-
-        </div>
-
-            <div id="domain_details_pane" class="form_pane">
-
-                <h2 id="domain_details_name">Domain details.</h2>
-                <div id="domain_change_size_div">
-                </div>
-                <div id="domain_details_filter_div">
-                    <label id="filter_list_label">Show:</label>
-                    <select name="filter_list" id="filter_list_id" label="filter_list_label" onchange="loadDomainName()">
-                        <option>All</option>
-                        <option>Healthy</option>
-                        <option>Errors</option>
-                        <option>RUNNING</option>
-                        <option>PENDING</option>
-                        <option>TERMINATING</option>
-                        <option>FAILED</option>
-                    </select>
-                    <input type="button" id="update_button" class="formbutton" value="Update" onclick="loadDomainName()"/>
-                </div>
-                <div id="domain_details_list_div">
-                    <ul id="instance_details">
-                    </ul>
-                </div>
-            </div>
-
-    </div>
 </div>
 {% endblock %}
