@@ -385,22 +385,35 @@ def phantom_lc_delete(request_params, userobj):
     except Exception, ex:
         raise PhantomWebException("Error communication with Phantom REST: %s" % (str(ex)))
 
-
+    error_message = ""
     lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
     if not lc_db_object or len(lc_db_object) < 1:
         raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc.name))
     lc_db_object = lc_db_object[0]
     host_vm_db_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
     if not host_vm_db_a:
-        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc_name))
+        error_message = error_message + "No such launch configuration %s. Misconfigured service.  " % (lc_name)
+        g_general_log.warn(error_message)
 
     for lc in lcs:
         ndx = lc.name.find(lc_name)
         if ndx == 0:
-            lc.delete()
+            try:
+                lc.delete()
+            except Exception, lc_del_ex:
+                error_message = error_message + "Error deleting the LC: %s.  " % (str(lc_del_ex))
+                g_general_log.warn(error_message)
+
     for host_vm_db in host_vm_db_a:
-        host_vm_db.delete()
+        try:
+            host_vm_db.delete()
+        except Exception, host_db_del:
+            error_message = error_message + "Error deleting the host entry: %s" % (str(host_db_del))
+            g_general_log.warn(error_message)
     lc_db_object.delete()
+
+    if error_message:
+        raise PhantomWebException(error_message)
 
     response_dict = {}
 

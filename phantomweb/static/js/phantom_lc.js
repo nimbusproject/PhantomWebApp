@@ -331,6 +331,7 @@ function phantom_lc_delete_internal(lc_name) {
 
     var error_func = function(obj, message) {
         phantom_lc_buttons(true);
+        alert(message);
     }
 
     var url = make_url("api/launchconfig/delete");
