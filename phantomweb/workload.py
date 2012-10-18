@@ -282,10 +282,7 @@ def phantom_lc_load(request_params, userobj):
             # This does not seem to be working l = ec2conn.get_all_images(filters={'is-public': False})
             l = ec2conn.get_all_images()
             user_images = [u.id for u in l if not u.is_public]
-            keypairs = ec2conn.get_all_key_pairs()
-            keynames = [k.name for k in keypairs]
             cloud_info['personal_images'] = user_images
-            cloud_info['keynames'] = keynames
             cloud_info['instances'] = g_instance_types
             cloud_info['status'] = 0
         except Exception, ex:
@@ -310,7 +307,6 @@ def phantom_lc_save(request_params, userobj):
     # we need to convert params to a usable dict
     for param_name in request_params:
         _parse_param_name("cloud", param_name, request_params, lc_dict)
-        _parse_param_name("keyname", param_name, request_params, lc_dict)
         _parse_param_name("image_id", param_name, request_params, lc_dict)
         _parse_param_name("instance_type", param_name, request_params, lc_dict)
         _parse_param_name("max_vm", param_name, request_params, lc_dict)
@@ -327,7 +323,15 @@ def phantom_lc_save(request_params, userobj):
     phantom_con = _get_phantom_con(userobj)
 
     try:
+        sites_dict = userobj.get_clouds()
         for site_name in lc_dict:
+
+            if site_name not in sites_dict:
+                raise PhantomWebException("The site %s is not configured." % (site_name))
+            site_ent = sites_dict[site_name]
+            if 'keyname' not in site_ent:
+                raise PhantomWebException("There is no key configured for the site %s.  Please see the Edit Cloud page." % (site_name))
+
             lc_conf_name = "%s@%s" % (lc_name, site_name)
             entry = lc_dict[site_name]
 
@@ -343,11 +347,11 @@ def phantom_lc_save(request_params, userobj):
 
             try:
                 # we probably need to list everything with the base name and delete it
-                    phantom_con.delete_launch_configuration(lc_conf_name)
+                phantom_con.delete_launch_configuration(lc_conf_name)
             except Exception, boto_del_ex:
                 # delete in case this is an update
                 pass
-            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=entry['keyname'], security_groups=['default'], instance_type=entry['instance_type'])
+            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=site_ent['keyname'], security_groups=['default'], instance_type=entry['instance_type'])
             phantom_con.create_launch_configuration(lc)
 
             is_common = entry['common'].lower() == "true"

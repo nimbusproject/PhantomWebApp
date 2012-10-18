@@ -12,7 +12,6 @@ function phantom_lc_buttons(enabled) {
         $("#phantom_lc_cloud").removeAttr("disabled", "disabled");
         $("#phantom_lc_max_vm").removeAttr("disabled", "disabled");
         $("#phantom_lc_instance").removeAttr("disabled", "disabled");
-        $("#phantom_lc_keyname").removeAttr("disabled", "disabled");
         $("#phantom_lc_userdata").removeAttr("disabled", "disabled");
         $("#phantom_lc_add").removeAttr("disabled", "disabled");
         $("#phantom_lc_remove").removeAttr("disabled", "disabled");
@@ -28,7 +27,6 @@ function phantom_lc_buttons(enabled) {
         $("#phantom_lc_cloud").attr("disabled", "disabled");
         $("#phantom_lc_max_vm").attr("disabled", "disabled");
         $("#phantom_lc_instance").attr("disabled", "disabled");
-        $("#phantom_lc_keyname").attr("disabled", "disabled");
         $("#phantom_lc_common_image_input").attr("disabled", "disabled");
         $("#phantom_lc_user_images_choices").attr("disabled", "disabled");
         $("#phantom_lc_userdata").attr("disabled", "disabled");
@@ -106,12 +104,6 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
 
     if (cloud_data.status != 0) {
         return;
-    }
-    $("#phantom_lc_keyname").empty();
-    for (key in cloud_data.keynames) {
-        var keyname = cloud_data.keynames[key];
-        var new_opt = $('<option>', {'name': keyname, value: keyname, text: keyname});
-        $("#phantom_lc_keyname").append(new_opt);
     }
     $("#phantom_lc_instance").empty();
     for (instance in cloud_data.instances) {
@@ -220,7 +212,6 @@ function phantom_lc_add_click() {
     var cloud_name = $("#phantom_lc_cloud").val().trim();
     var max_vm = $("#phantom_lc_max_vm").val().trim();
     var instance_type = $("#phantom_lc_instance").val().trim();
-    var keyname = $("#phantom_lc_keyname").val().trim();
 
     var common;
     var image_id = "";
@@ -249,10 +240,6 @@ function phantom_lc_add_click() {
         alert("You must select an instance type.");
         return;
     }
-    if (keyname == undefined || keyname == "") {
-        alert("You must select a key name.");
-        return;
-    }
     if (max_vm < -1 || max_vm > 32000) {
         alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
@@ -263,7 +250,6 @@ function phantom_lc_add_click() {
         'max_vm': max_vm,
         'image_id': image_id,
         'instance_type': instance_type,
-        'keyname': keyname,
         'common': common,
         'user_data': $("#phantom_lc_userdata").val()
     };
@@ -298,7 +284,6 @@ function phantom_lc_save_click_internal() {
 
         var rank_key = site_name.concat(".").concat("rank");
         var cloud_key = site_name.concat(".").concat("cloud");
-        var keyname_key = site_name.concat(".").concat("keyname");
         var image_id_key = site_name.concat(".").concat("image_id");
         var instance_type_key = site_name.concat(".").concat("instance_type");
         var max_vm_key = site_name.concat(".").concat("max_vm");
@@ -308,7 +293,6 @@ function phantom_lc_save_click_internal() {
 
         data[rank_key] = ndx;
         data[cloud_key] = cloud_data["cloud"];
-        data[keyname_key] = cloud_data["keyname"];
         data[image_id_key] = cloud_data["image_id"];
         data[instance_type_key] = cloud_data["instance_type"];
         data[max_vm_key] = cloud_data["max_vm"];
@@ -405,7 +389,6 @@ function phantom_lc_order_selected_click() {
 
         $("#phantom_lc_max_vm").val(cloud_val_dict['max_vm']);
         $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
-        $("#phantom_lc_keyname").val(cloud_val_dict['keyname']);
         $("#phantom_lc_userdata").val(cloud_val_dict['user_data']);
 
         if (cloud_val_dict['common']) {

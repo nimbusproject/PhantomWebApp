@@ -43,7 +43,7 @@
 
 #phantom_lc_info_area
 {
-    height: 350px;
+    height: 320px;
     width: 250px;
     padding: 10px;
     border-width: 1px;
@@ -117,7 +117,7 @@
     padding: 10px;
     border-style: solid;
     border-width: 1px;
-    height: 350px;
+    height: 320px;
 }
 
 #phantom_lc_common_image_input

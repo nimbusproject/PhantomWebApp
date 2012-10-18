@@ -52,6 +52,15 @@
     float: left;
 }
 
+.phantom_cloud_edit_border_pane
+{
+    border: solid;
+    border-color: black;
+    border-width: 1px;
+    padding: 10px;
+    margin: 4px;
+}
+
 #phantom_cloud_edit_status_message_div
 {
     width: 30%;
