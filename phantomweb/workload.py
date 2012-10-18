@@ -280,7 +280,7 @@ def phantom_lc_load(request_params, userobj):
             ec2conn = cloud.get_iaas_compute_con()
             g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
             # This does not seem to be working l = ec2conn.get_all_images(filters={'is-public': False})
-            l = ec2conn.get_all_images(filters={'is-public': False})
+            l = ec2conn.get_all_images()
             user_images = [u.id for u in l if not u.is_public]
             keypairs = ec2conn.get_all_key_pairs()
             keynames = [k.name for k in keypairs]
