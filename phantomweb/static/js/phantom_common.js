@@ -31,18 +31,28 @@ function ajaxCallREST(url, func, error_func) {
         dataType : "json",
         cache: false,
         success: function(data) {
-            var obj = data;
-            if(obj.error_message != undefined) {
-                var error_msg = obj.error_message;
-                error_func(url, error_msg);
+            try {
+                var obj = data;
+                if(obj.error_message != undefined) {
+                    var error_msg = obj.error_message;
+                    error_func(url, error_msg);
+                }
+                else {
+                    func(obj);
+                }
             }
-            else {
-                func(obj);
+            catch(err) {
+                alert(err);
             }
         },
         error : function(request, status, error) {
-            var error_msg = "Error communicating with the service ".concat(request.statusText);
-            error_func(url, error_msg);
+            try {
+                var error_msg = "Error communicating with the service ".concat(request.statusText);
+                error_func(url, error_msg);
+            }
+            catch(err) {
+                alert(err);
+            }
         }
     });
 }

@@ -329,7 +329,7 @@ def phantom_lc_save(request_params, userobj):
             if site_name not in sites_dict:
                 raise PhantomWebException("The site %s is not configured." % (site_name))
             site_ent = sites_dict[site_name]
-            if 'keyname' not in site_ent:
+            if not site_ent.keyname:
                 raise PhantomWebException("There is no key configured for the site %s.  Please see the Edit Cloud page." % (site_name))
 
             lc_conf_name = "%s@%s" % (lc_name, site_name)
@@ -351,7 +351,7 @@ def phantom_lc_save(request_params, userobj):
             except Exception, boto_del_ex:
                 # delete in case this is an update
                 pass
-            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=site_ent['keyname'], security_groups=['default'], instance_type=entry['instance_type'])
+            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=site_ent.keyname, security_groups=['default'], instance_type=entry['instance_type'])
             phantom_con.create_launch_configuration(lc)
 
             is_common = entry['common'].lower() == "true"
@@ -580,7 +580,7 @@ def phantom_domain_details(request_params, userobj):
         site = site_dict[cloud_name]
         i_d['image_id'] = site['image_id']
         i_d['instance_type'] = site['instance_type']
-        i_d['keyname'] = cloud_edit_ent['keyname']
+        i_d['keyname'] = cloud_edit_ent.keyname
         i_d['user_data'] = site['user_data']
 
         if i_d['instance_id']:
