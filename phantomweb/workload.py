@@ -550,6 +550,8 @@ def phantom_domain_details(request_params, userobj):
 
     asg = asgs[0]
 
+    cloud_edit_dict = userobj.get_clouds()
+
     lc_name = asg.launch_config_name
     lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name)
     if not lc_db_objects_a:
@@ -574,10 +576,11 @@ def phantom_domain_details(request_params, userobj):
         cloud_name = instance.availability_zone
         i_d['cloud'] = cloud_name
 
+        cloud_edit_ent = cloud_edit_dict[cloud_name]
         site = site_dict[cloud_name]
         i_d['image_id'] = site['image_id']
         i_d['instance_type'] = site['instance_type']
-        i_d['keyname'] = site['keyname']
+        i_d['keyname'] = cloud_edit_ent['keyname']
         i_d['user_data'] = site['user_data']
 
         if i_d['instance_id']:
