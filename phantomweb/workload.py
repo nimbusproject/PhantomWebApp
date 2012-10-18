@@ -464,7 +464,28 @@ def phantom_domain_start(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_resize(request_params, userobj):
-    pass
+    params = ['name', "vm_count"]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    domain_name = request_params["name"]
+    new_size = request_params["vm_count"]
+
+    try:
+        phantom_con = _get_phantom_con(userobj)
+        asg = phantom_con.get_all_groups(names=[domain_name,])
+        if not asg:
+            raise PhantomWebException("domain %s not found" % (domain_name))
+        asg = asg[0]
+        asg.set_capacity(new_size)
+    except PhantomWebException:
+        raise
+    except Exception, ex:
+        raise PhantomWebException(str(ex))
+    response_dict = {}
+    return response_dict
+
 
 @PhantomWebDecorator
 @LogEntryDecorator
@@ -485,8 +506,23 @@ def phantom_domain_terminate(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_domain_update(request_params, userobj):
-    pass
+def phantom_instance_terminate(request_params, userobj):
+    params = ['instance', "adjust"]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    instance_id = request_params["instance"]
+    adjust = request_params["adjust"]
+    adjust = adjust.lower() == "true"
+
+    g_general_log.debug("deleting %s" % (instance_id))
+    phantom_con = _get_phantom_con(userobj)
+
+    phantom_con.terminate_instance(instance_id, decrement_capacity=adjust)
+
+    response_dict = {}
+    return response_dict
 
 @PhantomWebDecorator
 @LogEntryDecorator

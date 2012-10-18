@@ -7,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
 from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add, phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save, phantom_domain_load, phantom_domain_terminate, phantom_domain_resize, phantom_domain_start, phantom_domain_update, phantom_domain_details
+from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add, phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save, phantom_domain_load, phantom_domain_terminate, phantom_domain_resize, phantom_domain_start, phantom_domain_details, phantom_instance_terminate
 from django.contrib import admin
 
 
@@ -72,17 +72,6 @@ def django_domain_resize(request):
 
 @LogEntryDecorator
 @login_required
-def django_domain_update(request):
-    user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_update(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
-    return h
-
-@LogEntryDecorator
-@login_required
 def django_domain_details(request):
     user_obj = get_user_object(request.user.username)
     try:
@@ -103,6 +92,19 @@ def django_domain_terminate(request):
     finally:
         user_obj.close()
     return h
+
+@LogEntryDecorator
+@login_required
+def django_instance_terminate(request):
+    user_obj = get_user_object(request.user.username)
+    try:
+        response_dict = phantom_instance_terminate(request.POST, user_obj)
+        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
+    finally:
+        user_obj.close()
+    return h
+
+
 
 #
 #  launch configuration options

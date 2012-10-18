@@ -75,12 +75,6 @@
     padding-bottom: 5px;
 }
 
-#phantom_domain_details_list_div
-{
-    overflow-y: scroll;
-    height: 80%;
-    background-color: #f6f6ff;
-}
 
 #phantom_domain_instance_details
 {
@@ -139,6 +133,21 @@
 {
 }
 
+#phantom_domain_instance_context_menu
+{
+    display: none;
+    background: #5d78a5;
+    box-shadow: 0 0 12px rgba( 0, 0, 0, .3 );
+    border: 1px solid white;
+    position: absolute;
+    top: 0; left: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 100px;
+    z-index: 10000;
+}
+
 #phantom_domain_instance_context_menu li
 {
     position: relative;
@@ -153,6 +162,61 @@
 }
 
 #phantom_domain_instance_context_menu div
+{
+    color: #fffbef;
+    display: inline-block;
+    padding: 8px;
+    text-decoration: none;
+    width: 80%;
+    text-align: center;
+}
+
+#phantom_domain_details_list_div
+{
+    overflow-y: scroll;
+    height: 80%;
+    background-color: #f6f6ff;
+}
+
+#phantom_domain_details_list_div ul
+{
+    list-style-type: none;
+}
+
+#phantom_domain_details_list_div li:hover
+{
+    background-color: #e6e6fa;
+}
+
+#phantomInstanceContextMenu
+{
+    display: none;
+    background: #5d78a5;
+    box-shadow: 0 0 12px rgba( 0, 0, 0, .3 );
+    border: 1px solid white;
+    position: absolute;
+    top: 0; left: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 100px;
+    z-index: 10000;
+}
+
+#phantomInstanceContextMenu li
+{
+    position: relative;
+    border-bottom-color: white;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+#phantomInstanceContextMenu li:hover
+{
+    background: #83a0d3;
+}
+
+#phantomInstanceContextMenu div
 {
     color: #fffbef;
     display: inline-block;
