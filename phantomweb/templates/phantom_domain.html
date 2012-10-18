@@ -1,0 +1,98 @@
+{% extends "../templates/base.html" %}
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_domain.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_domain.js"></script>
+{% endblock %}
+{% block bodytag %}onload="phantom_domain_load();" onclick="phantom_domain_noncontext_mouse_down();"{% endblock %}
+{% block nimbus_body  %}
+
+<div id="phantom_instance_context_menu_div">
+    <ul id="phantom_domain_instance_context_menu">
+        <li><div>Terminate</div></li>
+    </ul>
+</div>
+
+<div id="phantom_domain_content">
+
+    <div class="phantom_headings">
+        <label id="phantom_domain_heading_label" >Domains</label>
+    </div>
+    <div>
+        <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
+    </div>
+
+    <div id="phantom_domain_main_combined_pane" class="phantom_domain_form_pane">
+        <label class="phantom_area_header">Domain Options</label>
+        <div class="phantom_domain_section_div phantom_domain_row">
+            <label for="phantom_domain_name_input" class="phantom_domain_label">Domain Name:</label>
+            <input type='text' id="phantom_domain_name_input" class="phantom_domain_value"/>
+        </div>
+
+        <div class="phantom_domain_section_div phantom_domain_row">
+            <label for="phantom_domain_size_input" class="phantom_domain_label">Size:</label>
+            <input type='text' id="phantom_domain_size_input" class="phantom_domain_value"/>
+        </div>
+
+        <div class="phantom_domain_section_div phantom_domain_row" >
+            <label class="phantom_domain_label" id="phantom_domain_lc_div">Launch Configuration</label>
+            <select id="phantom_domain_lc_choice" class="phantom_domain_value phantom_domain_combo">
+            </select>
+        </div>
+
+        <div id="phantom_domain_button_div" class="phantom_domain_row phantom_domain_section_div">
+            <table class="phantom_domain_control_buttons">
+                <tr>
+                    <td>
+                        <input type="button" id="phantom_domain_button_start" class="phantom_domain_button" value="Start" onclick="phantom_domain_start_click()"/>
+                    </td>
+                    <td>
+                        <input type="button" id="phantom_domain_button_resize" class="phantom_domain_button" value="Resize" onclick="phantom_domain_resize_click()"/>
+                    </td>
+                    <td>
+                        <input type="button" id="phantom_domain_button_terminate" class="phantom_domain_button" value="Terminate" onclick="phantom_domain_terminate_click()"/>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="phantom_domain_section_div">
+            <select size="5" id="phantom_domain_list_domains" class="phantom_domain_row" onchange="phantom_domain_select_domain()">
+            </select>
+        </div>
+
+    </div>
+
+    <div id="phantom_domain_details_pane" class="phantom_domain_form_pane">
+        <label id="phantom_domain_details_name" class="phantom_area_header">Domain details.</label>
+        <div id="phantom_domain_details_filter_div">
+            <label id="phantom_domain_filter_list_label">Show:</label>
+            <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
+                <option>All</option>
+                <option>Healthy</option>
+                <option>Errors</option>
+                <option>RUNNING</option>
+                <option>PENDING</option>
+                <option>TERMINATING</option>
+                <option>FAILED</option>
+            </select>
+            <input type="button" id="phantom_domain_update_button" class="phantom_domain_button" value="Update" onclick="phantom_domain_update_click()"/>
+        </div>
+        <div id="phantom_domain_details_list_div">
+            <ul id="phantom_domain_instance_details">
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

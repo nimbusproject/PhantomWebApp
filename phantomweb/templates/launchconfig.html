@@ -1,0 +1,115 @@
+{% extends "../templates/base.html" %}
+{% block title %}Phantom Launch Configurations{% endblock %}
+
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_lc.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_lc.js"></script>
+{% endblock %}
+{% block bodytag %}onload="phantom_lc_load();"{% endblock %}
+{% block nimbus_body  %}
+
+    <div id="phantom_lc_content">
+        <div id="phantom_lc_name_label_div">
+            <label id="phantom_lc_heading_label" class="phantom_headings" for="phantom_lc_name_input">Muli-Cloud Launch Configuration</label>
+        </div>
+        <div>
+            <img src="/static/images/loading4.gif" id="phantom_lc_loading_image"/>
+        </div>
+
+        <div id="phantom_lc_name_combo_div">
+            <input id="phantom_lc_name_input" class="phantom_lc_name_item" type="text"/>
+            <select id="phantom_lc_name_select" class="phantom_lc_name_item" onchange="phantom_lc_change_lc_click()">
+            </select>
+            <input id="phantom_lc_save" class="phantom_lc_button phantom_lc_name_item"  type="button" value="Save" onclick="phantom_lc_save_click()"/>
+            <input id="phantom_lc_delete" class="phantom_lc_button phantom_lc_name_item"  type="button" value="Delete" onclick="phantom_lc_delete_click()"/>
+        </div>
+
+        <table>
+            <tr>
+                <td>
+                    <div id="phantom_lc_info_area">
+                        <label class="phantom_area_header">Cloud Options</label>
+                        <div class="phantom_lc_info_row">
+                            <label for="phantom_lc_cloud" class="phantom_lc_info_label">Cloud:</label>
+                            <select id="phantom_lc_cloud" class="phantom_lc_info_combo" onchange="phantom_lc_select_new_cloud()">
+                            </select>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <label for="phantom_lc_max_vm" class="phantom_lc_info_label">Max VMs:</label>
+                            <input type="text" id="phantom_lc_max_vm"/>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <label for="phantom_lc_instance" class="phantom_lc_info_label">Instance Type:</label>
+                            <select id="phantom_lc_instance" class="phantom_lc_info_combo">
+                            </select>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <label for="phantom_lc_keyname" class="phantom_lc_info_label">Key Name</label>
+                            <select id="phantom_lc_keyname" class="phantom_lc_info_combo">
+                            </select>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <div class="phantom_lc_info_label">
+                                <input class="phantom_lc_checkbox" id="phantom_lc_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_lc_change_image_type()"/>
+                                <label class="phantom_lc_checkbox_label" for="phantom_lc_common_choice_checked">Public Image</label>
+                            </div>
+                            <input type="text" id="phantom_lc_common_image_input"/>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <div class="phantom_lc_info_label">
+                                <input class="phantom_lc_checkbox" id="phantom_lc_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_lc_change_image_type()"/>
+                                <label class="phantom_lc_checkbox_label" for="phantom_lc_user_choice_checked">Personal Image</label>
+                            </div>
+                            <select name="user_images" id="phantom_lc_user_images_choices" class="phantom_lc_info_combo">
+                            </select>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <label for="phantom_lc_userdata">User Data</label>
+                        </div>
+                        <div class="phantom_lc_info_row">
+                            <textarea rows="5" id="phantom_lc_userdata"></textarea>
+                        </div>
+
+                    </div>
+                </td>
+
+                <td>
+                    <div id="phantom_lc_button_area">
+                        <div class="phantom_lc_button_row">
+                            <input id="phantom_lc_add" class="phantom_lc_button"  type="button" value="Add ->" onclick="phantom_lc_add_click()"/>
+                        </div>
+                        <div class="phantom_lc_button_row">
+                            <input id="phantom_lc_remove" class="phantom_lc_button" type="button" value="Remove X" onclick="phantom_lc_remove_click()"/>
+                        </div>
+                    </div>
+                </td>
+
+                <td>
+                    <div id="phantom_lc_order_area">
+                        <label class="phantom_area_header">Cloud Order</label>
+                        <div class="phantom_lc_area_row">
+                            <select size="15" name="phantom_lc_order" id="phantom_lc_order" onchange="phantom_lc_order_selected_click()"></select>
+                        </div>
+                        <div class="phantom_lc_area_row">
+                            <input id="phantom_lc_up" class="phantom_lc_button" type="button" value="Up" onclick="phantom_lc_up_click()"/>
+                            <input id="phantom_lc_down" class="phantom_lc_button" type="button" value="Down" onclick="phantom_lc_down_click()"/>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </form>
+
+    </div>
+
+
+{% endblock %}

@@ -23,7 +23,7 @@ setup(name=Name,
       packages=['phantomweb'],
       include_package_data=True,
       package_data={ 'phantomweb': ['templates/registration/*.html', 'templates/*.html', 'static/css/*', 'static/js/*', 'static/images/*']  },
-      install_requires = ["django == 1.4", "boto == 2.6", "phantomsql"],
+      install_requires = ["django == 1.4", "boto == 2.6", "phantomsql", "ceiclient"],
       
       classifiers=[
           'Development Status :: 4 - Beta',
