@@ -95,7 +95,7 @@ def _start_domain(phantom_con, domain_name, lc_name, vm_count, host_list_str, a_
 
     lc = lc[0]
 
-    policy_name_key = 'PHANTOM_DEFINTION'
+    policy_name_key = 'PHANTOM_DEFINITION'
     policy_name = 'error_overflow_n_preserving'
     ordered_clouds_key = 'clouds'
     n_preserve_key = 'n_preserve'
