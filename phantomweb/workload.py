@@ -31,9 +31,10 @@ def _get_launch_configuration(phantom_con, lc_db_object):
         try:
             lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name,])
         except Exception, ex:
-            lcs = []
+            raise PhantomWebException("Error communicating with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
+
         if len(lcs) != 1:
-            raise PhantomWebException("Error communication with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
+            raise PhantomWebException("Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % shoe_horn_lc_name)
         lc = lcs[0]
         site_entry = {
             'cloud': site_name,
