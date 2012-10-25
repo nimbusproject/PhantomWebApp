@@ -49,9 +49,9 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 
     return site_dict
 
-def _get_all_launch_configurations(phantom_con):
+def _get_all_launch_configurations(phantom_con, username):
     all_lc_dict = {}
-    lc_db_objects_a = LaunchConfigurationDB.objects.all()
+    lc_db_objects_a = LaunchConfigurationDB.objects.all(username=username)
     for lc_db_object in lc_db_objects_a:
         site_dict = _get_launch_configuration(phantom_con, lc_db_object)
         all_lc_dict[lc_db_object.name] = site_dict
@@ -271,7 +271,7 @@ def phantom_lc_load(request_params, userobj):
 
     phantom_con = _get_phantom_con(userobj)
 
-    all_lc_dict = _get_all_launch_configurations(phantom_con)
+    all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
     iaas_info = {}
     for cloud_name in clouds_d:
         try:
@@ -313,9 +313,9 @@ def phantom_lc_save(request_params, userobj):
         _parse_param_name("common", param_name, request_params, lc_dict)
         _parse_param_name("rank", param_name, request_params, lc_dict)
 
-    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object:
-        lc_db_object = LaunchConfigurationDB.objects.create(name=lc_name)
+        lc_db_object = LaunchConfigurationDB.objects.create(name=lc_name, username=userobj._user_dbobject.access_key)
     else:
         lc_db_object = lc_db_object[0]
     lc_db_object.save()
@@ -386,9 +386,9 @@ def phantom_lc_delete(request_params, userobj):
         raise PhantomWebException("Error communication with Phantom REST: %s" % (str(ex)))
 
     error_message = ""
-    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object or len(lc_db_object) < 1:
-        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc.name))
+        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc_name))
     lc_db_object = lc_db_object[0]
     host_vm_db_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
     if not host_vm_db_a:
@@ -427,7 +427,7 @@ def phantom_domain_load(request_params, userobj):
     phantom_con = _get_phantom_con(userobj)
 
     domains = _get_all_domains(phantom_con)
-    all_lc_dict = _get_all_launch_configurations(phantom_con)
+    all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
 
     lc_names = []
     for name in all_lc_dict.keys():
@@ -452,7 +452,7 @@ def phantom_domain_start(request_params, userobj):
     vm_count = request_params["vm_count"]
 
 
-    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name)
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object or len(lc_db_object) < 1:
         raise PhantomWebException("The launch configuration %s is not known to the web application." % (lc_name))
 
@@ -566,12 +566,12 @@ def phantom_domain_details(request_params, userobj):
     cloud_edit_dict = userobj.get_clouds()
 
     lc_name = asg.launch_config_name
-    lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name)
+    lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_objects_a:
         msg = "Could not find the launch configuration '%s' associated with the domain '%s'" % (lc_name, domain_name)
         g_general_log.error(msg)
         raise PhantomWebException(msg)
-
+    
     lc_db_object = lc_db_objects_a[0]
     site_dict = _get_launch_configuration(phantom_con, lc_db_object)
 

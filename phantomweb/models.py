@@ -2,6 +2,11 @@ from django.db import models
 
 class LaunchConfigurationDB(models.Model):
     name = models.CharField(max_length=128)
+    username = models.CharField(max_length=128)
+
+    class Meta(object):
+        unique_together = ("name", "username")
+
 
 class HostMaxPairDB(models.Model):
     cloud_name = models.CharField(max_length=128)
