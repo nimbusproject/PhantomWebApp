@@ -52,7 +52,7 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 
 def _get_all_launch_configurations(phantom_con, username):
     all_lc_dict = {}
-    lc_db_objects_a = LaunchConfigurationDB.objects.all(username=username)
+    lc_db_objects_a = LaunchConfigurationDB.objects.filter(username=username)
     for lc_db_object in lc_db_objects_a:
         site_dict = _get_launch_configuration(phantom_con, lc_db_object)
         all_lc_dict[lc_db_object.name] = site_dict
