@@ -18,6 +18,8 @@ g_general_log = logging.getLogger('phantomweb.general')
 # at some point this should come from some sort of DB
 g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
 
+PHANTOM_REGION = 'phantom'
+
 #
 # we are only dealing with launch configurations that were made with the web app
 #
@@ -75,10 +77,10 @@ def _get_all_domains(phantom_con):
 @LogEntryDecorator
 def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
-    g_general_log.debug("Getting phantom can at %s" % (url))
+    g_general_log.debug("Getting phantom connection at %s" % (url))
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
-    region = RegionInfo(endpoint=uparts.hostname)
+    region = RegionInfo(name=PHANTOM_REGION, endpoint=uparts.hostname)
     con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
