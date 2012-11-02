@@ -8,7 +8,7 @@ from phantomweb.models import UserPhantomInfoDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomsql import PhantomSQL
 from phantomweb.models import PhantomInfoDB, RabbitInfoDB
-from ceiclient.client import DTRSClient
+from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
 
 
@@ -140,6 +140,12 @@ class UserObjectMySQL(UserObject):
 
     def has_phantom_data(self):
        return True
+
+    def describe_domain(self, username, domain):
+        # TODO: this should eventually be part of the REST API
+        epum_client = EPUMClient(self._dashi_conn)
+        describe = epum_client.describe_domain(domain, caller=username)
+        return describe
 
     def load_clouds(self):
         self._load_clouds()

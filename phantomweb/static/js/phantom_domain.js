@@ -263,6 +263,7 @@ function phantom_domain_load_instances() {
         fields[4] = instance.image_id;
         fields[5] = instance.instance_type;
         fields[6] = instance.keyname;
+        fields[7] = instance.metric + ": " + sensor_data_to_string(instance.sensor_data);
 
         var filter = $("#phantom_domain_filter_list").val();
         if (filter != "All") {
@@ -291,6 +292,19 @@ function phantom_domain_load_instances() {
             ul.append(subli);
         }
     }
+}
+
+function sensor_data_to_string(sensor_data) {
+
+    var str = "";
+    for (var sensor_type in sensor_data) {
+        if (sensor_type === "Series") {
+            // Ignore series data because it is ugly :)
+            continue;
+        }
+        str += sensor_type + ": " + sensor_data[sensor_type] + " ";
+    }
+    return str;
 }
 
 function phantom_domain_details_internal() {

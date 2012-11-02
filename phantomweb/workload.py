@@ -578,6 +578,15 @@ def phantom_domain_details(request_params, userobj):
     lc_db_object = lc_db_objects_a[0]
     site_dict = _get_launch_configuration(phantom_con, lc_db_object)
 
+    # TODO: this should come from the REST interface
+    # TODO: this should support multiple metrics in the next sync
+    metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
+    instance_metrics = {}
+    metric = metrics.get('config', {}).get('engine_conf', {}).get('metric')
+    if metrics is not None:
+        for instance in metrics.get('instances', []):
+            instance_metrics[instance.get('iaas_id')] = metric, instance.get('sensor_data')
+
     inst_list = []
     for instance in asg.instances:
         i_d = {}
@@ -598,6 +607,9 @@ def phantom_domain_details(request_params, userobj):
         i_d['instance_type'] = site['instance_type']
         i_d['keyname'] = cloud_edit_ent.keyname
         i_d['user_data'] = site['user_data']
+
+        if instance_metrics.get(i_d['instance_id']):
+            i_d['metric'], i_d['sensor_data'] = instance_metrics.get(i_d['instance_id'])
 
         if i_d['instance_id']:
             # look up more info with boto. this could be optimized for network communication
