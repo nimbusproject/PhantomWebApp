@@ -263,7 +263,10 @@ function phantom_domain_load_instances() {
         fields[4] = instance.image_id;
         fields[5] = instance.instance_type;
         fields[6] = instance.keyname;
-        fields[7] = instance.metric + ": " + sensor_data_to_string(instance.sensor_data);
+        var parsed_sensor_data = sensor_data_to_string(instance.sensor_data);
+        if (parsed_sensor_data !== "") {
+            fields[7] = instance.metric + ": " + sensor_data_to_string(instance.sensor_data);
+        }
 
         var filter = $("#phantom_domain_filter_list").val();
         if (filter != "All") {
