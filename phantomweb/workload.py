@@ -108,7 +108,19 @@ def _start_domain(phantom_con, domain_name, lc_name, vm_count, host_list_str, a_
     clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
     npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
 
-    tags = [policy_tag, clouds_tag, npreserve_tag]
+    # TODO: This is hardcoded for this sync, should be exposed in the UI
+    metric_key = 'metric'
+    metric = 'CPUUtilization'
+    sample_function_key =  'sample_function'
+    sample_function = 'Average'
+    sensor_type_key = 'sensor_type'
+    sensor_type = 'cloudwatch'
+
+    metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+
+    tags = [policy_tag, clouds_tag, npreserve_tag, metric_tag, sample_function_tag, sensor_type_tag]
 
     asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=phantom_con, group_name=domain_name, availability_zones=["us-east-1"], min_size=vm_count, max_size=vm_count, tags=tags)
     phantom_con.create_auto_scaling_group(asg)
@@ -365,7 +377,7 @@ def phantom_lc_save(request_params, userobj):
                 host_max_db = HostMaxPairDB.objects.create(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
             host_max_db.save()
     except Exception, boto_ex:
-        g_general_log.error("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
+        g_general_log.exception("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
         raise PhantomWebException(str(boto_ex))
 
     response_dict = {}
