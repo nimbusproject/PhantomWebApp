@@ -18,6 +18,11 @@ g_general_log = logging.getLogger('phantomweb.general')
 # at some point this should come from some sort of DB
 g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
 
+g_engine_to_phantom_de_map = {
+        "epu.decisionengine.impls.phantom_multi_site_overflow.PhantomMultiSiteOverflowEngine": "multicloud",
+        "epu.decisionengine.impls.sensor.SensorEngine": "sensor",
+        }
+
 PHANTOM_REGION = 'phantom'
 
 #
@@ -74,6 +79,35 @@ def _get_all_domains(phantom_con):
 
     return return_asgs
 
+def _get_all_domains_dashi(userobj):
+
+    asgs = userobj.get_all_groups()
+
+    return_asgs = {}
+    for a in asgs:
+        engine_conf = a.get('config', {}).get('engine_conf', {})
+        engine_class = a.get('config', {}).get('general', {}).get('engine_class')
+
+        ent = {}
+        ent['name'] = a['name']
+        ent['de_name'] = g_engine_to_phantom_de_map.get(engine_class)
+        ent['vm_size'] = engine_conf.get('domain_desired_size')
+
+        ent['lc_name'] = engine_conf.get('dtname')
+        ent['metric'] = engine_conf.get('metric')
+        ent['sensor_cooldown'] = engine_conf.get('cooldown_period')
+        ent['sensor_minimum_vms'] = engine_conf.get('minimum_vms')
+        ent['sensor_maximum_vms'] = engine_conf.get('maximum_vms')
+        ent['sensor_scale_up_threshold'] = engine_conf.get('scale_up_threshold')
+        ent['sensor_scale_up_vms'] = engine_conf.get('scale_up_n_vms')
+        ent['sensor_scale_down_threshold'] = engine_conf.get('scale_down_threshold')
+        ent['sensor_scale_down_vms'] = engine_conf.get('scale_down_n_vms')
+
+        return_asgs[a['name']] = ent
+
+    return return_asgs
+        
+
 @LogEntryDecorator
 def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
@@ -85,8 +119,57 @@ def _get_phantom_con(userobj):
     con.host = uparts.hostname
     return con
 
+def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
+
+    policy_name_key = 'PHANTOM_DEFINITION'
+    policy_name = 'sensor_engine'
+    policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+
+    metric_key = 'metric'
+    metric = de_params.get('sensor_metric')
+
+    cooldown_key = 'cooldown_period'
+    cooldown = de_params.get('sensor_cooldown')
+    scale_up_threshold_key = 'scale_up_threshold'
+    scale_up_threshold = de_params.get('sensor_scale_up_threshold')
+    scale_up_vms_key = 'scale_up_n_vms'
+    scale_up_vms = de_params.get('sensor_scale_up_vms')
+    scale_down_threshold_key = 'scale_down_threshold'
+    scale_down_threshold = de_params.get('sensor_scale_down_threshold')
+    scale_down_vms_key = 'scale_down_n_vms'
+    scale_down_vms = de_params.get('sensor_scale_down_vms')
+
+    # TODO: This is hardcoded for this sync, should be exposed in the UI
+    sample_function_key =  'sample_function'
+    sample_function = 'Average'
+    sensor_type_key = 'sensor_type'
+    sensor_type = 'cloudwatch'
+
+    metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+    cooldown_tag = Tag(connection=phantom_con, key=cooldown_key, value=cooldown, resource_id=domain_name)
+    scale_up_threshold_tag = Tag(connection=phantom_con, key=scale_up_threshold_key, value=scale_up_threshold, resource_id=domain_name)
+    scale_up_vms_tag = Tag(connection=phantom_con, key=scale_up_vms_key, value=scale_up_vms, resource_id=domain_name)
+    scale_down_threshold_tag = Tag(connection=phantom_con, key=scale_down_threshold_key, value=scale_down_threshold, resource_id=domain_name)
+    scale_down_vms_tag = Tag(connection=phantom_con, key=scale_down_vms_key, value=scale_down_vms, resource_id=domain_name)
+
+    tags = []
+    tags.append(policy_tag)
+    tags.append(metric_tag)
+    tags.append(sample_function_tag)
+    tags.append(sensor_type_tag)
+    tags.append(cooldown_tag)
+    tags.append(scale_up_threshold_tag)
+    tags.append(scale_up_vms_tag)
+    tags.append(scale_down_threshold_tag)
+    tags.append(scale_down_vms_tag)
+
+    return tags
+
+
 @LogEntryDecorator
-def _start_domain(phantom_con, domain_name, lc_name, vm_count, host_list_str, a_cloudname):
+def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_list_str, a_cloudname):
 
     shoe_horn = "%s@%s" % (lc_name, a_cloudname)
     try:
@@ -98,31 +181,50 @@ def _start_domain(phantom_con, domain_name, lc_name, vm_count, host_list_str, a_
 
     lc = lc[0]
 
-    policy_name_key = 'PHANTOM_DEFINITION'
-    policy_name = 'error_overflow_n_preserving'
-    ordered_clouds_key = 'clouds'
-    n_preserve_key = 'n_preserve'
-    n_preserve = vm_count
+    tags = []
 
-    policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
-    clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
-    npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
+    if de_name == 'multicloud':
+        policy_name_key = 'PHANTOM_DEFINITION'
+        policy_name = 'error_overflow_n_preserving'
+        ordered_clouds_key = 'clouds'
+        n_preserve_key = 'n_preserve'
+        n_preserve = de_params.get('vm_count')
 
-    # TODO: This is hardcoded for this sync, should be exposed in the UI
-    metric_key = 'metric'
-    metric = 'CPUUtilization'
-    sample_function_key =  'sample_function'
-    sample_function = 'Average'
-    sensor_type_key = 'sensor_type'
-    sensor_type = 'cloudwatch'
+        policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+        clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
+        npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
 
-    metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
-    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
-    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+        tags.append(policy_tag)
+        tags.append(clouds_tag)
+        tags.append(npreserve_tag)
 
-    tags = [policy_tag, clouds_tag, npreserve_tag, metric_tag, sample_function_tag, sensor_type_tag]
+        min_size = de_params.get('vm_count')
+        max_size = de_params.get('vm_count')
 
-    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=phantom_con, group_name=domain_name, availability_zones=["us-east-1"], min_size=vm_count, max_size=vm_count, tags=tags)
+        # TODO: This is hardcoded for this sync, should be exposed in the UI
+        metric_key = 'metric'
+        metric = 'CPUUtilization'
+        sample_function_key =  'sample_function'
+        sample_function = 'Average'
+        sensor_type_key = 'sensor_type'
+        sensor_type = 'cloudwatch'
+
+        metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
+        sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+        sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+
+        tags.append(metric_tag)
+        tags.append(sample_function_tag)
+        tags.append(sensor_type_tag)
+
+    elif de_name == 'sensor':
+
+        min_size = de_params.get('sensor_minimum_vms')
+        max_size = de_params.get('sensor_maximum_vms')
+
+        tags = tags + sensor_tags_from_de_params(phantom_con, domain_name, de_params)
+
+    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=phantom_con, group_name=domain_name, availability_zones=["us-east-1"], min_size=min_size, max_size=max_size, tags=tags)
     phantom_con.create_auto_scaling_group(asg)
 
 @PhantomWebDecorator
@@ -439,9 +541,9 @@ def phantom_lc_delete(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_load(request_params, userobj):
-    phantom_con = _get_phantom_con(userobj)
 
-    domains = _get_all_domains(phantom_con)
+    phantom_con = _get_phantom_con(userobj)
+    domains = _get_all_domains_dashi(userobj)
     all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
 
     lc_names = []
@@ -458,14 +560,40 @@ def phantom_domain_load(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_start(request_params, userobj):
-    params = ['name', "lc_name", "vm_count", ]
-    for p in params:
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms", 
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
+            "sensor_scale_down_threshold", "sensor_scale_down_vms"]
+    multicloud_params = ["vm_count",]
+    mandatory_params = ['name', "lc_name", "de_name"]
+    for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
     domain_name = request_params["name"]
     lc_name = request_params["lc_name"]
-    vm_count = request_params["vm_count"]
+    de_name = request_params["de_name"]
 
+    de_params = {}
+    if de_name == "sensor":
+        for p in sensor_params:
+            if p not in request_params:
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["sensor_metric"] = request_params["sensor_metric"]
+        de_params["sensor_cooldown"] = request_params["sensor_cooldown"]
+        de_params["sensor_minimum_vms"] = request_params["sensor_minimum_vms"]
+        de_params["sensor_maximum_vms"] = request_params["sensor_maximum_vms"]
+        de_params["sensor_scale_up_threshold"] = request_params["sensor_scale_up_threshold"]
+        de_params["sensor_scale_up_vms"] = request_params["sensor_scale_up_vms"]
+        de_params["sensor_scale_down_threshold"] = request_params["sensor_scale_down_threshold"]
+        de_params["sensor_scale_down_vms"] = request_params["sensor_scale_down_vms"]
+
+    elif de_name == "multicloud":
+        for p in multicloud_params:
+            if p not in request_params:
+                g_general_log.debug("%s not in %s" % (p, request_params))
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["vm_count"] = request_params["vm_count"]
 
     lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object or len(lc_db_object) < 1:
@@ -487,7 +615,7 @@ def phantom_domain_start(request_params, userobj):
 
 
     phantom_con = _get_phantom_con(userobj)
-    _start_domain(phantom_con, domain_name, lc_name, vm_count, ordered_hosts, a_cloudname)
+    _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, ordered_hosts, a_cloudname)
 
     response_dict = {}
     return response_dict
@@ -495,24 +623,64 @@ def phantom_domain_start(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_resize(request_params, userobj):
-    params = ['name', "vm_count"]
-    for p in params:
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms", 
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
+            "sensor_scale_down_threshold", "sensor_scale_down_vms"]
+    multicloud_params = ["vm_count",]
+    mandatory_params = ['name', "de_name"]
+    for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
+    domain_name = request_params["name"]
+    de_name = request_params["de_name"]
+
+    de_params = {}
+    if de_name == "sensor":
+        g_general_log.debug("PDA: updating sensor")
+        for p in sensor_params:
+            if p not in request_params:
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["sensor_metric"] = request_params["sensor_metric"]
+        de_params["sensor_cooldown"] = request_params["sensor_cooldown"]
+        de_params["sensor_minimum_vms"] = request_params["sensor_minimum_vms"]
+        de_params["sensor_maximum_vms"] = request_params["sensor_maximum_vms"]
+        de_params["sensor_scale_up_threshold"] = request_params["sensor_scale_up_threshold"]
+        de_params["sensor_scale_up_vms"] = request_params["sensor_scale_up_vms"]
+        de_params["sensor_scale_down_threshold"] = request_params["sensor_scale_down_threshold"]
+        de_params["sensor_scale_down_vms"] = request_params["sensor_scale_down_vms"]
+
+    elif de_name == "multicloud":
+        g_general_log.debug("PDA: updating multicloud")
+        for p in multicloud_params:
+            if p not in request_params:
+                g_general_log.debug("%s not in %s" % (p, request_params))
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["vm_count"] = request_params["vm_count"]
+
 
     domain_name = request_params["name"]
-    new_size = request_params["vm_count"]
+    new_size = request_params.get("vm_count")
 
     try:
         phantom_con = _get_phantom_con(userobj)
+
+        tags = sensor_tags_from_de_params(phantom_con, domain_name, de_params)
+        phantom_con.create_or_update_tags(tags)
+
         asg = phantom_con.get_all_groups(names=[domain_name,])
         if not asg:
             raise PhantomWebException("domain %s not found" % (domain_name))
         asg = asg[0]
-        asg.set_capacity(new_size)
+
+        if new_size is not None:
+            asg.set_capacity(new_size)
+
     except PhantomWebException:
         raise
     except Exception, ex:
+        g_general_log.exception("Error in resize")
         raise PhantomWebException(str(ex))
     response_dict = {}
     return response_dict
@@ -594,8 +762,8 @@ def phantom_domain_details(request_params, userobj):
     # TODO: this should support multiple metrics in the next sync
     metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
     instance_metrics = {}
-    metric = metrics.get('config', {}).get('engine_conf', {}).get('metric')
     if metrics is not None:
+        metric = metrics.get('config', {}).get('engine_conf', {}).get('metric')
         for instance in metrics.get('instances', []):
             instance_metrics[instance.get('iaas_id')] = metric, instance.get('sensor_data')
 

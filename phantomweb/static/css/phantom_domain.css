@@ -1,3 +1,9 @@
+
+#loading
+{
+    height: 23px;
+}
+
 #phantom_domain_content
 {
     display: table;
@@ -10,10 +16,50 @@
     height: 25px;
 }
 
+#phantom_domain_list_pane
+{
+    float: left;
+    position: relative;
+    overflow: hidden;
+    width: 12%%;
+    height: 410px;
+    margin: 4px;
+    margin-left: 0px;
+    margin-right: 1px;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 0px;
+}
+
+#phantom_domain_list_domains
+{
+    height: 400px;
+    overflow: hidden;
+    padding: 4px;
+    margin: -5px -20px -5px -5px;
+}
+
+#phantom_domain_button_add_div
+{
+    padding-top: 0;
+}
+
+#phantom_domain_button_add
+{
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 #phantom_domain_main_combined_pane
 {
     float: left;
     position: relative;
+    width: 38%;
+}
+
+.phantom_domain_de_pref {
+    display: none;
 }
 
 .phantom_domain_section_div
@@ -34,7 +80,7 @@
 .phantom_domain_label
 {
     display: inline-block;
-    width: 40%;
+    width: 45%;
 }
 
 .phantom_domain_value
@@ -67,7 +113,8 @@
 #phantom_domain_details_pane
 {
     position: relative;
-    float: right;
+    float: left;
+    width: 41%;
 }
 
 #phantom_domain_details_filter_div
@@ -84,26 +131,21 @@
 .phantom_domain_form_pane
 {
     border: solid;
-    border-color: black;
+    border-color: #AAA;
     border-width: 1px;
     padding: 10px;
-    margin: 4px;
     height: 400px;
-    width: 45%;
-    margin-left: 5px;
-    margin-right: 5px;
+    margin: 4px;
+    margin-left: 0px;
+    margin-right: 1px;
 }
 
 .phantom_domain_control_buttons
 {
-    margin-left: 75px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-#phantom_domain_list_domains
-{
-    width: 400px;
-    height: 200px;
-}
 
 .phantom_domain_combo
 {

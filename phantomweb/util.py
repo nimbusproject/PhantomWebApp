@@ -114,6 +114,7 @@ class UserObjectMySQL(UserObject):
 
     def __init__(self, username):
 
+        self.username = username
         phantom_info_objects = PhantomInfoDB.objects.all()
         if not phantom_info_objects:
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
@@ -128,9 +129,12 @@ class UserObjectMySQL(UserObject):
         self._user_dbobject = self._authz.get_user_object_by_display_name(username)
         if not self._user_dbobject:
             raise PhantomWebException('The user %s is not associated with cloud user database.  Please contact your sysadmin' % (username))
+        self.access_key = self._user_dbobject.access_key
 
         ssl = self.rabbit_info.rabbitssl
         self._dashi_conn = DashiCeiConnection(self.rabbit_info.rabbithost, self.rabbit_info.rabbituser, self.rabbit_info.rabbitpassword, exchange=self.rabbit_info.rabbitexchange, timeout=60, port=self.rabbit_info.rabbitport, ssl=ssl)
+        self.epum = EPUMClient(self._dashi_conn)
+        self.dtrs = DTRSClient(self._dashi_conn)
 
         self._load_clouds()
 
@@ -139,13 +143,28 @@ class UserObjectMySQL(UserObject):
         self._authz.close()
 
     def has_phantom_data(self):
-       return True
+        return True
 
     def describe_domain(self, username, domain):
         # TODO: this should eventually be part of the REST API
-        epum_client = EPUMClient(self._dashi_conn)
-        describe = epum_client.describe_domain(domain, caller=username)
+        describe = self.epum.describe_domain(domain, caller=username)
         return describe
+
+    def get_all_groups(self):
+        domain_names = self.epum.list_domains(caller=self.access_key)
+        domains = []
+        for domain in domain_names:
+            domain_description = self.epum.describe_domain(domain, caller=self.access_key)
+            domains.append(domain_description)
+        return domains
+
+    def get_all_lcs(self):
+        dt_names = self.dtrs.list_dts(self.access_key)
+        dts = []
+        for dt_name in dt_names:
+            dt = self.dtrs.describe_dt(self.access_key, dt_name)
+            dts.append(dt)
+        return dts
 
     def load_clouds(self):
         self._load_clouds()

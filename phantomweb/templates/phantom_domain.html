@@ -14,7 +14,7 @@
     <script src="/static/js/phantom_common.js"></script>
     <script src="/static/js/phantom_domain.js"></script>
 {% endblock %}
-{% block bodytag %}onload="phantom_domain_load();" onclick="phantom_domain_noncontext_mouse_down();"{% endblock %}
+{% block bodytag %}{% endblock %}
 {% block nimbus_body  %}
 
 <div id="phantom_instance_context_menu_div">
@@ -28,53 +28,91 @@
     <div class="phantom_headings">
         <label id="phantom_domain_heading_label" >Domains</label>
     </div>
-    <div>
+    <div id="loading">
         <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
     </div>
 
+    <div id="phantom_domain_list_pane" class="phantom_domain_form_pane">
+        <div class="phantom_domain_section_div phantom_domain_row" id="phantom_domain_button_add_div"  >
+            <input type="button" id="phantom_domain_button_add" class="phantom_domain_button" value="Add Domain" />
+        </div>
+
+        <select id="phantom_domain_list_domains" class="phantom_domain_value phantom_domain_combo" size="20" >
+        </select>
+    </div>
+
     <div id="phantom_domain_main_combined_pane" class="phantom_domain_form_pane">
-        <label class="phantom_area_header">Domain Options</label>
-        <div class="phantom_domain_section_div phantom_domain_row">
-            <label for="phantom_domain_name_input" class="phantom_domain_label">Domain Name:</label>
-            <input type='text' id="phantom_domain_name_input" class="phantom_domain_value"/>
-        </div>
+        <div id="phantom_domain_main_combined_pane_inner">
+            <label class="phantom_area_header">Configuration for <span id="phantom_domain_name_label"></span></label>
 
-        <div class="phantom_domain_section_div phantom_domain_row">
-            <label for="phantom_domain_size_input" class="phantom_domain_label">Size:</label>
-            <input type='text' id="phantom_domain_size_input" class="phantom_domain_value"/>
-        </div>
+            <div class="phantom_domain_section_div phantom_domain_row" >
+                <label class="phantom_domain_label" id="phantom_domain_lc_div">Launch Configuration</label>
+                <select id="phantom_domain_lc_choice" class="phantom_domain_value phantom_domain_combo">
+                </select>
+            </div>
 
-        <div class="phantom_domain_section_div phantom_domain_row" >
-            <label class="phantom_domain_label" id="phantom_domain_lc_div">Launch Configuration</label>
-            <select id="phantom_domain_lc_choice" class="phantom_domain_value phantom_domain_combo">
-            </select>
-        </div>
+            <div class="phantom_domain_section_div phantom_domain_row" >
+                <label class="phantom_domain_label" id="phantom_domain_de_div">Decision Engine:</label>
+                <select id="phantom_domain_de_choice" class="phantom_domain_value phantom_domain_combo">
+                </select>
+            </div>
 
-        <div id="phantom_domain_button_div" class="phantom_domain_row phantom_domain_section_div">
-            <table class="phantom_domain_control_buttons">
-                <tr>
-                    <td>
-                        <input type="button" id="phantom_domain_button_start" class="phantom_domain_button" value="Start" onclick="phantom_domain_start_click()"/>
-                    </td>
-                    <td>
-                        <input type="button" id="phantom_domain_button_resize" class="phantom_domain_button" value="Resize" onclick="phantom_domain_resize_click()"/>
-                    </td>
-                    <td>
-                        <input type="button" id="phantom_domain_button_terminate" class="phantom_domain_button" value="Terminate" onclick="phantom_domain_terminate_click()"/>
-                    </td>
-                </tr>
-            </table>
-        </div>
+            <div class="phantom_domain_de_pref phantom_domain_section_div phantom_domain_row" id="phantom_domain_multicloud_preferences">
+                <label for="phantom_domain_size_input" class="phantom_domain_label">Size:</label>
+                <input type='text' id="phantom_domain_size_input" class="phantom_domain_value"/>
+            </div>
 
-        <div class="phantom_domain_section_div">
-            <select size="5" id="phantom_domain_list_domains" class="phantom_domain_row" onchange="phantom_domain_select_domain()">
-            </select>
-        </div>
+            <div class="phantom_domain_de_pref phantom_domain_section_div phantom_domain_row" id="phantom_domain_sensor_preferences">
+                <label for="phantom_domain_metric_input" class="phantom_domain_label">Metric:</label>
+                <input type='text' id="phantom_domain_metric_input" class="phantom_domain_value"/>
 
+                <label for="phantom_domain_cooldown_input" class="phantom_domain_label">Cooldown (s):</label>
+                <input type='text' id="phantom_domain_cooldown_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_minimum_input" class="phantom_domain_label">Minimum:</label>
+                <input type='text' id="phantom_domain_minimum_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_maximum_input" class="phantom_domain_label">Maximum:</label>
+                <input type='text' id="phantom_domain_maximum_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_scale_up_threshold_input" class="phantom_domain_label">Scale Up Threshold:</label>
+                <input type='text' id="phantom_domain_scale_up_threshold_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_scale_up_n_vms_input" class="phantom_domain_label">Scale Up By:</label>
+                <input type='text' id="phantom_domain_scale_up_n_vms_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_scale_down_threshold_input" class="phantom_domain_label">Scale Down Threshold:</label>
+                <input type='text' id="phantom_domain_scale_down_threshold_input" class="phantom_domain_value"/>
+
+                <label for="phantom_domain_scale_down_n_vms_input" class="phantom_domain_label">Scale Down By:</label>
+                <input type='text' id="phantom_domain_scale_down_n_vms_input" class="phantom_domain_value"/>
+            </div>
+
+
+            <div id="phantom_domain_button_div" class="phantom_domain_row phantom_domain_section_div">
+                <table class="phantom_domain_control_buttons" id="phantom_domain_start_buttons">
+                    <tr>
+                        <td>
+                            <input type="button" id="phantom_domain_button_start" class="phantom_domain_button" value="Start"/>
+                        </td>
+                    </tr>
+                </table>
+                <table class="phantom_domain_control_buttons" id="phantom_domain_running_buttons">
+                    <tr>
+                        <td>
+                            <input type="button" id="phantom_domain_button_resize" class="phantom_domain_button" value="Update"/>
+                        </td>
+                        <td>
+                            <input type="button" id="phantom_domain_button_terminate" class="phantom_domain_button" value="Terminate"/>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="phantom_domain_details_pane" class="phantom_domain_form_pane">
-        <label id="phantom_domain_details_name" class="phantom_area_header">Domain details.</label>
+        <label id="phantom_domain_details_name" class="phantom_area_header">Details</label>
         <div id="phantom_domain_details_filter_div">
             <label id="phantom_domain_filter_list_label">Show:</label>
             <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
@@ -86,7 +124,7 @@
                 <option>TERMINATING</option>
                 <option>FAILED</option>
             </select>
-            <input type="button" id="phantom_domain_update_button" class="phantom_domain_button" value="Update" onclick="phantom_domain_update_click()"/>
+            <input type="button" id="phantom_domain_update_button" class="phantom_domain_button" value="Refresh"/>
         </div>
         <div id="phantom_domain_details_list_div">
             <ul id="phantom_domain_instance_details">
