@@ -95,6 +95,7 @@ def _get_all_domains_dashi(userobj):
 
         ent['lc_name'] = engine_conf.get('dtname')
         ent['metric'] = engine_conf.get('metric')
+        ent['monitor_sensors'] = engine_conf.get('monitor_sensors')
         ent['sensor_cooldown'] = engine_conf.get('cooldown_period')
         ent['sensor_minimum_vms'] = engine_conf.get('minimum_vms')
         ent['sensor_maximum_vms'] = engine_conf.get('maximum_vms')
@@ -128,6 +129,9 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     metric_key = 'metric'
     metric = de_params.get('sensor_metric')
 
+    monitor_sensors_key = 'monitor_sensors'
+    monitor_sensors = de_params.get('monitor_sensors', '')
+
     cooldown_key = 'cooldown_period'
     cooldown = de_params.get('sensor_cooldown')
     scale_up_threshold_key = 'scale_up_threshold'
@@ -146,6 +150,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     sensor_type = 'cloudwatch'
 
     metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
+    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
     sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
     sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
     cooldown_tag = Tag(connection=phantom_con, key=cooldown_key, value=cooldown, resource_id=domain_name)
@@ -157,6 +162,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     tags = []
     tags.append(policy_tag)
     tags.append(metric_tag)
+    tags.append(monitor_sensors_tag)
     tags.append(sample_function_tag)
     tags.append(sensor_type_tag)
     tags.append(cooldown_tag)
@@ -189,33 +195,21 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         ordered_clouds_key = 'clouds'
         n_preserve_key = 'n_preserve'
         n_preserve = de_params.get('vm_count')
+        monitor_sensors_key = 'monitor_sensors'
+        monitor_sensors = de_params.get('monitor_sensors', '')
 
         policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
         clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
         npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
+        monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
 
         tags.append(policy_tag)
         tags.append(clouds_tag)
         tags.append(npreserve_tag)
+        tags.append(monitor_sensors_tag)
 
         min_size = de_params.get('vm_count')
         max_size = de_params.get('vm_count')
-
-        # TODO: This is hardcoded for this sync, should be exposed in the UI
-        metric_key = 'metric'
-        metric = 'CPUUtilization'
-        sample_function_key =  'sample_function'
-        sample_function = 'Average'
-        sensor_type_key = 'sensor_type'
-        sensor_type = 'cloudwatch'
-
-        metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
-        sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
-        sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
-
-        tags.append(metric_tag)
-        tags.append(sample_function_tag)
-        tags.append(sensor_type_tag)
 
     elif de_name == 'sensor':
 
@@ -564,7 +558,7 @@ def phantom_domain_start(request_params, userobj):
             "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
             "sensor_scale_down_threshold", "sensor_scale_down_vms"]
     multicloud_params = ["vm_count",]
-    mandatory_params = ['name', "lc_name", "de_name"]
+    mandatory_params = ['name', "lc_name", "de_name", "monitor_sensors"]
     for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
@@ -573,6 +567,7 @@ def phantom_domain_start(request_params, userobj):
     de_name = request_params["de_name"]
 
     de_params = {}
+    de_params["monitor_sensors"] = request_params["monitor_sensors"];
     if de_name == "sensor":
         for p in sensor_params:
             if p not in request_params:
@@ -593,7 +588,8 @@ def phantom_domain_start(request_params, userobj):
                 g_general_log.debug("%s not in %s" % (p, request_params))
                 raise PhantomWebException('Missing parameter %s' % (p))
 
-        de_params["vm_count"] = request_params["vm_count"]
+
+    g_general_log.info("starting with params: %s" % de_params)
 
     lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object or len(lc_db_object) < 1:
@@ -627,7 +623,7 @@ def phantom_domain_resize(request_params, userobj):
             "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
             "sensor_scale_down_threshold", "sensor_scale_down_vms"]
     multicloud_params = ["vm_count",]
-    mandatory_params = ['name', "de_name"]
+    mandatory_params = ["name", "de_name", "monitor_sensors"]
     for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
@@ -635,8 +631,8 @@ def phantom_domain_resize(request_params, userobj):
     de_name = request_params["de_name"]
 
     de_params = {}
+    de_params["monitor_sensors"] = request_params["monitor_sensors"];
     if de_name == "sensor":
-        g_general_log.debug("PDA: updating sensor")
         for p in sensor_params:
             if p not in request_params:
                 raise PhantomWebException('Missing parameter %s' % (p))
@@ -651,7 +647,6 @@ def phantom_domain_resize(request_params, userobj):
         de_params["sensor_scale_down_vms"] = request_params["sensor_scale_down_vms"]
 
     elif de_name == "multicloud":
-        g_general_log.debug("PDA: updating multicloud")
         for p in multicloud_params:
             if p not in request_params:
                 g_general_log.debug("%s not in %s" % (p, request_params))
@@ -763,9 +758,8 @@ def phantom_domain_details(request_params, userobj):
     metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
     instance_metrics = {}
     if metrics is not None:
-        metric = metrics.get('config', {}).get('engine_conf', {}).get('metric')
         for instance in metrics.get('instances', []):
-            instance_metrics[instance.get('iaas_id')] = metric, instance.get('sensor_data')
+            instance_metrics[instance.get('iaas_id')] = '', instance.get('sensor_data')
 
     inst_list = []
     for instance in asg.instances:

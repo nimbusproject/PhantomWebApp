@@ -9,9 +9,14 @@ $(document).ready(function() {
 
     $("#phantom_domain_main_combined_pane_inner").hide();
 
-    $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE)
-    phantom_select_de(DEFAULT_DECISION_ENGINE);
+    $("#phantom_domain_sensors_input").tagsManager();
 
+    $("input[name=hidden-tags]").change(function() {
+        phantom_update_sensors();
+    });
+
+    $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE);
+    phantom_select_de(DEFAULT_DECISION_ENGINE);
     phantom_domain_load();
 
     $("body").click(function() {
@@ -71,6 +76,20 @@ function phantom_add_domain_click() {
 
     $("#phantom_domain_list_domains").val(new_domain_name);
     phantom_domain_select_domain();
+}
+
+function phantom_update_sensors() {
+    var metrics_raw = $("input[name=hidden-tags]").val();
+    var metrics = metrics_raw.split(",");
+    var old_selected_metric = $("#phantom_domain_metric_choice").val();
+
+    $("#phantom_domain_metric_choice").empty();
+    for (var i=0; i<metrics.length; i++) {
+        var metric = metrics[i];
+        var new_opt = $('<option>', {'name': metric, value: metric, text: metric});
+        $("#phantom_domain_metric_choice").append(new_opt);
+    }
+    $("#phantom_domain_metric_choice").val(old_selected_metric);
 }
 
 function phantom_domain_load_lc_names() {
@@ -157,15 +176,18 @@ function phantom_domain_load() {
 // TODO: refactor for DRY with resize
 function phantom_domain_start_click_internal() {
     var url = make_url('api/domain/start');
+
+    // All-DE attrs
     var lc_name = $("#phantom_domain_lc_choice").val();
     var domain_name = $("#phantom_domain_name_label").text();
     var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
+    var monitor_sensors = $("input[name=hidden-tags]").val();
 
     // Multicloud attrs
     var vm_count = $("#phantom_domain_size_input").val();
 
     // Sensor attrs
-    var metric = $("#phantom_domain_metric_input").val();
+    var metric = $("#phantom_domain_metric_choice").val();
     var cooldown = $("#phantom_domain_cooldown_input").val();
     var minimum_vms = $("#phantom_domain_minimum_input").val();
     var maximum_vms = $("#phantom_domain_maximum_input").val();
@@ -183,7 +205,7 @@ function phantom_domain_start_click_internal() {
         error_msg = "You must specify a domain name";
     }
 
-    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name};
+    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name, "monitor_sensors": monitor_sensors};
 
     if (de_name == "multicloud") {
         if (! vm_count) {
@@ -264,12 +286,13 @@ function phantom_domain_resize_click_internal() {
     var lc_name = $("#phantom_domain_lc_choice").val();
     var domain_name = $("#phantom_domain_name_label").text();
     var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
+    var monitor_sensors = $("input[name=hidden-tags]").val();
 
     // Multicloud attrs
     var vm_count = $("#phantom_domain_size_input").val();
 
     // Sensor attrs
-    var metric = $("#phantom_domain_metric_input").val();
+    var metric = $("#phantom_domain_metric_choice").val();
     var cooldown = $("#phantom_domain_cooldown_input").val();
     var minimum_vms = $("#phantom_domain_minimum_input").val();
     var maximum_vms = $("#phantom_domain_maximum_input").val();
@@ -287,7 +310,7 @@ function phantom_domain_resize_click_internal() {
         error_msg = "You must specify a domain name";
     }
 
-    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name};
+    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name, "monitor_sensors": monitor_sensors};
 
     if (de_name == "multicloud") {
         if (! vm_count) {
@@ -330,6 +353,11 @@ function phantom_domain_resize_click_internal() {
         data["sensor_scale_up_vms"] = scale_up_vms;
         data["sensor_scale_down_threshold"] = scale_down_threshold;
         data["sensor_scale_down_vms"] = scale_down_vms;
+    }
+
+    if (error_msg != undefined) {
+        alert(error_msg);
+        return;
     }
 
     var success_func = function(obj) {
@@ -427,11 +455,19 @@ function phantom_domain_select_domain_internal() {
         $("#phantom_domain_running_buttons").show();
         phantom_select_de(g_decision_engines_by_type[domain_data.de_name]);
 
+        $("#phantom_domain_sensors_input").tagsManager('empty');
+        var sensors = String(domain_data.monitor_sensors).split(",");
+        for (var i=0; i<sensors.length; i++) {
+            $("#phantom_domain_sensors_input").tagsManager('pushTag', sensors[i]);
+        }
+ 
         if (domain_data.de_name == "multicloud") {
             $("#phantom_domain_size_input").val(domain_data.vm_size);
         }
         else if (domain_data.de_name == "sensor") {
-            $("#phantom_domain_metric_input").val(domain_data.metric);
+            //TODO: load all tags
+            $("#phantom_domain_sensors_input").tagsManager('pushTag', domain_data.metric);
+            $("#phantom_domain_metric_choice").val(domain_data.metric);
             $("#phantom_domain_cooldown_input").val(domain_data.sensor_cooldown);
             $("#phantom_domain_minimum_input").val(domain_data.sensor_minimum_vms);
             $("#phantom_domain_maximum_input").val(domain_data.sensor_maximum_vms);
@@ -485,7 +521,7 @@ function phantom_domain_load_instances() {
         fields[6] = instance.keyname;
         var parsed_sensor_data = sensor_data_to_string(instance.sensor_data);
         if (parsed_sensor_data !== "") {
-            fields[7] = instance.metric + ": " + sensor_data_to_string(instance.sensor_data);
+            fields[7] = sensor_data_to_string(instance.sensor_data);
         }
 
         var filter = $("#phantom_domain_filter_list").val();
@@ -520,12 +556,14 @@ function phantom_domain_load_instances() {
 function sensor_data_to_string(sensor_data) {
 
     var str = "";
-    for (var sensor_type in sensor_data) {
-        if (sensor_type === "Series") {
-            // Ignore series data because it is ugly :)
-            continue;
+    for (var metric in sensor_data) {
+        for (var sensor_type in sensor_data[metric]) {
+            if (sensor_type === "Series") {
+                // Ignore series data because it is ugly :)
+                continue;
+            }
+            str += metric + ": " + sensor_type + ": " + sensor_data[metric][sensor_type] + " <br>";
         }
-        str += sensor_type + ": " + sensor_data[sensor_type] + " ";
     }
     return str;
 }

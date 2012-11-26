@@ -1,36 +1,52 @@
-#phantom_content
-{
+span.myTag {
+    background: none repeat scroll 0 0 #EEE;
+    border: 1px solid #AAA;
+    border-radius: 3px 3px 3px 3px;
+    color: #555;
+
+    font-size: 11px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    padding: 3px 2px 2px 3px;
+    text-decoration: none;
+
+    vertical-align: middle;
+    line-height: 18px;
+    height:18px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+}
+
+a.myTagRemover {
+    color: #444;
+}
+
+#phantom_content {
     display: table;
     width: 900px;
     height: 500px;
 }
 
-.phantom_links
-{
+.phantom_links {
     display: inline;
     padding-right: 20px;
 }
 
-#phantom_links_div
-{
+#phantom_links_div {
     display: inline;
     width: 100%;
     text-align: left;
 }
 
-#phantom_reset_pw_div li
-{
+#phantom_reset_pw_div li {
     list-style-type: none;
 }
 
-.phantom_headings
-{
+.phantom_headings {
     font-size: x-large;
     padding-top: 20px;
     padding-right: 25px;
 }
 
-.phantom_area_header
-{
+.phantom_area_header {
     font-size: 1pc;
 }

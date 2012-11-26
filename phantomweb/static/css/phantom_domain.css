@@ -11,6 +11,13 @@
     height: 500px;
 }
 
+#phantom_domain_sensors_label
+{
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
 #phantom_domain_status_bar_div
 {
     height: 25px;
