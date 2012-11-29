@@ -4,6 +4,12 @@
     height: 23px;
 }
 
+#loading_details
+{
+    float: right;
+    display: none;
+}
+
 #phantom_domain_content
 {
     display: table;

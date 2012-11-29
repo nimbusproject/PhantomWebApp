@@ -3,6 +3,7 @@ var g_launch_config_names = {};
 var g_domain_details = {};
 var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud'};
 var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud'};
+var g_current_details_request = null;
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
 
 $(document).ready(function() {
@@ -69,13 +70,28 @@ function phantom_domain_buttons(enabled) {
     }
 }
 
+function phantom_domain_details_buttons(enabled) {
+
+    if (enabled) {
+        $('#loading_details').hide();
+        $("#phantom_domain_details_filter_div > input, #phantom_domain_details_filter_div > select").removeAttr("disabled");
+    }
+    else {
+        $("#phantom_domain_details_filter_div > input, #phantom_domain_details_filter_div > select").attr("disabled", true);
+        $('#loading_details').show();
+    }
+}
+
 function phantom_add_domain_click() {
     var new_domain_name = prompt("Enter a new domain name:");
     g_domain_data[new_domain_name] = {};
     phantom_domain_load_domain_names();
 
+    phantom_domain_deselect_domain();
+    phantom_domain_load_lc_names();
+    phantom_domain_load_de_names();
     $("#phantom_domain_list_domains").val(new_domain_name);
-    phantom_domain_select_domain();
+    phantom_domain_select_domain(false);
 }
 
 function phantom_update_sensors() {
@@ -143,8 +159,6 @@ function phantom_select_de(decision_engine) {
 function phantom_domain_load_internal() {
 
     var success_func = function(obj) {
-        $("#phantom_domain_instance_details").empty();
-
         g_domain_data = obj.domains;
         g_launch_config_names = obj.launchconfigs;
 
@@ -256,10 +270,13 @@ function phantom_domain_start_click_internal() {
     }
 
     var success_func = function(obj) {
+        console.log("Success!");
         phantom_domain_load_internal();
+        console.log("Load internal");
         $("#phantom_domain_start_buttons").hide();
         $("#phantom_domain_running_buttons").show();
         $("#phantom_domain_list_domains").val(domain_name);
+        phantom_domain_buttons(true);
         phantom_domain_details_internal();
     }
 
@@ -361,10 +378,7 @@ function phantom_domain_resize_click_internal() {
     }
 
     var success_func = function(obj) {
-        //("#phantom_domain_size_input").val("");
-        //$("#phantom_domain_list_domains").val(domain_name);
         phantom_domain_load_internal();
-        //phantom_domain_select_domain();
     }
 
     var error_func = function(obj, message) {
@@ -430,8 +444,9 @@ function phantom_domain_terminate_click() {
     }
 }
 
-function phantom_domain_select_domain_internal() {
+function phantom_domain_select_domain_internal(load_details) {
 
+    phantom_domain_details_abort();
     var domain_name = $("#phantom_domain_list_domains").val();
     if (!domain_name) {
         return;
@@ -476,16 +491,21 @@ function phantom_domain_select_domain_internal() {
             $("#phantom_domain_scale_down_threshold_input").val(domain_data.sensor_scale_down_threshold);
             $("#phantom_domain_scale_down_n_vms_input").val(domain_data.sensor_scale_down_vms);
         }
-        phantom_domain_details_internal();
+        if (load_details) {
+            phantom_domain_details_internal();
+        }
     }
 }
 
 
-function phantom_domain_select_domain() {
+function phantom_domain_select_domain(load_details) {
+    load_details = typeof load_details !== 'undefined' ? load_details : true;
+    console.log("load details: " + load_details);
     try {
-        phantom_domain_select_domain_internal();
+        phantom_domain_select_domain_internal(load_details);
     }
     catch(err) {
+        console.log("select");
         alert(err);
     }
 }
@@ -494,6 +514,9 @@ function phantom_domain_deselect_domain() {
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
     $("#phantom_domain_main_combined_pane_inner").hide();
+    $("#phantom_domain_main_combined_pane_inner input[type='text']").val("");
+    $("#phantom_domain_main_combined_pane_inner select").empty();
+    $("#phantom_domain_sensors_input").tagsManager('empty');
 }
 
 function phantom_domain_update_click() {
@@ -501,6 +524,7 @@ function phantom_domain_update_click() {
         phantom_domain_details_internal();
     }
     catch(err) {
+        console.log("details error");
         alert(err);
     }
 }
@@ -520,6 +544,7 @@ function phantom_domain_load_instances() {
         fields[5] = instance.instance_type;
         fields[6] = instance.keyname;
         var parsed_sensor_data = sensor_data_to_string(instance.sensor_data);
+        console.log("parsed_sensor_data : " + parsed_sensor_data);
         if (parsed_sensor_data !== "") {
             fields[7] = sensor_data_to_string(instance.sensor_data);
         }
@@ -557,6 +582,7 @@ function sensor_data_to_string(sensor_data) {
 
     var str = "";
     for (var metric in sensor_data) {
+        console.log("metric: " + metric);
         for (var sensor_type in sensor_data[metric]) {
             if (sensor_type === "Series") {
                 // Ignore series data because it is ugly :)
@@ -570,12 +596,17 @@ function sensor_data_to_string(sensor_data) {
 
 function phantom_domain_details_internal() {
 
+    phantom_domain_details_abort();
+    phantom_domain_details_buttons(false);
+
     var domain_name = $("#phantom_domain_name_label").text();
 
     var url = make_url("api/domain/details");
     var data = {'name': domain_name};
 
     var success_func = function(obj) {
+        g_current_details_request = null;
+        $("#phantom_domain_instance_details").empty();
         var lc_name = obj.lc_name;
         var vm_count = obj.domain_size;
 
@@ -585,15 +616,26 @@ function phantom_domain_details_internal() {
 
         phantom_domain_load_instances();
         phantom_domain_buttons(true);
+        phantom_domain_details_buttons(true);
     }
 
     var error_func = function(obj, message) {
+        g_current_details_request = null;
         alert(message);
         phantom_domain_buttons(true);
+        phantom_domain_details_buttons(true);
     }
 
-    phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    g_current_details_request =  phantomAjaxPost(url, data, success_func, error_func);
+}
+
+function phantom_domain_details_abort() {
+
+    if (g_current_details_request !== null) {
+        g_current_details_request.abort();
+        g_current_details_request = null;
+    }
+    phantom_domain_details_buttons(true);
 }
 
 

@@ -25,7 +25,7 @@ function load_error_handler(url, error_msg) {
 
 function ajaxCallREST(url, func, error_func) {
     $.ajaxSetup({ cache: false });
-    $.ajax({
+    var xhr = $.ajax({
         type : "GET",
         url : url,
         dataType : "json",
@@ -55,6 +55,7 @@ function ajaxCallREST(url, func, error_func) {
             }
         }
     });
+    return xhr;
 }
 
 function phantomAjaxPost(url, data_vals, func, error_func) {
@@ -83,7 +84,7 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
         };
 
     $.ajaxSetup({ cache: false });
-    $.ajax({
+    var xhr = $.ajax({
         cache: false,
         type : "POST",
         url : url,
@@ -92,4 +93,5 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
         success: success_func,
         error: l_error_func
     });
+    return xhr;
 }

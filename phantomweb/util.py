@@ -148,6 +148,7 @@ class UserObjectMySQL(UserObject):
     def describe_domain(self, username, domain):
         # TODO: this should eventually be part of the REST API
         describe = self.epum.describe_domain(domain, caller=username)
+        g_general_log.info("describe_domain: %s" % describe)
         return describe
 
     def get_all_groups(self):

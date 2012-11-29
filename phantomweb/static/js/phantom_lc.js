@@ -127,7 +127,7 @@ function phantom_lc_load_cloud_names() {
     for(var site in g_cloud_map) {
         var cloud_data = g_cloud_map[site];
         if (cloud_data.status != 0) {
-            alert("There was an error communication with ".concat(site).concat(".  You may interact with the remaining clouds.  Refresh later when the cloud is available."))        }
+            alert("There was an error communicating with ".concat(site).concat(". You may still use the remaining clouds. Refresh later when the cloud is available."))        }
         else {
             var new_opt = $('<option>', {'name': site, value: site, text: site});
             $("#phantom_lc_cloud").append(new_opt);

@@ -197,16 +197,25 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         n_preserve = de_params.get('vm_count')
         monitor_sensors_key = 'monitor_sensors'
         monitor_sensors = de_params.get('monitor_sensors', '')
+        sample_function_key =  'sample_function'
+        sample_function = 'Average'
+        # TODO: this should eventually be configurable
+        sensor_type_key = 'sensor_type'
+        sensor_type = 'cloudwatch'
 
         policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
         clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
         npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
         monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+        sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+        sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
         tags.append(policy_tag)
         tags.append(clouds_tag)
         tags.append(npreserve_tag)
         tags.append(monitor_sensors_tag)
+        tags.append(sample_function_tag)
+        tags.append(sensor_type_tag)
 
         min_size = de_params.get('vm_count')
         max_size = de_params.get('vm_count')
@@ -588,6 +597,8 @@ def phantom_domain_start(request_params, userobj):
                 g_general_log.debug("%s not in %s" % (p, request_params))
                 raise PhantomWebException('Missing parameter %s' % (p))
 
+        de_params["vm_count"] = request_params["vm_count"]
+
 
     g_general_log.info("starting with params: %s" % de_params)
 
@@ -754,8 +765,8 @@ def phantom_domain_details(request_params, userobj):
     site_dict = _get_launch_configuration(phantom_con, lc_db_object)
 
     # TODO: this should come from the REST interface
-    # TODO: this should support multiple metrics in the next sync
     metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
+    g_general_log.info("PDA: metrics: %s" % metrics)
     instance_metrics = {}
     if metrics is not None:
         for instance in metrics.get('instances', []):
