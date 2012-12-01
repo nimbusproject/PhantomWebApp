@@ -1,3 +1,20 @@
+
+body {
+    background: url(http://www.nimbusproject.org/images/body_bg.jpg) repeat-x;
+}
+
+/* Phone-specific CSS */
+@media (max-width: 767px) {
+    body {
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+}
+
+a.myTagRemover {
+    color: #444;
+}
+
 span.myTag {
     background: none repeat scroll 0 0 #EEE;
     border: 1px solid #AAA;
@@ -16,8 +33,17 @@ span.myTag {
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
 }
 
-a.myTagRemover {
-    color: #444;
+body div.container-fluid {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#nimbus_logo {
+    margin-bottom: 5px;
+}
+
+.topbar {
+    margin-bottom: 5px;
 }
 
 #phantom_content {
@@ -48,5 +74,5 @@ a.myTagRemover {
 }
 
 .phantom_area_header {
-    font-size: 1pc;
+    margin-top: -0px;
 }

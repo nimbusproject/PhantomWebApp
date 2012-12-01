@@ -1,5 +1,8 @@
 var g_cloud_map = {};
 
+$(document).ready(function() {
+    $("#nav-clouds").addClass("active");
+});
 
 function phantom_cloud_edit_enable(enable) {
     if(enable) {

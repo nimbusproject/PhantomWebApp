@@ -3,6 +3,10 @@ var g_arranged_cloud_values = {};
 var g_lc_info = {};
 var g_blank_name = "<new name>";
 
+$(document).ready(function() {
+    $("#nav-launchconfig").addClass("active");
+});
+
 function phantom_lc_buttons(enabled) {
 
     if (enabled) {

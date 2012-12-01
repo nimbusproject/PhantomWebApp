@@ -1,7 +1,23 @@
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+.inner-container {
+    padding: 0;
+}
+@media (min-width: 768px) {
+    .domain-well {
+        min-height: 400px;
+    }
+}
 
 #loading
 {
     height: 23px;
+}
+
+#phantom_domain_loading_image {
+    display: none;
 }
 
 #loading_details
@@ -13,7 +29,7 @@
 #phantom_domain_content
 {
     display: table;
-    width: 900px;
+    /*width: 900px;*/
     height: 500px;
 }
 
@@ -57,7 +73,7 @@
     padding-top: 0;
 }
 
-#phantom_domain_button_add
+#xphantom_domain_button_add
 {
     width: 100%;
     margin-left: auto;

@@ -9,17 +9,20 @@ var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
 
 $(document).ready(function() {
 
+    $("#nav-domains").addClass("active");
+
     $("#phantom_domain_main_combined_pane_inner").hide();
 
     $("#phantom_domain_sensors_input").tagsManager();
 
     $("input[name=hidden-tags]").change(function() {
         phantom_update_sensors();
+        return false;
     });
 
     $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE);
     phantom_select_de(DEFAULT_DECISION_ENGINE);
-    phantom_domain_load();
+    phantom_domain_load(); //TODO Enable this
 
     $("body").click(function() {
         phantom_domain_noncontext_mouse_down();
@@ -27,39 +30,43 @@ $(document).ready(function() {
 
     $("#phantom_domain_update_button").click(function() {
         phantom_domain_update_click();
+        return false;
     })
 
     $("#phantom_domain_de_choice").change(function() {
         phantom_select_de($("#phantom_domain_de_choice").val());
+        return false;
     });
 
     $("#phantom_domain_button_add").click(function() {
         phantom_add_domain_click();
+        return false;
     });
 
-    $("#phantom_domain_list_domains").change(function() {
-        try {
-            phantom_domain_select_domain();
-        }
-        catch (err) {
-            alert('err');
-        }
+    $(document).on("click", "a.domain", function() {
+        var domain = $(this).text();
+        phantom_domain_select_domain(domain);
+        return false;
     });
 
     $("#phantom_domain_list_domains option").click(function() {
         phantom_domain_select_domain();
+        return false;
     });
 
     $("#phantom_domain_button_start").click(function() {
         phantom_domain_start_click();
+        return false;
     });
 
     $("#phantom_domain_button_resize").click(function() {
         phantom_domain_resize_click();
+        return false;
     });
 
     $("#phantom_domain_button_terminate").click(function() {
         phantom_domain_terminate_click();
+        return false;
     });
 });
 
@@ -97,7 +104,7 @@ function phantom_add_domain_click() {
     phantom_domain_load_lc_names();
     phantom_domain_load_de_names();
     $("#phantom_domain_list_domains").val(new_domain_name);
-    phantom_domain_select_domain(false);
+    phantom_domain_select_domain(new_domain_name, false);
 }
 
 function phantom_update_sensors() {
@@ -117,6 +124,10 @@ function phantom_update_sensors() {
 function phantom_domain_load_lc_names() {
     $("#phantom_domain_lc_choice").empty();
 
+    
+    var new_opt = $('<option>', {'name': "title", value: "Launch Configurations", text: "Launch Configurations"});
+    $("#phantom_domain_lc_choice").append(new_opt);
+
     for(var lc_name in g_launch_config_names) {
         lc_name = g_launch_config_names[lc_name];
         var new_opt = $('<option>', {'name': lc_name, value: lc_name, text: lc_name});
@@ -126,11 +137,13 @@ function phantom_domain_load_lc_names() {
 
 function phantom_domain_load_domain_names() {
     var previously_selected_domain = $("#phantom_domain_list_domains").val();
-    $("#phantom_domain_list_domains").empty();
+    //$("#phantom_domain_list_domains").empty();
+
+    $("#domain-header").nextAll().remove();
 
     for(var domain_name in g_domain_data) {
-        var new_opt = $('<option>', {'name': domain_name, value: domain_name, text: domain_name});
-        $("#phantom_domain_list_domains").append(new_opt);
+        var new_domain = $('<li><a href="#" class="domain">' + domain_name + '</a></li>');
+        $("#domain-nav").append(new_domain);
     }
 
     $("#phantom_domain_list_domains").val(previously_selected_domain);
@@ -150,12 +163,13 @@ function phantom_select_de(decision_engine) {
 
     if (decision_engine === "Sensor") {
         $("#phantom_domain_de_choice").val("Sensor");
-        $(".phantom_domain_de_pref").hide().filter("#phantom_domain_sensor_preferences").show();
         $("#phantom_domain_sensor_preferences").show();
+        $("#phantom_domain_multicloud_preferences").hide();
     }
     else if (decision_engine === "Multi Cloud") {
         $("#phantom_domain_de_choice").val("Multi Cloud");
-        $(".phantom_domain_de_pref").hide().filter("#phantom_domain_multicloud_preferences").show();
+        $("#phantom_domain_sensor_preferences").hide();
+        $("#phantom_domain_multicloud_preferences").show();
     }
     else {
         console.log("Don't know de type: " + decision_engine);
@@ -448,13 +462,14 @@ function phantom_domain_terminate_click() {
     }
 }
 
-function phantom_domain_select_domain_internal(load_details) {
+function phantom_domain_select_domain_internal(domain_name, load_details) {
 
     phantom_domain_details_abort();
-    var domain_name = $("#phantom_domain_list_domains").val();
     if (!domain_name) {
         return;
     }
+    $("a.domain").parent().removeClass("active");
+    $("a.domain:contains('" + domain_name + "')").parent().addClass("active");
 
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
@@ -502,10 +517,10 @@ function phantom_domain_select_domain_internal(load_details) {
 }
 
 
-function phantom_domain_select_domain(load_details) {
+function phantom_domain_select_domain(domain, load_details) {
     load_details = typeof load_details !== 'undefined' ? load_details : true;
     try {
-        phantom_domain_select_domain_internal(load_details);
+        phantom_domain_select_domain_internal(domain, load_details);
     }
     catch(err) {
         alert(err);
