@@ -1,6 +1,7 @@
 var g_domain_data = {};
 var g_launch_config_names = {};
 var g_domain_details = {};
+var g_domain_details_cache = {};
 var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud'};
 var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud'};
 var g_current_details_request = null;
@@ -37,7 +38,12 @@ $(document).ready(function() {
     });
 
     $("#phantom_domain_list_domains").change(function() {
-        phantom_domain_select_domain();
+        try {
+            phantom_domain_select_domain();
+        }
+        catch (err) {
+            alert('err');
+        }
     });
 
     $("#phantom_domain_list_domains option").click(function() {
@@ -270,9 +276,7 @@ function phantom_domain_start_click_internal() {
     }
 
     var success_func = function(obj) {
-        console.log("Success!");
         phantom_domain_load_internal();
-        console.log("Load internal");
         $("#phantom_domain_start_buttons").hide();
         $("#phantom_domain_running_buttons").show();
         $("#phantom_domain_list_domains").val(domain_name);
@@ -500,12 +504,10 @@ function phantom_domain_select_domain_internal(load_details) {
 
 function phantom_domain_select_domain(load_details) {
     load_details = typeof load_details !== 'undefined' ? load_details : true;
-    console.log("load details: " + load_details);
     try {
         phantom_domain_select_domain_internal(load_details);
     }
     catch(err) {
-        console.log("select");
         alert(err);
     }
 }
@@ -524,7 +526,6 @@ function phantom_domain_update_click() {
         phantom_domain_details_internal();
     }
     catch(err) {
-        console.log("details error");
         alert(err);
     }
 }
@@ -544,7 +545,6 @@ function phantom_domain_load_instances() {
         fields[5] = instance.instance_type;
         fields[6] = instance.keyname;
         var parsed_sensor_data = sensor_data_to_string(instance.sensor_data);
-        console.log("parsed_sensor_data : " + parsed_sensor_data);
         if (parsed_sensor_data !== "") {
             fields[7] = sensor_data_to_string(instance.sensor_data);
         }
@@ -582,7 +582,6 @@ function sensor_data_to_string(sensor_data) {
 
     var str = "";
     for (var metric in sensor_data) {
-        console.log("metric: " + metric);
         for (var sensor_type in sensor_data[metric]) {
             if (sensor_type === "Series") {
                 // Ignore series data because it is ugly :)
@@ -601,6 +600,11 @@ function phantom_domain_details_internal() {
 
     var domain_name = $("#phantom_domain_name_label").text();
 
+    if (domain_name in g_domain_details_cache) {
+        g_domain_details = g_domain_details_cache[domain_name];
+        phantom_domain_load_instances();
+    }
+
     var url = make_url("api/domain/details");
     var data = {'name': domain_name};
 
@@ -611,6 +615,7 @@ function phantom_domain_details_internal() {
         var vm_count = obj.domain_size;
 
         g_domain_details = obj.instances;
+        g_domain_details_cache[domain_name] = obj.instances;
         $("#phantom_domain_size_input").val(vm_count);
         $("#phantom_domain_lc_choice").val(lc_name);
 
@@ -621,7 +626,6 @@ function phantom_domain_details_internal() {
 
     var error_func = function(obj, message) {
         g_current_details_request = null;
-        alert(message);
         phantom_domain_buttons(true);
         phantom_domain_details_buttons(true);
     }
@@ -632,7 +636,11 @@ function phantom_domain_details_internal() {
 function phantom_domain_details_abort() {
 
     if (g_current_details_request !== null) {
-        g_current_details_request.abort();
+        try {
+            g_current_details_request.abort();
+        }
+        catch (e) {
+        }
         g_current_details_request = null;
     }
     phantom_domain_details_buttons(true);
