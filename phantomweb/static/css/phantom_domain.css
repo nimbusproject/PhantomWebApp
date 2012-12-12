@@ -11,6 +11,10 @@
     }
 }
 
+#phantom_instance_context_menu {
+    display: none;
+}
+
 #loading
 {
     height: 23px;
@@ -148,7 +152,6 @@
 
 #phantom_domain_details_filter_div
 {
-    padding-bottom: 5px;
 }
 
 

@@ -15,37 +15,51 @@
 {% endblock %}
 {% block bodytag %}onload="phantom_cloud_edit_load_page();"{% endblock %}
 {% block nimbus_body  %}
-<h3>Clouds</h3>
-
 <div class="" id="xstatus_bar_div">
     <img src="/static/images/loading4.gif" id="phantom_cloud_edit_loading_image"/>
 </div>
 <div>
-    <form action="." method="post">{% csrf_token %}
-        <fieldset>
-            <label for="phantom_cloud_edit_name" class="xphantom_cloud_edit_label">Cloud Name:</label>
-            <select id="phantom_cloud_edit_name" class="xphantom_cloud_edit_input"  onchange="phantom_cloud_edit_change_cloud()">
-            </select>
-            <label class="xphantom_cloud_edit_label" for="phantom_cloud_edit_access">Access Key:</label>
-            <input id="phantom_cloud_edit_access" class="xphantom_cloud_edit_input" type="text"/>
-            <label class="xphantom_cloud_edit_label" for="phantom_cloud_edit_secret">Secret Key:</label>
-            <input id="phantom_cloud_edit_secret" class="xphantom_cloud_edit_input" type="text"/>
-            <label class="xphantom_cloud_edit_label" for="phantom_cloud_edit_keyname_list">Key Name:</label>
-            <select id="phantom_cloud_edit_keyname_list" class="xphantom_cloud_edit_input">
-            </select>
-            <input id="phantom_cloud_edit_add" type="button" class="btn" value="Add" onclick="phantom_cloud_edit_add_click()"/>
-            <input id="phantom_cloud_edit_remove" type="button" class="btn" value="Remove" onclick="phantom_cloud_edit_remove_click()"/>
-        </fieldset>
-        <div class="phantom_cloud_edit_configured_list">
-            Here is a list of clouds that are already configured for your use.  You can change their values above.
-            <ul id="phantom_cloud_edit_list">
-            </ul>
-        </div>
-        <div id="phantom_cloud_edit_status_message_div">
-            <label id="phantom_cloud_edit_key_message" class="phantom_cloud_edit_warning_message"></label>
-            <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
-        </div>
+  <form action="." method="post" class="form-horizontal">{% csrf_token %}
+    <div class="control-group" >
+      <label for="phantom_cloud_edit_name" class="control-label">Cloud Name:</label>
+      <div class="controls">
+        <select id="phantom_cloud_edit_name" class="xphantom_cloud_edit_input"  onchange="phantom_cloud_edit_change_cloud()"></select>
+      </div>
+    </div>
+    <div class="control-group" >
+      <label class="control-label" for="phantom_cloud_edit_access">Access Key:</label>
+      <div class="controls">
+        <input id="phantom_cloud_edit_access" class="xphantom_cloud_edit_input" type="text"/>
+      </div>
+    </div>
+    <div class="control-group" >
+      <label class="control-label" for="phantom_cloud_edit_secret">Secret Key:</label>
+      <div class="controls">
+        <input id="phantom_cloud_edit_secret" class="xphantom_cloud_edit_input" type="text"/>
+      </div>
+    </div>
+    <div class="control-group" >
+      <label class="control-label" for="phantom_cloud_edit_keyname_list">Key Name:</label>
+      <div class="controls">
+        <select id="phantom_cloud_edit_keyname_list" class="xphantom_cloud_edit_input"></select>
+      </div>
+    </div>
+    <div class="control-group" >
+      <div class="controls">
+        <input id="phantom_cloud_edit_add" type="button" class="btn btn-primary" value="Add" onclick="phantom_cloud_edit_add_click()"/>
+        <input id="phantom_cloud_edit_remove" type="button" class="btn btn-danger" value="Remove" onclick="phantom_cloud_edit_remove_click()"/>
+      </div>
+    </div>
+    <div class="phantom_cloud_edit_configured_list">
+      Here is a list of clouds that are already configured for your use.  You can change their values above.
+      <ul id="phantom_cloud_edit_list">
+      </ul>
+    </div>
+    <div id="phantom_cloud_edit_status_message_div">
+      <label id="phantom_cloud_edit_key_message" class="phantom_cloud_edit_warning_message"></label>
+      <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
+    </div>
 
-    </form>
+  </form>
 </div>
 {% endblock %}

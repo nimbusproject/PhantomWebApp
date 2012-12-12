@@ -19,133 +19,150 @@
 {% block bodytag %}{% endblock %}
 
 
+
+{% block nimbus_body  %}
 <div id="phantom_instance_context_menu_div">
     <ul id="phantom_domain_instance_context_menu">
         <li><div>Terminate</div></li>
     </ul>
 </div>
 
-{% block nimbus_body  %}
-<h3>Domains</h3>
 <div id="loading">
-    <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
+  <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
 </div>
 
-<!--div id="phantom_domain_list_pane" class="phantom_domain_form_pane">
-<div class="phantom_domain_section_div phantom_domain_row" id="phantom_domain_button_add_div"  >
-    <input type="button" id="phantom_domain_button_add" class="btn" value="Add Domain" />
-</div>
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
 
-<select id="phantom_domain_list_domains" class="phantom_domain_value phantom_domain_combo" size="20" >
-</select>
-        </div>-->
-        <div class="container-fluid inner-container">
-            <div class="row-fluid">
-                <div class="span2">
-                    <div class="well well-small sidebar-nav domain-well">
-                        <ul class="nav nav-list" id="domain-nav">
-                            <li class=""><a id="phantom_domain_button_add" href="#">Add Domain</a></li>
-                            <li class="divider"></li>
-                            <li class="nav-header" id="domain-header"><a href="#">Domains</a></li>
-                        </ul>
-                    </div><!--/.well -->
-                </div><!--/span-->
+    <div class="span2">
+      <div class="well well-small sidebar-nav domain-well">
+        <ul class="nav nav-list" id="domain-nav">
+          <li class=""><a id="phantom_domain_button_add" href="#">Add Domain</a></li>
+          <li class="divider"></li>
+          <li class="nav-header" id="domain-header"><a href="#">Domains</a></li>
+        </ul>
+      </div><!--/.well -->
+    </div><!--/span-->
 
-                <div class="span5">
-                    <div id="xphantom_domain_main_combined_pane" class="well well-small domain-well">
-                        <div id="phantom_domain_main_combined_pane_inner">
-                            <h5 class="phantom_area_header">Configuration for <span id="phantom_domain_name_label"></span></h5>
-                            <form class="form-horizontal">                           
-                                <select id="phantom_domain_lc_choice" class="span12">
-                                    <option selected="selected">Launch Configuration</option>
-                                </select>
+    <div class="span5">
+      <div id="xphantom_domain_main_combined_pane" class="well well-small domain-well">
+        <div id="phantom_domain_main_combined_pane_inner">
+          <h5 class="phantom_area_header">Configuration for <span id="phantom_domain_name_label"></span></h5>
 
-                                <div class="control-group" >
-                                    <input name="tags" id="phantom_domain_sensors_input" placeholder="Add Sensor"></input>
-                                </div>
+          <form class="form-horizontal">                           
 
-                            <div class="control-group" >
-                                <label class="control-label" id="phantom_domain_de_div">Decision Engine:</label>
-                                <div class="controls">
-                                <select id="phantom_domain_de_choice" class="phantom_domain_value phantom_domain_combo">
-                                </select>
-                                </div>
-                            </div>
-
-                            <div class="control-group" id="phantom_domain_multicloud_preferences">
-                                <label for="phantom_domain_size_input" class="control-label">Size:</label>
-                                <div class="controls">
-                                    <input type='text' id="phantom_domain_size_input" class=""/>
-                                </div>
-                            </div>
-
-                            <div class="phantom_domain_de_pref phantom_domain_section_div phantom_domain_row" id="phantom_domain_sensor_preferences">
-                                <label for="phantom_domain_metric_input" class="phantom_domain_label">Metric:</label>
-                                <select id="phantom_domain_metric_choice" class="phantom_domain_value phantom_domain_combo"></select>
-                                <!--<input type='text' id="phantom_domain_metric_input" class="phantom_domain_value"/>-->
-
-                                <label for="phantom_domain_cooldown_input" class="phantom_domain_label">Cooldown (s):</label>
-                                <input type='text' id="phantom_domain_cooldown_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_minimum_input" class="phantom_domain_label">Minimum:</label>
-                                <input type='text' id="phantom_domain_minimum_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_maximum_input" class="phantom_domain_label">Maximum:</label>
-                                <input type='text' id="phantom_domain_maximum_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_scale_up_threshold_input" class="phantom_domain_label">Scale Up Threshold:</label>
-                                <input type='text' id="phantom_domain_scale_up_threshold_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_scale_up_n_vms_input" class="phantom_domain_label">Scale Up By:</label>
-                                <input type='text' id="phantom_domain_scale_up_n_vms_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_scale_down_threshold_input" class="phantom_domain_label">Scale Down Threshold:</label>
-                                <input type='text' id="phantom_domain_scale_down_threshold_input" class="phantom_domain_value"/>
-
-                                <label for="phantom_domain_scale_down_n_vms_input" class="phantom_domain_label">Scale Down By:</label>
-                                <input type='text' id="phantom_domain_scale_down_n_vms_input" class="phantom_domain_value"/>
-                            </div>
-
-
-                            <div id="phantom_domain_button_div" class="control-group">
-                                <div id="phantom_domain_start_buttons" class="span12 pagination-centered">
-                                    <input type="button" id="phantom_domain_button_start" class="btn btn-primary" value="Start"/>
-                                </div>
-                                <div id="phantom_domain_running_buttons" class="span12 pagination-centered">
-                                    <input type="button" id="phantom_domain_button_resize" class="btn" value="Update"/>
-                                    <input type="button" id="phantom_domain_button_terminate" class="btn btn-danger" value="Terminate"/>
-                                </div>
-                            </div>
-                        </form>
-                        </div>
-                    </div>
-                </div><!-- /.span -->
-                <div class="span5">
-                    <div id="xphantom_domain_details_pane" class="well well-small domain-well">
-                        <h5 id="phantom_domain_details_name" class="phantom_area_header">Details</h5>
-                        <div id="phantom_domain_details_filter_div">
-                            <label id="phantom_domain_filter_list_label">Show:</label>
-                            <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
-                                <option>All</option>
-                                <option>Healthy</option>
-                                <option>Errors</option>
-                                <option>RUNNING</option>
-                                <option>PENDING</option>
-                                <option>TERMINATING</option>
-                                <option>FAILED</option>
-                            </select>
-                            <input type="button" id="phantom_domain_update_button" class="btn" value="Refresh"/>
-                            <div id="loading_details">
-                                <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
-                            </div>
-                        </div>
-                        <div id="phantom_domain_details_list_div">
-                            <ul id="phantom_domain_instance_details">
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+            <div class="control-group" >
+              <label class="control-label" for="phantom_domain_lc_choice">Launch Configuration:</label>
+              <div class="controls">
+                <select id="phantom_domain_lc_choice" class="">
+                </select>
+              </div>
             </div>
+
+            <div class="control-group" >
+              <label class="control-label" for="phantom_domain_sensors_input">Sensors to Monitor:</label>
+              <div class="controls">
+                <input name="tags" id="phantom_domain_sensors_input" placeholder="Add Sensor" class="span5"></input>
+              </div>
+            </div>
+
+            <div class="control-group" >
+              <label class="control-label" id="phantom_domain_de_div">Sensor Policy:</label>
+              <div class="controls">
+                <select id="phantom_domain_de_choice" class="phantom_domain_value phantom_domain_combo">
+                </select>
+              </div>
+            </div>
+
+            <div class="control-group" id="phantom_domain_multicloud_preferences">
+              <label for="phantom_domain_size_input" class="control-label">Size:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_size_input" class=""/>
+              </div>
+            </div>
+
+            <div class="control-group" id="phantom_domain_sensor_preferences">
+              <label for="phantom_domain_metric_choice" class="control-label">Metric:</label>
+              <div class="controls">
+                <select id="phantom_domain_metric_choice" class="phantom_domain_value phantom_domain_combo"></select>
+              </div>
+
+              <label for="phantom_domain_cooldown_input" class="control-label">Cooldown (s):</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_cooldown_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_minimum_input" class="control-label">Minimum:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_minimum_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_maximum_input" class="control-label">Maximum:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_maximum_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_up_threshold_input" class="control-label">Scale Up Threshold:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_up_threshold_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_up_n_vms_input" class="control-label">Scale Up By:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_up_n_vms_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_down_threshold_input" class="control-label">Scale Down Threshold:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_down_threshold_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_down_n_vms_input" class="control-label">Scale Down By:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_down_n_vms_input" class="phantom_domain_value"/>
+              </div>
+            </div>
+
+
+            <div id="phantom_domain_button_div" class="control-group">
+              <div id="phantom_domain_start_buttons" class="span12 pagination-centered">
+                <input type="button" id="phantom_domain_button_start" class="btn btn-primary" value="Start"/>
+              </div>
+              <div id="phantom_domain_running_buttons" class="span12 pagination-centered">
+                <input type="button" id="phantom_domain_button_resize" class="btn" value="Update"/>
+                <input type="button" id="phantom_domain_button_terminate" class="btn btn-danger" value="Terminate"/>
+              </div>
+            </div>
+          </form>
         </div>
+      </div>
+    </div><!-- /.span -->
+
+    <div class="span5">
+      <div id="xphantom_domain_details_pane" class="well well-small domain-well">
+        <h5 id="phantom_domain_details_name" class="phantom_area_header">Details</h5>
+        <div id="phantom_domain_details_filter_div" class="form-inline">
+          <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
+            <option>All</option>
+            <option>Healthy</option>
+            <option>Errors</option>
+            <option>RUNNING</option>
+            <option>PENDING</option>
+            <option>TERMINATING</option>
+            <option>FAILED</option>
+          </select>
+          <input type="button" id="phantom_domain_update_button" class="btn" value="Refresh"/>
+          <div id="loading_details">
+            <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
+          </div>
+        </div>
+        <div id="phantom_domain_details_list_div">
+          <ul id="phantom_domain_instance_details">
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

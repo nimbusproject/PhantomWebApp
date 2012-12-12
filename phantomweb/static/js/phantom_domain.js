@@ -22,7 +22,7 @@ $(document).ready(function() {
 
     $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE);
     phantom_select_de(DEFAULT_DECISION_ENGINE);
-    phantom_domain_load(); //TODO Enable this
+    phantom_domain_load();
 
     $("body").click(function() {
         phantom_domain_noncontext_mouse_down();
@@ -32,6 +32,10 @@ $(document).ready(function() {
         phantom_domain_update_click();
         return false;
     })
+
+    $("#phantom_domain_filter_list").change(function() {
+        phantom_domain_update_click();
+    });
 
     $("#phantom_domain_de_choice").change(function() {
         phantom_select_de($("#phantom_domain_de_choice").val());
@@ -123,10 +127,6 @@ function phantom_update_sensors() {
 
 function phantom_domain_load_lc_names() {
     $("#phantom_domain_lc_choice").empty();
-
-    
-    var new_opt = $('<option>', {'name': "title", value: "Launch Configurations", text: "Launch Configurations"});
-    $("#phantom_domain_lc_choice").append(new_opt);
 
     for(var lc_name in g_launch_config_names) {
         lc_name = g_launch_config_names[lc_name];
@@ -663,12 +663,14 @@ function phantom_domain_details_abort() {
 
 
 function phantom_domain_context_menu(e) {
+    console.log("click: " + e.pageX + ", " + e.pageY);
     var obj = $("#phantom_domain_instance_context_menu");
 
     var o = {
-                left: e.pageX,
-                top: e.pageY
-            };
+        position: "absolute",
+        left: e.pageX,
+        top: e.pageY,
+    };
 
     function nestedterminateClick() {
         try{
