@@ -147,7 +147,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     sample_function_key =  'sample_function'
     sample_function = 'Average'
     sensor_type_key = 'sensor_type'
-    sensor_type = 'cloudwatch'
+    sensor_type = 'opentsdb'
 
     metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
     monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
@@ -201,7 +201,7 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         sample_function = 'Average'
         # TODO: this should eventually be configurable
         sensor_type_key = 'sensor_type'
-        sensor_type = 'cloudwatch'
+        sensor_type = 'opentsdb'
 
         policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
         clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
