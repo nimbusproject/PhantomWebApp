@@ -1,3 +1,4 @@
+// TODO: turn this into some kind of model object
 var g_domain_data = {};
 var g_launch_config_names = {};
 var g_domain_details = {};
@@ -137,12 +138,11 @@ function phantom_domain_load_lc_names() {
 
 function phantom_domain_load_domain_names() {
     var previously_selected_domain = $("#phantom_domain_list_domains").val();
-    //$("#phantom_domain_list_domains").empty();
 
     $("#domain-header").nextAll().remove();
 
     for(var domain_name in g_domain_data) {
-        var new_domain = $('<li><a href="#" class="domain">' + domain_name + '</a></li>');
+        var new_domain = $('<li><a href="#" class="domain" id="domain-' + domain_name + '">' + domain_name + '</a></li>');
         $("#domain-nav").append(new_domain);
     }
 
@@ -176,7 +176,7 @@ function phantom_select_de(decision_engine) {
     }
 }
 
-function phantom_domain_load_internal() {
+function phantom_domain_load_internal(select_domain_on_success) {
 
     var success_func = function(obj) {
         g_domain_data = obj.domains;
@@ -186,6 +186,9 @@ function phantom_domain_load_internal() {
         phantom_domain_load_domain_names();
         phantom_domain_load_de_names();
         phantom_domain_buttons(true);
+        if (typeof select_domain_on_success !== 'undefined') {
+            phantom_domain_select_domain(select_domain_on_success);
+        }
     };
 
     var error_func = function(obj, message) {
@@ -207,95 +210,23 @@ function phantom_domain_load() {
     }
 }
 
-// TODO: refactor for DRY with resize
 function phantom_domain_start_click_internal() {
     var url = make_url('api/domain/start');
 
-    // All-DE attrs
-    var lc_name = $("#phantom_domain_lc_choice").val();
-    var domain_name = $("#phantom_domain_name_label").text();
-    var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
-    var monitor_sensors = $("input[name=hidden-tags]").val();
-
-    // Multicloud attrs
-    var vm_count = $("#phantom_domain_size_input").val();
-
-    // Sensor attrs
-    var metric = $("#phantom_domain_metric_choice").val();
-    var cooldown = $("#phantom_domain_cooldown_input").val();
-    var minimum_vms = $("#phantom_domain_minimum_input").val();
-    var maximum_vms = $("#phantom_domain_maximum_input").val();
-    var scale_up_threshold = $("#phantom_domain_scale_up_threshold_input").val();
-    var scale_up_vms = $("#phantom_domain_scale_up_n_vms_input").val();
-    var scale_down_threshold = $("#phantom_domain_scale_down_threshold_input").val();
-    var scale_down_vms = $("#phantom_domain_scale_down_n_vms_input").val();
-
-    var error_msg = undefined;
-
-    if (lc_name == undefined || lc_name == "" || lc_name == null) {
-        error_msg = "You must select a launch configuration name";
-    }
-    if (domain_name == undefined || domain_name == "" || domain_name == null) {
-        error_msg = "You must specify a domain name";
-    }
-
-    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name, "monitor_sensors": monitor_sensors};
-
-    if (de_name == "multicloud") {
-        if (! vm_count) {
-            error_msg = "You must specify a total number of vms";
-        }
-
-        data["vm_count"] = vm_count;
-    }
-    else if (de_name == "sensor") {
-        if (! metric) {
-            error_msg = "You must specify a metric";
-        }
-        if (! cooldown) {
-            error_msg = "You must specify a cooldown";
-        }
-        if (! minimum_vms) {
-            error_msg = "You must specify a minimum number of vms";
-        }
-        if (! maximum_vms) {
-            error_msg = "You must specify a maximum number of vms";
-        }
-        if (! scale_up_threshold) {
-            error_msg = "You must specify a scale up threshold";
-        }
-        if (! scale_up_vms) {
-            error_msg = "You must specify a number of vms to scale up by";
-        }
-        if (! scale_down_threshold) {
-            error_msg = "You must specify a scale down threshold";
-        }
-        if (! scale_down_vms) {
-            error_msg = "You must specify a number of vms to scale down by";
-        }
-
-        data["sensor_metric"] = metric;
-        data["sensor_cooldown"] = cooldown;
-        data["sensor_minimum_vms"] = minimum_vms;
-        data["sensor_maximum_vms"] = maximum_vms;
-        data["sensor_scale_up_threshold"] = scale_up_threshold;
-        data["sensor_scale_up_vms"] = scale_up_vms;
-        data["sensor_scale_down_threshold"] = scale_down_threshold;
-        data["sensor_scale_down_vms"] = scale_down_vms;
-    }
-
-    if (error_msg != undefined) {
-        alert(error_msg);
+    var domain = gather_domain_params_from_ui();
+    if (domain === null) {
         return;
     }
+    console.log(domain);
 
     var success_func = function(obj) {
-        phantom_domain_load_internal();
+        phantom_domain_load_internal(domain['name']);
+        // load details is manually called to get a result right away
+        phantom_domain_details_internal();
         $("#phantom_domain_start_buttons").hide();
         $("#phantom_domain_running_buttons").show();
-        $("#phantom_domain_list_domains").val(domain_name);
+        $("#phantom_domain_list_domains").val(domain['name']);
         phantom_domain_buttons(true);
-        phantom_domain_details_internal();
     }
 
     var error_func = function(obj, message) {
@@ -304,7 +235,7 @@ function phantom_domain_start_click_internal() {
     }
 
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    phantomAjaxPost(url, domain, success_func, error_func);
 }
 
 function phantom_domain_start_click() {
@@ -316,8 +247,11 @@ function phantom_domain_start_click() {
     }
 }
 
-function phantom_domain_resize_click_internal() {
-    var url = make_url('api/domain/resize');
+function gather_domain_params_from_ui() {
+    /* gather_domain_params_from_ui
+     * get all of the domain parameters from the UI, validate them, then return
+     * a formatted dictionary that can be used in a start or update call
+     */
     var lc_name = $("#phantom_domain_lc_choice").val();
     var domain_name = $("#phantom_domain_name_label").text();
     var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
@@ -392,11 +326,23 @@ function phantom_domain_resize_click_internal() {
 
     if (error_msg != undefined) {
         alert(error_msg);
+        return null;
+    }
+
+    return data;
+}
+
+function phantom_domain_resize_click_internal() {
+    var url = make_url('api/domain/resize');
+
+    var domain = gather_domain_params_from_ui();
+    if (domain === null) {
         return;
     }
 
     var success_func = function(obj) {
-        phantom_domain_load_internal();
+        phantom_domain_buttons(true);
+        phantom_domain_details_internal();
     }
 
     var error_func = function(obj, message) {
@@ -405,7 +351,7 @@ function phantom_domain_resize_click_internal() {
     }
 
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    phantomAjaxPost(url, domain, success_func, error_func);
 }
 
 function phantom_domain_resize_click() {
@@ -431,26 +377,26 @@ function phantom_domain_terminate_click_internal() {
         return;
     }
 
-    var data = {'name': domain_name}
+    var data = {'name': domain_name};
 
     var success_func = function(obj) {
         delete g_domain_data[domain_name];
         $("#phantom_domain_name_label").text("");
         $("#phantom_domain_lc_choice").val("");
         $("#phantom_domain_size_input").val("");
-        $("#phantom_domain_list_domains option[name*=" + domain_name + "]").remove();
+        $("#domain-" + domain_name).remove();
         phantom_domain_deselect_domain();
+        phantom_domain_details_abort();
         phantom_domain_buttons(true);
-    }
+    };
 
     var error_func = function(obj, message) {
         alert(message);
         phantom_domain_buttons(true);
-    }
+    };
 
     phantom_domain_buttons(false);
     phantomAjaxPost(url, data, success_func, error_func);
-
 }
 
 function phantom_domain_terminate_click() {

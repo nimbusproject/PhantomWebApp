@@ -91,7 +91,7 @@ def _get_all_domains_dashi(userobj):
         ent = {}
         ent['name'] = a['name']
         ent['de_name'] = g_engine_to_phantom_de_map.get(engine_class)
-        ent['vm_size'] = engine_conf.get('domain_desired_size')
+        ent['vm_size'] = engine_conf.get('minimum_vms')
 
         ent['lc_name'] = engine_conf.get('dtname')
         ent['metric'] = engine_conf.get('metric')
@@ -119,6 +119,36 @@ def _get_phantom_con(userobj):
     con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
+
+def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
+    """multicloud_tags_from_de_params
+
+    Creates tags to update sensors monitored
+    """
+
+    policy_name_key = 'PHANTOM_DEFINITION'
+    policy_name = 'error_overflow_n_preserving'
+    policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+
+    monitor_sensors_key = 'monitor_sensors'
+    monitor_sensors = de_params.get('monitor_sensors', '')
+    sample_function_key =  'sample_function'
+    sample_function = 'Average'
+    # TODO: this should eventually be configurable
+    sensor_type_key = 'sensor_type'
+    sensor_type = 'opentsdb'
+
+    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+
+    tags = []
+    tags.append(policy_tag)
+    tags.append(monitor_sensors_tag)
+    tags.append(sample_function_tag)
+    tags.append(sensor_type_tag)
+
+    return tags
 
 def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
@@ -663,7 +693,8 @@ def phantom_domain_resize(request_params, userobj):
                 g_general_log.debug("%s not in %s" % (p, request_params))
                 raise PhantomWebException('Missing parameter %s' % (p))
 
-        de_params["vm_count"] = request_params["vm_count"]
+        de_params["minimum_vms"] = request_params["vm_count"]
+        de_params["maximum_vms"] = request_params["vm_count"]
 
 
     domain_name = request_params["name"]
@@ -672,16 +703,20 @@ def phantom_domain_resize(request_params, userobj):
     try:
         phantom_con = _get_phantom_con(userobj)
 
-        tags = sensor_tags_from_de_params(phantom_con, domain_name, de_params)
-        phantom_con.create_or_update_tags(tags)
+        if de_name == "sensor":
+            tags = sensor_tags_from_de_params(phantom_con, domain_name, de_params)
+            phantom_con.create_or_update_tags(tags)
+        elif de_name == "multicloud":
+            tags = multicloud_tags_from_de_params(phantom_con, domain_name, de_params)
+            phantom_con.create_or_update_tags(tags)
 
-        asg = phantom_con.get_all_groups(names=[domain_name,])
-        if not asg:
-            raise PhantomWebException("domain %s not found" % (domain_name))
-        asg = asg[0]
+            asg = phantom_con.get_all_groups(names=[domain_name,])
+            if not asg:
+                raise PhantomWebException("domain %s not found" % (domain_name))
+            asg = asg[0]
 
-        if new_size is not None:
-            asg.set_capacity(new_size)
+            if new_size is not None:
+                asg.set_capacity(new_size)
 
     except PhantomWebException:
         raise
