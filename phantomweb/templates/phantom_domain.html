@@ -22,13 +22,21 @@
 
 {% block nimbus_body  %}
 <div id="phantom_instance_context_menu_div">
-    <ul id="phantom_domain_instance_context_menu">
-        <li><div>Terminate</div></li>
-    </ul>
+  <ul id="phantom_domain_instance_context_menu">
+    <li><div>Terminate</div></li>
+  </ul>
 </div>
 
-<div id="loading">
-  <img src="/static/images/loading4.gif" id="phantom_domain_loading_image"/>
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
 </div>
 
 <div class="container-fluid inner-container">
@@ -54,7 +62,7 @@
             <div class="control-group" >
               <label class="control-label" for="phantom_domain_lc_choice">Launch Configuration:</label>
               <div class="controls">
-                <select id="phantom_domain_lc_choice" class="">
+                <select id="phantom_domain_lc_choice" class="span12">
                 </select>
               </div>
             </div>
@@ -69,13 +77,13 @@
             <div class="control-group" >
               <label class="control-label" id="phantom_domain_de_div">Scaling Policy:</label>
               <div class="controls">
-                <select id="phantom_domain_de_choice" class="phantom_domain_value phantom_domain_combo">
+                <select id="phantom_domain_de_choice" class="span12">
                 </select>
               </div>
             </div>
 
             <div class="control-group" id="phantom_domain_multicloud_preferences">
-              <label for="phantom_domain_size_input" class="control-label">Size:</label>
+              <label for="phantom_domain_size_input" class="control-label">Number of VMs:</label>
               <div class="controls">
                 <input type='text' id="phantom_domain_size_input" class=""/>
               </div>

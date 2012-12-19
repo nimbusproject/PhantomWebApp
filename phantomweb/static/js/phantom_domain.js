@@ -7,6 +7,7 @@ var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud
 var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud'};
 var g_current_details_request = null;
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
+var ALERT_FADE_TIME_IN_MS = 10000;
 
 $(document).ready(function() {
 
@@ -75,16 +76,36 @@ $(document).ready(function() {
     });
 });
 
+function phantom_alert(alert_text) {
+    var new_alert = '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>' + alert_text + '</div>'
+    $("#alert-container").append(new_alert);
+    remove_element_after_delay($("#alert-container .alert").last(), ALERT_FADE_TIME_IN_MS);
+}
+
+function remove_element_after_delay(element, milliseconds) {
+    window.setTimeout(function() {
+        try {
+            element.fadeOut(200, function() {
+                $(this).remove();
+            });
+        }
+        catch(e) {
+            console.log(e);
+        }
+    }, milliseconds);
+}
 
 function phantom_domain_buttons(enabled) {
 
     if (enabled) {
         $("input, select").removeAttr("disabled");
-        $('#phantom_domain_loading_image').hide();
+        $("#phantom_domain_button_add").removeAttr("disabled");
+        $("#loading").hide();
     }
     else {
         $("input, select").attr("disabled", true);
-        $('#phantom_domain_loading_image').show();
+        $("#phantom_domain_button_add").attr("disabled", true);
+        $("#loading").show();
     }
 }
 
@@ -101,7 +122,13 @@ function phantom_domain_details_buttons(enabled) {
 }
 
 function phantom_add_domain_click() {
+    if ( $("#phantom_domain_button_add").attr("disabled") ) {
+        return false;
+    }
     var new_domain_name = prompt("Enter a new domain name:");
+    if (new_domain_name === null) {
+        return false;
+    }
     g_domain_data[new_domain_name] = {};
     phantom_domain_load_domain_names();
 
@@ -193,7 +220,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
 
     var error_func = function(obj, message) {
         alert(message);
-        $('#phantom_domain_loading_image').hide();
+        $('#loading').hide();
     }
 
     var url = make_url('api/domain/load')
@@ -283,7 +310,7 @@ function gather_domain_params_from_ui() {
 
     if (de_name == "multicloud") {
         if (! vm_count) {
-            error_msg = "You must specify a total number of vms";
+            error_msg = "You must specify a number of vms to run";
         }
 
         data["vm_count"] = vm_count;
@@ -325,7 +352,7 @@ function gather_domain_params_from_ui() {
     }
 
     if (error_msg != undefined) {
-        alert(error_msg);
+        phantom_alert(error_msg);
         return null;
     }
 
