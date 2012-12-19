@@ -86,11 +86,9 @@ def _get_all_domains_dashi(userobj):
     return_asgs = {}
     for a in asgs:
         engine_conf = a.get('config', {}).get('engine_conf', {})
-        engine_class = a.get('config', {}).get('general', {}).get('engine_class')
 
         ent = {}
         ent['name'] = a['name']
-        ent['de_name'] = g_engine_to_phantom_de_map.get(engine_class)
         ent['vm_size'] = engine_conf.get('minimum_vms')
 
         ent['lc_name'] = engine_conf.get('dtname')
@@ -103,6 +101,8 @@ def _get_all_domains_dashi(userobj):
         ent['sensor_scale_up_vms'] = engine_conf.get('scale_up_n_vms')
         ent['sensor_scale_down_threshold'] = engine_conf.get('scale_down_threshold')
         ent['sensor_scale_down_vms'] = engine_conf.get('scale_down_n_vms')
+        ent['sensor_scale_down_vms'] = engine_conf.get('scale_down_n_vms')
+        ent['de_name'] = engine_conf.get('phantom_de_name')
 
         return_asgs[a['name']] = ent
 
@@ -153,7 +153,7 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
 def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
     policy_name_key = 'PHANTOM_DEFINITION'
-    policy_name = 'sensor_engine'
+    policy_name = 'error_overflow_n_preserving'
     policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
 
     metric_key = 'metric'
@@ -222,9 +222,9 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
     if de_name == 'multicloud':
         policy_name_key = 'PHANTOM_DEFINITION'
         policy_name = 'error_overflow_n_preserving'
+        policy_variant_key = 'phantom_de_name'
+        policy_variant = de_name
         ordered_clouds_key = 'clouds'
-        n_preserve_key = 'n_preserve'
-        n_preserve = de_params.get('vm_count')
         monitor_sensors_key = 'monitor_sensors'
         monitor_sensors = de_params.get('monitor_sensors', '')
         sample_function_key =  'sample_function'
@@ -234,15 +234,15 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         sensor_type = 'opentsdb'
 
         policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+        policy_variant_tag = Tag(connection=phantom_con, key=policy_variant_key, value=policy_variant, resource_id=domain_name)
         clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
-        npreserve_tag = Tag(connection=phantom_con, key=n_preserve_key, value=n_preserve, resource_id=domain_name)
         monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
         sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
         sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
         tags.append(policy_tag)
+        tags.append(policy_variant_tag)
         tags.append(clouds_tag)
-        tags.append(npreserve_tag)
         tags.append(monitor_sensors_tag)
         tags.append(sample_function_tag)
         tags.append(sensor_type_tag)
@@ -251,6 +251,16 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         max_size = de_params.get('vm_count')
 
     elif de_name == 'sensor':
+
+        ordered_clouds_key = 'clouds'
+        policy_variant_key = 'phantom_de_name'
+        policy_variant = de_name
+
+        policy_variant_tag = Tag(connection=phantom_con, key=policy_variant_key, value=policy_variant, resource_id=domain_name)
+        clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
+
+        tags.append(policy_variant_tag)
+        tags.append(clouds_tag)
 
         min_size = de_params.get('sensor_minimum_vms')
         max_size = de_params.get('sensor_maximum_vms')
@@ -801,7 +811,6 @@ def phantom_domain_details(request_params, userobj):
 
     # TODO: this should come from the REST interface
     metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
-    g_general_log.info("PDA: metrics: %s" % metrics)
     instance_metrics = {}
     if metrics is not None:
         for instance in metrics.get('instances', []):
