@@ -22,7 +22,7 @@ function phantom_lc_buttons(enabled) {
         $("#phantom_lc_up").removeAttr("disabled", "disabled");
         $("#phantom_lc_down").removeAttr("disabled", "disabled");
         phantom_lc_change_image_type();
-        $('#phantom_lc_loading_image').hide();
+        $('#loading').hide();
     }
     else {
         $("#phantom_lc_name_select").attr("disabled", "disabled");
@@ -38,7 +38,7 @@ function phantom_lc_buttons(enabled) {
         $("#phantom_lc_remove").attr("disabled", "disabled");
         $("#phantom_lc_up").attr("disabled", "disabled");
         $("#phantom_lc_down").attr("disabled", "disabled");
-        $('#phantom_lc_loading_image').show();
+        $('#loading').show();
     }
 }
 
@@ -66,7 +66,7 @@ function phantom_lc_reload_success_func(obj) {
     }
     catch (err) {
         alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
-        $('#phantom_lc_loading_image').hide();
+        $('#loading').hide();
     }
 }
 
@@ -84,7 +84,7 @@ function phantom_lc_select_new_cloud() {
     catch(err)
     {
         alert("There was a problem on the page.  ".concat(err.message));
-        $('#phantom_lc_loading_image').hide();
+        $('#loading').hide();
     }
     phantom_lc_buttons(true);
 }

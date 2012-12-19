@@ -15,9 +15,18 @@
 {% endblock %}
 {% block bodytag %}onload="phantom_cloud_edit_load_page();"{% endblock %}
 {% block nimbus_body  %}
-<div class="" id="xstatus_bar_div">
-    <img src="/static/images/loading4.gif" id="phantom_cloud_edit_loading_image"/>
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
 </div>
+
 <div>
   <form action="." method="post" class="form-horizontal">{% csrf_token %}
     <div class="control-group" >

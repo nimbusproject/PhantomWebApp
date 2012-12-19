@@ -17,8 +17,16 @@
 {% block bodytag %}onload="phantom_lc_load();"{% endblock %}
 {% block nimbus_body  %}
 
-<div>
-  <img src="/static/images/loading4.gif" id="phantom_lc_loading_image"/>
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
 </div>
 
 <div id="phantom_lc_content" class="container-fluid inner-container">

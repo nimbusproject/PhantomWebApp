@@ -9,13 +9,13 @@ function phantom_cloud_edit_enable(enable) {
         $("#phantom_cloud_edit_add").removeAttr("disabled", "disabled");
         $("#phantom_cloud_edit_remove").removeAttr("disabled", "disabled");
         $('#phantom_cloud_edit_name').removeAttr("disabled", "disabled");
-        $('#phantom_cloud_edit_loading_image').hide();
+        $('#loading').hide();
     }
     else {
         $("#phantom_cloud_edit_add").attr("disabled", "disabled");
         $("#phantom_cloud_edit_remove").attr("disabled", "disabled");
         $("#phantom_cloud_edit_name").attr("disabled", "disabled");
-        $('#phantom_cloud_edit_loading_image').show();
+        $('#loading').show();
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
         $("#phantom_cloud_edit_keyname_list").empty();
