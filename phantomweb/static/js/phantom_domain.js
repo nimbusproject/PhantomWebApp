@@ -99,12 +99,14 @@ function phantom_domain_buttons(enabled) {
 
     if (enabled) {
         $("input, select").removeAttr("disabled");
-        $("#phantom_domain_button_add").removeAttr("disabled");
+        $("#phantom_domain_button_add").removeAttr("disabled")
+            .parent().removeClass("disabled");
         $("#loading").hide();
     }
     else {
         $("input, select").attr("disabled", true);
-        $("#phantom_domain_button_add").attr("disabled", true);
+        $("#phantom_domain_button_add").attr("disabled", true)
+            .parent().addClass("disabled");
         $("#loading").show();
     }
 }
