@@ -39,5 +39,5 @@ urlpatterns = patterns('',
     url(r'^phantom/api/domain/resize$', 'phantomweb.views.django_domain_resize'),
     url(r'^phantom/api/domain/details$', 'phantomweb.views.django_domain_details'),
 
-    url(r'^phantom/api/instance/termiante$', 'phantomweb.views.django_instance_terminate'),
+    url(r'^phantom/api/instance/terminate$', 'phantomweb.views.django_instance_terminate'),
 )

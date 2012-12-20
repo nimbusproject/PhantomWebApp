@@ -640,6 +640,8 @@ function phantom_domain_details_abort() {
 function phantom_domain_context_menu(e) {
     console.log("click: " + e.pageX + ", " + e.pageY);
     var obj = $("#phantom_domain_instance_context_menu");
+    var terminate = $("#context_terminate");
+    var replace = $("#context_replace");
 
     var o = {
         position: "absolute",
@@ -655,8 +657,19 @@ function phantom_domain_context_menu(e) {
             alert(err);
         }
     }
-    obj.unbind("click");
-    obj.click(nestedterminateClick);
+    terminate.unbind("click");
+    terminate.click(nestedterminateClick);
+
+    function nestedReplaceClick() {
+        try{
+            phantom_domain_instance_replace_click(e.data.param1, e.data.param2);
+        }
+        catch(err) {
+            alert(err);
+        }
+    }
+    replace.unbind("click");
+    replace.click(nestedReplaceClick);
 
     e.stopPropagation();
     obj.css(o);
@@ -666,10 +679,37 @@ function phantom_domain_context_menu(e) {
 
 function phantom_domain_instance_terminate_click(instanceid, cloudname) {
     //phantom/
-    var url = make_url('api/instance/termiante');
+    var url = make_url('api/instance/terminate');
 
     var obj = $("#phantom_domain_instance_context_menu");
     var msg = "Do you want to kill the VM instance ".concat(instanceid).concat("?");
+    var answer = confirm (msg);
+
+    if (!answer) {
+        return;
+    }
+
+    var success_func = function(obj){
+        phantom_domain_details_internal();
+    }
+
+    var error_func = function(obj, message) {
+        alert(message);
+        phantom_domain_buttons(true);
+    }
+
+    var data = {'instance': instanceid, "adjust": true};
+    phantom_domain_buttons(false);
+    console.log("terminating");
+    phantomAjaxPost(url, data, success_func, error_func);
+}
+
+function phantom_domain_instance_replace_click(instanceid, cloudname) {
+    //phantom/
+    var url = make_url('api/instance/terminate');
+
+    var obj = $("#phantom_domain_instance_context_menu");
+    var msg = "Do you want to kill and replace the VM instance ".concat(instanceid).concat("?");
     var answer = confirm (msg);
 
     if (!answer) {
