@@ -6,8 +6,11 @@ var g_domain_details_cache = {};
 var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud'};
 var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud'};
 var g_current_details_request = null;
+var g_current_details_timer = null;
+var g_selected_instance = null;
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
 var ALERT_FADE_TIME_IN_MS = 10000;
+var DETAILS_TIMER_MS = 5000;
 
 $(document).ready(function() {
 
@@ -74,13 +77,26 @@ $(document).ready(function() {
         phantom_domain_terminate_click();
         return false;
     });
+
+    $("#details_table_body").on('click', 'tr', function(event){
+        $(this).parent().children().removeClass("info");
+        var instance_id = $(this).children().first().text();
+        show_instance_details(instance_id);
+    });
+
+    $("#details_table_body").on('contextmenu', 'tr', function(event){
+        var instance_id = $(this).children().first().text();
+        var instance = get_instance(instance_id)
+        if (instance === null) {
+          return;
+        }
+
+        phantom_domain_context_menu(event, instance.instance_id, instance.cloud);
+        return false;
+    });
+
 });
 
-function phantom_alert(alert_text) {
-    var new_alert = '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>' + alert_text + '</div>'
-    $("#alert-container").append(new_alert);
-    remove_element_after_delay($("#alert-container .alert").last(), ALERT_FADE_TIME_IN_MS);
-}
 
 function remove_element_after_delay(element, milliseconds) {
     window.setTimeout(function() {
@@ -114,12 +130,12 @@ function phantom_domain_buttons(enabled) {
 function phantom_domain_details_buttons(enabled) {
 
     if (enabled) {
-        $('#loading_details').hide();
+        $('#phantom_details_loading_image').hide();
         $("#phantom_domain_details_filter_div > input, #phantom_domain_details_filter_div > select").removeAttr("disabled");
     }
     else {
         $("#phantom_domain_details_filter_div > input, #phantom_domain_details_filter_div > select").attr("disabled", true);
-        $('#loading_details').show();
+        $('#phantom_details_loading_image').show();
     }
 }
 
@@ -221,7 +237,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
     };
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         $('#loading').hide();
     }
 
@@ -235,7 +251,7 @@ function phantom_domain_load() {
         phantom_domain_load_internal();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -246,7 +262,6 @@ function phantom_domain_start_click_internal() {
     if (domain === null) {
         return;
     }
-    console.log(domain);
 
     var success_func = function(obj) {
         phantom_domain_load_internal(domain['name']);
@@ -259,7 +274,7 @@ function phantom_domain_start_click_internal() {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_domain_buttons(true);
     }
 
@@ -272,7 +287,7 @@ function phantom_domain_start_click() {
         phantom_domain_start_click_internal();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -375,7 +390,7 @@ function phantom_domain_resize_click_internal() {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_domain_buttons(true);
     }
 
@@ -388,7 +403,7 @@ function phantom_domain_resize_click() {
         phantom_domain_resize_click_internal();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -402,7 +417,7 @@ function phantom_domain_terminate_click_internal() {
         error_msg = "You must specify a domain name";
     }
     if (error_msg != undefined) {
-        alert(error_msg);
+        phantom_alert(error_msg);
         return;
     }
 
@@ -420,7 +435,7 @@ function phantom_domain_terminate_click_internal() {
     };
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_domain_buttons(true);
     };
 
@@ -433,12 +448,13 @@ function phantom_domain_terminate_click() {
         phantom_domain_terminate_click_internal();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
 function phantom_domain_select_domain_internal(domain_name, load_details) {
 
+    g_selected_instance = null;
     phantom_domain_details_abort();
     if (!domain_name) {
         return;
@@ -498,13 +514,15 @@ function phantom_domain_select_domain(domain, load_details) {
         phantom_domain_select_domain_internal(domain, load_details);
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
 function phantom_domain_deselect_domain() {
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
+    $("#details_table_body").empty();
+    $("#instance_table_body").empty();
     $("#phantom_domain_main_combined_pane_inner").hide();
     $("#phantom_domain_main_combined_pane_inner input[type='text']").val("");
     $("#phantom_domain_main_combined_pane_inner select").empty();
@@ -516,57 +534,136 @@ function phantom_domain_update_click() {
         phantom_domain_details_internal();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
 function phantom_domain_load_instances() {
 
     $("#phantom_domain_instance_details").empty();
+    $("#instance_table_body").empty();
+
+    var table_body = $("#details_table_body").empty();
+
     for(var i in g_domain_details) {
         var instance = g_domain_details[i];
 
-        var fields = new Array();
-        fields[0] = instance.lifecycle_state;
-        fields[1] = instance.cloud;
-        fields[2] = instance.health_status;
-        fields[3] = instance.hostname;
-        fields[4] = instance.image_id;
-        fields[5] = instance.instance_type;
-        fields[6] = instance.keyname;
-        var parsed_sensor_data = sensor_data_to_string(instance.sensor_data);
-        if (parsed_sensor_data !== "") {
-            fields[7] = sensor_data_to_string(instance.sensor_data);
-        }
-
         var filter = $("#phantom_domain_filter_list").val();
-        if (filter != "All") {
-            if(filter == "Healthy" && (fields[0].indexOf("RUNNING") > 0 || fields[0].indexOf("PENDING") > 0 || fields[0].indexOf("REQUESTING") > 0)) {
+        if (filter != "All VMs") {
+            if(filter == "Healthy" &&
+               (instance.lifecycle_state.indexOf("RUNNING") > 0 ||
+                instance.lifecycle_state.indexOf("PENDING") > 0 ||
+                instance.lifecycle_state.indexOf("REQUESTING") > 0)) {
             }
-            else if (fields[0].indexOf(filter) < 0) {
+            else if (instance.lifecycle_state.indexOf(filter) < 0) {
                 continue;
             }
         }
+        
+        var row = "<tr>" +
+        "<td class='instance_id'>" + instance.instance_id + "</td>" +
+        "<td><span class='label " +
+        label_class_from_lifecycle_state(instance.lifecycle_state)
+        + "'>" + human_lifecycle_state(instance.lifecycle_state) + "</td>"
+        "</tr>";
+        table_body.append(row);
 
-        var li = $("<li></li>");
-        $("#phantom_domain_instance_details").append(li);
-        var div = $('<div></div>').addClass('phantom_domain_instance_status_div');
-        var h4 = $('<h4></h4>').addClass('phantom_domain_instance_status_name');
-        h4.html(instance.instance_id);
-        var ul = $('<ul></ul>').addClass('phantom_domain_instance_status_details_list');
-        li.append(div);
-        div.append(h4);
-        div.append(ul);
-        li.attr("id", instance.instance_id);
-        li.click({param1: instance.instance_id, param2: instance.cloud}, phantom_domain_context_menu);
+        //TODO: bind this to terminate on right click
 
-        for(var j = 0; j < fields.length; j++) {
-            var subli = $('<li></li>').addClass('phantom_domain_instance_status_details_item');
-            subli.html(fields[j]);
-            ul.append(subli);
-        }
     }
 }
+
+function label_class_from_lifecycle_state(state) {
+    var state_code = state.split("-");
+    var int_state_code = parseInt(state_code[0], 10);
+
+    if (int_state_code < 600) {
+        return "label-warning";
+    }
+    else if (int_state_code === 600) {
+        return "label-success";
+    }
+    else if (int_state_code > 600) {
+        return "label-important";
+    }
+    else {
+        return "";
+    }
+}
+
+function human_lifecycle_state(state) {
+    var split_state = state.split("-");
+    if (split_state.length !== 2) {
+        return state;
+    }
+    else {
+        return split_state[1];
+    }
+}
+
+function get_instance(instance_id) {
+
+    var instance = null;
+    for(var i in g_domain_details) {
+        var inst = g_domain_details[i];
+        if (inst.instance_id === instance_id) {
+            instance = inst;
+            break;
+        }
+    }
+    return instance;
+}
+
+function show_instance_details(instance_id) {
+    function make_row(key, value) {
+      return "<tr><td><strong>" + key + ":</strong></td><td>" + value + "</td></tr>";
+    }
+
+    if (instance_id === null) {
+        return;
+    }
+
+    $("#details_table_body").children().removeClass("info");
+    var matched_row = $("#details_table_body tr td:contains('" + instance_id + "')")
+      .parent().addClass("info");
+
+    // If this instance isn't shown right now, we don't want to display it.
+    // This could happen when instances are filtered
+    if (matched_row.length === 0) {
+        return;
+    }
+
+    var table = $("#instance_table_body").empty();
+    var instance = get_instance(instance_id)
+    if (instance === null) {
+      return;
+    }
+
+    g_selected_instance = instance_id;
+
+    var data = make_row("Instance ID", instance.instance_id) +
+    make_row("Hostname", instance.hostname) +
+    make_row("State", instance.lifecycle_state) +
+    make_row("Cloud", instance.cloud) +
+    make_row("Image", instance.image_id) +
+    make_row("Instance Type", instance.instance_type) +
+    make_row("SSH Key", instance.keyname);
+
+    var sensor_data = instance.sensor_data;
+    for (var metric in sensor_data) {
+        for (var sensor_type in sensor_data[metric]) {
+            if (sensor_type === "Series") {
+                // Ignore series data because it is ugly :)
+                continue;
+            }
+
+            data += make_row(metric, sensor_data[metric][sensor_type]);
+        }
+    }
+
+    table.append(data);
+}
+
 
 function sensor_data_to_string(sensor_data) {
 
@@ -593,6 +690,7 @@ function phantom_domain_details_internal() {
     if (domain_name in g_domain_details_cache) {
         g_domain_details = g_domain_details_cache[domain_name];
         phantom_domain_load_instances();
+        show_instance_details(g_selected_instance);
     }
 
     var url = make_url("api/domain/details");
@@ -612,6 +710,8 @@ function phantom_domain_details_internal() {
         phantom_domain_load_instances();
         phantom_domain_buttons(true);
         phantom_domain_details_buttons(true);
+        show_instance_details(g_selected_instance);
+        phantom_start_details_timer();
     }
 
     var error_func = function(obj, message) {
@@ -621,6 +721,10 @@ function phantom_domain_details_internal() {
     }
 
     g_current_details_request =  phantomAjaxPost(url, data, success_func, error_func);
+}
+
+function phantom_start_details_timer() {
+    g_current_details_timer = window.setTimeout(phantom_domain_details_internal, DETAILS_TIMER_MS);
 }
 
 function phantom_domain_details_abort() {
@@ -633,12 +737,15 @@ function phantom_domain_details_abort() {
         }
         g_current_details_request = null;
     }
+    if (g_current_details_timer !== null) {
+        window.clearInterval(g_current_details_timer);
+        g_current_details_timer = null;
+    }
     phantom_domain_details_buttons(true);
 }
 
 
-function phantom_domain_context_menu(e) {
-    console.log("click: " + e.pageX + ", " + e.pageY);
+function phantom_domain_context_menu(e, instance_id, cloud) {
     var obj = $("#phantom_domain_instance_context_menu");
     var terminate = $("#context_terminate");
     var replace = $("#context_replace");
@@ -651,10 +758,10 @@ function phantom_domain_context_menu(e) {
 
     function nestedterminateClick() {
         try{
-            phantom_domain_instance_terminate_click(e.data.param1, e.data.param2);
+            phantom_domain_instance_terminate_click(instance_id, cloud);
         }
         catch(err) {
-            alert(err);
+            phantom_alert(err);
         }
     }
     terminate.unbind("click");
@@ -662,10 +769,10 @@ function phantom_domain_context_menu(e) {
 
     function nestedReplaceClick() {
         try{
-            phantom_domain_instance_replace_click(e.data.param1, e.data.param2);
+            phantom_domain_instance_replace_click(instance_id, cloud);
         }
         catch(err) {
-            alert(err);
+            phantom_alert(err);
         }
     }
     replace.unbind("click");
@@ -694,13 +801,12 @@ function phantom_domain_instance_terminate_click(instanceid, cloudname) {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_domain_buttons(true);
     }
 
     var data = {'instance': instanceid, "adjust": true};
     phantom_domain_buttons(false);
-    console.log("terminating");
     phantomAjaxPost(url, data, success_func, error_func);
 }
 
@@ -721,7 +827,7 @@ function phantom_domain_instance_replace_click(instanceid, cloudname) {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_domain_buttons(true);
     }
 

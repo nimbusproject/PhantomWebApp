@@ -1,3 +1,10 @@
+
+function phantom_alert(alert_text) {
+    var new_alert = '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>' + alert_text + '</div>'
+    $("#alert-container").append(new_alert);
+    remove_element_after_delay($("#alert-container .alert").last(), ALERT_FADE_TIME_IN_MS);
+}
+
 function make_url(p) {
     var base_url = document.location.href.concat("/");
 

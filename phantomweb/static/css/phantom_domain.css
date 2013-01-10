@@ -11,6 +11,10 @@
     }
 }
 
+#details_table {
+  background-color: #FCFCFC;
+}
+
 #phantom_instance_context_menu {
     display: none;
 }
@@ -26,8 +30,19 @@
 
 #loading_details
 {
+    height: 23px;
+}
+
+#phantom_details_loading_image {
     float: right;
     display: none;
+}
+
+#phantom_domain_filter_list {
+    height: 23px;
+    width: 105px;
+    font-size: 11px;
+    margin: 0;
 }
 
 #phantom_domain_content
@@ -239,9 +254,8 @@
 {
     color: #fffbef;
     display: inline-block;
-    padding: 8px;
+    padding: 6px;
     text-decoration: none;
-    width: 80%;
     text-align: center;
 }
 
