@@ -292,6 +292,7 @@ function phantom_lc_save_click_internal() {
         var instance_type_key = site_name.concat(".").concat("instance_type");
         var max_vm_key = site_name.concat(".").concat("max_vm");
         var common_key = site_name.concat(".").concat("common");
+        var user_data_key = site_name.concat(".").concat("user_data");
 
         var ndx = i + 1;
 
@@ -301,6 +302,7 @@ function phantom_lc_save_click_internal() {
         data[instance_type_key] = cloud_data["instance_type"];
         data[max_vm_key] = cloud_data["max_vm"];
         data[common_key] = cloud_data["common"];
+        data[user_data_key] = cloud_data["user_data"];
     });
 
     var success_func = function(obj) {

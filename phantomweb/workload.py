@@ -472,6 +472,7 @@ def phantom_lc_save(request_params, userobj):
         _parse_param_name("max_vm", param_name, request_params, lc_dict)
         _parse_param_name("common", param_name, request_params, lc_dict)
         _parse_param_name("rank", param_name, request_params, lc_dict)
+        _parse_param_name("user_data", param_name, request_params, lc_dict)
 
     lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object:
@@ -511,7 +512,11 @@ def phantom_lc_save(request_params, userobj):
             except Exception, boto_del_ex:
                 # delete in case this is an update
                 pass
-            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con, name=lc_conf_name, image_id=entry['image_id'], key_name=site_ent.keyname, security_groups=['default'], instance_type=entry['instance_type'])
+            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con,
+                    name=lc_conf_name, image_id=entry['image_id'],
+                    key_name=site_ent.keyname, security_groups=['default'],
+                    instance_type=entry['instance_type'],
+                    user_data=entry['user_data'])
             phantom_con.create_launch_configuration(lc)
 
             is_common = entry['common'].lower() == "true"
