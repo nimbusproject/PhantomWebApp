@@ -425,6 +425,7 @@ function phantom_domain_terminate_click_internal() {
 
     var success_func = function(obj) {
         delete g_domain_data[domain_name];
+        delete g_domain_details_cache[domain_name];
         $("#phantom_domain_name_label").text("");
         $("#phantom_domain_lc_choice").val("");
         $("#phantom_domain_size_input").val("");
