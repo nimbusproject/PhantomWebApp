@@ -1,8 +1,12 @@
 
-#phantom_lc_content
-{
-    width: 800px;
-    height: 500px;
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+@media (min-width: 768px) {
+    .lc-well {
+        min-height: 400px;
+    }
 }
 
 #phantom_lc_heading_div

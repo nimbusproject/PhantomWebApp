@@ -1,5 +1,21 @@
 var ALERT_FADE_TIME_IN_MS = 10000;
 
+// Shim for IE
+if(!Array.prototype.indexOf) {
+    Array.prototype.indexOf = function(needle) {
+        for(var i = 0; i < this.length; i++) {
+            if(this[i] === needle) {
+                return i;
+            }
+        }
+        return -1;
+    };
+}
+
+String.prototype.toProperCase = function () {
+    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+};
+
 function remove_element_after_delay(element, milliseconds) {
     window.setTimeout(function() {
         try {

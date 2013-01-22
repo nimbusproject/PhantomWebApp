@@ -491,7 +491,7 @@ def phantom_lc_save(request_params, userobj):
                 raise PhantomWebException("The site %s is not configured." % (site_name))
             site_ent = sites_dict[site_name]
             if not site_ent.keyname:
-                raise PhantomWebException("There is no key configured for the site %s.  Please see the Edit Cloud page." % (site_name))
+                raise PhantomWebException("There is no key configured for the site %s.  Please see your Profile." % (site_name))
 
             lc_conf_name = "%s@%s" % (lc_name, site_name)
             entry = lc_dict[site_name]
@@ -522,16 +522,15 @@ def phantom_lc_save(request_params, userobj):
             is_common = entry['common'].lower() == "true"
             host_max_db_a = HostMaxPairDB.objects.filter(cloud_name=site_name, launch_config=lc_db_object)
             if host_max_db_a:
-                host_max_db = host_max_db_a[0]
+                host_max_db_a.update(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
             else:
                 host_max_db = HostMaxPairDB.objects.create(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
-            host_max_db.save()
+                host_max_db.save()
     except Exception, boto_ex:
         g_general_log.exception("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
         raise PhantomWebException(str(boto_ex))
 
     response_dict = {}
-    
     return response_dict
 
 @PhantomWebDecorator

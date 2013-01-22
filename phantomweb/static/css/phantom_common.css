@@ -11,6 +11,15 @@ body {
     }
 }
 
+.table-white {
+  background-color: #FCFCFC;
+}
+
+.magic-underline {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+
 a.myTagRemover {
     color: #444;
 }
@@ -36,6 +45,14 @@ span.myTag {
 body div.container-fluid {
     padding-left: 5px;
     padding-right: 5px;
+}
+
+.progress-phantom {
+    height: 23px;
+}
+
+.move-icon:hover {
+    cursor: ns-resize;
 }
 
 #nimbus_logo {

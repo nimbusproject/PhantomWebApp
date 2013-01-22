@@ -1,5 +1,5 @@
 {% extends "../templates/base.html" %}
-{% block title %}Phantom Cloud Configurations{% endblock %}
+{% block title %}Profile - Phantom{% endblock %}
 {% block headcss %}
     <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_profile.css' />
 {% endblock %}
@@ -44,7 +44,7 @@
         <div class="well well-small">
           <form action="." method="post" class="form-horizontal">{% csrf_token %}
             <fieldset>
-              <legend>Cloud Credentials</legend>
+              <h5 class="magic-underline">Cloud Credentials</h5>
               <div class="control-group" >
                 <label for="phantom_cloud_edit_name" class="control-label">Cloud:</label>
                 <div class="controls">
@@ -92,7 +92,7 @@
         <div class="well well-small">
           <form id="password-form" class="form-horizontal">
             <fieldset>
-              <legend>Change Password</legend>
+              <h5 class="magic-underline">Change Password</h5>
               <div class="control-group" >
                 <label for="Old Password" class="control-label">Old Password:</label>
                 <div class="controls">

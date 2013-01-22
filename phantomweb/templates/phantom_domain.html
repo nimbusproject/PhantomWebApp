@@ -1,5 +1,5 @@
 {% extends "../templates/base.html" %}
-{% block title %}Phantom Domains{% endblock %}
+{% block title %}Domains - Phantom{% endblock %}
 {% block headcss %}
     <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_domain.css' />
 {% endblock %}
@@ -31,7 +31,7 @@
 <div class="container-fluid inner-container">
   <div class="row-fluid">
     <div class="span2">
-      <div id="loading" class="progress progress-striped active">
+      <div id="loading" class="progress progress-striped progress-phantom active">
         <div class="bar" style="width: 100%"></div>
       </div>
     </div>
@@ -56,7 +56,7 @@
     <div class="span5">
       <div id="xphantom_domain_main_combined_pane" class="well well-small domain-well">
         <div id="phantom_domain_main_combined_pane_inner">
-          <h5 class="phantom_area_header">Configuration for <span id="phantom_domain_name_label"></span></h5>
+          <h5 class="phantom_area_header magic-underline">Configuration for <span id="phantom_domain_name_label"></span></h5>
 
           <form class="form-horizontal">                           
 
@@ -161,7 +161,7 @@
           </select>
           <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
         </div>
-        <table class="table table-bordered table-hover" id="details_table">
+        <table class="table table-bordered table-hover table-white" id="details_table">
           <thead>
             <tr>
               <th>Instance ID</th>

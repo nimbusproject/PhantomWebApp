@@ -1,49 +1,121 @@
 var g_cloud_map = {};
 var g_arranged_cloud_values = {};
 var g_lc_info = {};
+var g_unsaved_lcs = [];
 var g_blank_name = "<new name>";
+var g_selected_lc = null;
+var g_selected_cloud = null;
 
 $(document).ready(function() {
     $("#nav-launchconfig").addClass("active");
+
+    $("#lc-nav").on("click", "a.launch_config", function() {
+        var launch_config = $(this).text();
+        phantom_lc_change_lc_internal(launch_config);
+        return false;
+    });
+
+    $("#cloud_table_body").on('click', 'tr', function(event){
+        $(this).parent().children().removeClass("info");
+        var cloud_name = $(this).children().first().text();
+        phantom_lc_order_selected_click(cloud_name);
+    });
+
+    $("#cloud_table_body").sortable({
+        helper: function(e, tr)
+          {
+            var $originals = tr.children();
+            var $helper = tr.clone();
+            $helper.children().each(function(index)
+            {
+              // Set helper cell sizes to match the original sizes
+              $(this).width($originals.eq(index).width())
+            });
+            return $helper;
+          },
+    });
+
+    $("#phantom_lc_add").click(function() {
+        phantom_lc_enable_click();
+        return false;
+    });
+
+    $("#phantom_lc_disable_cloud").click(function() {
+        phantom_lc_disable_click();
+        return false;
+    });
+
+    $("#phantom_lc_info_area input, #phantom_lc_info_area select, #phantom_lc_info_area textbox").change(function() {
+        if (g_arranged_cloud_values[g_selected_cloud]) {
+            phantom_lc_enable_click();
+        }
+        return false;
+    });
+
+    $("#phantom_lc_info_area input, #phantom_lc_info_area textbox").keyup(function() {
+        if (g_arranged_cloud_values[g_selected_cloud]) {
+            phantom_lc_enable_click();
+        }
+        return false;
+    });
+
+    $("#phantom_lc_max_vm").keydown(function(event) {
+        // Allow: backspace, delete, tab, escape, and enter
+        if ( event.keyCode == 46 || event.keyCode == 8 || event.keyCode == 9 ||
+             event.keyCode == 27 || event.keyCode == 13 || event.keyCode == 189 ||
+             // Allow: Ctrl+A
+            (event.keyCode == 65 && event.ctrlKey === true) ||
+             // Allow: home, end, left, right
+            (event.keyCode >= 35 && event.keyCode <= 39)) {
+                 // let it happen, don't do anything
+                 return;
+        }
+        else {
+            // Ensure that it is a number and stop the keypress
+            if (event.shiftKey || (event.keyCode < 48 || event.keyCode > 57) && (event.keyCode < 96 || event.keyCode > 105 )) {
+                event.preventDefault();
+            }
+        }
+    });
+
+    $("#phantom_lc_button_add").click(function() {
+        phantom_lc_add_lc_click();
+        return false;
+    });
+
+    $("#phantom_lc_delete").click(function() {
+        phantom_lc_delete_click();
+        return false;
+    });
+
+    $("#phantom_lc_save").click(function() {
+        phantom_lc_save_click();
+        return false;
+    });
+
+    phantom_lc_load();
 });
 
 function phantom_lc_buttons(enabled) {
 
     if (enabled) {
-        $("#phantom_lc_name_select").removeAttr("disabled", "disabled");
-        $("#phantom_lc_delete").removeAttr("disabled", "disabled");
-        $("#phantom_lc_save").removeAttr("disabled", "disabled");
-        $("#phantom_lc_cloud").removeAttr("disabled", "disabled");
-        $("#phantom_lc_max_vm").removeAttr("disabled", "disabled");
-        $("#phantom_lc_instance").removeAttr("disabled", "disabled");
-        $("#phantom_lc_userdata").removeAttr("disabled", "disabled");
-        $("#phantom_lc_add").removeAttr("disabled", "disabled");
-        $("#phantom_lc_remove").removeAttr("disabled", "disabled");
-        $("#phantom_lc_up").removeAttr("disabled", "disabled");
-        $("#phantom_lc_down").removeAttr("disabled", "disabled");
+        $("button, input, select").removeAttr("disabled");
+        $("#phantom_lc_button_add").removeAttr("disabled")
+            .parent().removeClass("disabled");
         phantom_lc_change_image_type();
         $('#loading').hide();
     }
     else {
-        $("#phantom_lc_name_select").attr("disabled", "disabled");
-        $("#phantom_lc_delete").attr("disabled", "disabled");
-        $("#phantom_lc_save").attr("disabled", "disabled");
-        $("#phantom_lc_cloud").attr("disabled", "disabled");
-        $("#phantom_lc_max_vm").attr("disabled", "disabled");
-        $("#phantom_lc_instance").attr("disabled", "disabled");
-        $("#phantom_lc_common_image_input").attr("disabled", "disabled");
-        $("#phantom_lc_user_images_choices").attr("disabled", "disabled");
-        $("#phantom_lc_userdata").attr("disabled", "disabled");
-        $("#phantom_lc_add").attr("disabled", "disabled");
-        $("#phantom_lc_remove").attr("disabled", "disabled");
-        $("#phantom_lc_up").attr("disabled", "disabled");
-        $("#phantom_lc_down").attr("disabled", "disabled");
+        $("button, input, select").attr("disabled", true);
+        $("#phantom_lc_button_add").attr("disabled", true)
+            .parent().addClass("disabled");
         $('#loading').show();
     }
 }
 
 function phantom_lc_reload_success_func(obj) {
     try {
+        $("#alert-container").empty();
         $("#phantom_lc_name_select").empty();
         $("#phantom_lc_cloud").empty();
         g_cloud_map = obj.cloud_info;
@@ -51,13 +123,13 @@ function phantom_lc_reload_success_func(obj) {
 
         phantom_lc_load_lc_names();
         phantom_lc_load_cloud_names();
-        phantom_lc_change_lc_internal();
-        var cloud_name = $("#phantom_lc_cloud").val();
+        //phantom_lc_change_lc_internal();
+        var cloud_name = g_selected_cloud;
         phantom_lc_select_new_cloud_internal(cloud_name);
         phantom_lc_change_image_type();
 
         var lc_name_from_saved = $("#phantom_lc_name_input").val();
-        if (lc_name_from_saved != "" && lc_name_from_saved != undefined && lc_name_from_saved != g_blank_name) {
+        if (lc_name_from_saved) {
             // if it was a saved name load up its value
             $("#phantom_lc_name_select").val(lc_name_from_saved);
         }
@@ -65,7 +137,7 @@ function phantom_lc_reload_success_func(obj) {
         phantom_lc_buttons(true);
     }
     catch (err) {
-        alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
+        phantom_alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
         $('#loading').hide();
     }
 }
@@ -73,6 +145,20 @@ function phantom_lc_reload_success_func(obj) {
 function phantom_lc_load_error_func(obj, message) {
     phantom_lc_buttons(true);
     alert(message);
+}
+
+function phantom_lc_add_lc_click() {
+
+    var new_lc_name = prompt("Enter a new launch config name:");
+    if (new_lc_name === null) {
+        return false;
+    }
+
+    g_unsaved_lcs.push(new_lc_name);
+    g_lc_info[new_lc_name] = {};
+    g_arranged_cloud_values[new_lc_name] = {};
+    g_selected_lc = new_lc_name;
+    phantom_lc_load_lc_names();
 }
 
 function phantom_lc_select_new_cloud() {
@@ -109,6 +195,7 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
     if (cloud_data.status != 0) {
         return;
     }
+    $("#phantom_lc_max_vm").val("");
     $("#phantom_lc_instance").empty();
     for (instance in cloud_data.instances) {
         var i = cloud_data.instances[instance];
@@ -131,7 +218,7 @@ function phantom_lc_load_cloud_names() {
     for(var site in g_cloud_map) {
         var cloud_data = g_cloud_map[site];
         if (cloud_data.status != 0) {
-            alert("There was an error communicating with ".concat(site).concat(". You may still use the remaining clouds. Refresh later when the cloud is available."))        }
+            phantom_alert("There was an error communicating with ".concat(site).concat(". You may still use the remaining clouds. Refresh later when the cloud is available."))        }
         else {
             var new_opt = $('<option>', {'name': site, value: site, text: site});
             $("#phantom_lc_cloud").append(new_opt);
@@ -142,19 +229,51 @@ function phantom_lc_load_cloud_names() {
 function phantom_lc_load_lc_names() {
     $("#phantom_lc_name_input").val("");
 
-    var new_opt = $('<option>', {'name': g_blank_name, value: g_blank_name, text: g_blank_name});
-    $("#phantom_lc_name_select").append(new_opt);
+    $("#lc-header").nextAll().remove();
 
     for (var lc_name in  g_lc_info) {
         var lc = g_lc_info[lc_name];
-        var rank = lc["rank"];
-        var new_opt = $('<option>', {'name': lc_name, value: lc_name, text: lc_name});
-        $("#phantom_lc_name_select").append(new_opt);
+        var new_lc = '<li><a href="#" class="launch_config" id="lc-' + lc_name + '">' + lc_name + '</a></li>';
+        $("#lc-nav").append(new_lc);
     }
+    phantom_lc_change_lc_internal(g_selected_lc);
 }
 
-function phantom_lc_change_lc_internal() {
-    var lc_name =  $("#phantom_lc_name_select").val();
+function make_cloud_table_row(site, status) {
+
+    if (status === "Enabled") {
+        status = '<span class="label label-success">' + status + '</span>';
+    }
+    else if (status === "Disabled") {
+        status = '<span class="label label-warning">' + status + '</span>';
+    }
+    else {
+        status = '<span class="label">' + status + '</span>';
+    }
+
+    var row = "<tr id='cloud-row-" + site + "'>" +
+      "<td class='cloud-data-site'>" + site + "</td>" +
+      "<td>" + status + "<i class='icon-align-justify move-icon pull-right'></i></td>" +
+      "</tr>";
+    return row;
+}
+
+function phantom_lc_change_lc_internal(lc_name) {
+
+    if (!lc_name) {
+        return;
+    }
+
+    g_selected_lc = lc_name;
+    g_selected_cloud = null;
+
+    $("#launch_config_options_head").text(lc_name + " Launch Configuration");
+
+    $("a.launch_config").parent().removeClass("active");
+    $("a.launch_config:contains('" + lc_name + "')").parent().addClass("active");
+
+    $("#cloud_options_name").text("cloud");
+    $("#cloud_table_body").empty();
 
     if (lc_name == g_blank_name) {
         // set to blank values
@@ -181,6 +300,25 @@ function phantom_lc_change_lc_internal() {
         ordered[ndx - 1] = site;
     }
 
+    var table_body = $("#cloud_table_body");
+
+    for(var idx in ordered) {
+        var site = ordered[idx];
+        var row = make_cloud_table_row(site, "Enabled");
+        table_body.append(row);
+    }
+
+
+    for(var site in g_cloud_map) {
+        if (ordered.indexOf(site) > -1) {
+            continue;
+        }
+        var row = make_cloud_table_row(site, "Disabled");
+        table_body.append(row);
+    }
+
+
+
     for(var ndx in ordered) {
         var site = ordered[ndx];
         var new_opt = $('<option>', {'name': site, value: site, text: site});
@@ -188,12 +326,12 @@ function phantom_lc_change_lc_internal() {
     }
 }
 
-function phantom_lc_change_lc_click() {
+function phantom_lc_change_lc_click(lc_name) {
     try {
-        phantom_lc_change_lc_internal();
+        phantom_lc_change_lc_internal(lc_name);
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -201,6 +339,7 @@ function phantom_lc_load_internal() {
     var url = make_url('api/launchconfig/load')
     phantom_lc_buttons(false);
     phantomAjaxPost(url, {}, phantom_lc_reload_success_func, phantom_lc_load_error_func);
+    phantom_info("Loading Launch Configurations");
 }
 
 function phantom_lc_load() {
@@ -212,8 +351,9 @@ function phantom_lc_load() {
     }
 }
 
-function phantom_lc_add_click() {
-    var cloud_name = $("#phantom_lc_cloud").val().trim();
+function phantom_lc_enable_click() {
+
+    var cloud_name = g_selected_cloud;
     var max_vm = $("#phantom_lc_max_vm").val().trim();
     var instance_type = $("#phantom_lc_instance").val().trim();
 
@@ -228,24 +368,24 @@ function phantom_lc_add_click() {
         common = false;
     }
 
-    if (cloud_name == undefined || cloud_name == "") {
-        alert("You must select a cloud.");
+    if (!cloud_name) {
+        phantom_alert("You must select a cloud.");
         return;
     }
-    if (max_vm == undefined || max_vm == "") {
-        alert("You must select a maximum number of VMs for this cloud.");
+    if (!max_vm) {
+        phantom_alert("You must select a maximum number of VMs for this cloud.");
         return;
     }
-    if (image_id == undefined || image_id == "") {
-        alert("You must select a image.");
+    if (!image_id) {
+        phantom_alert("You must select an image.");
         return;
     }
-    if (instance_type == undefined || instance_type == "") {
-        alert("You must select an instance type.");
+    if (!instance_type) {
+        phantom_alert("You must select an instance type.");
         return;
     }
     if (max_vm < -1 || max_vm > 32000) {
-        alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
+        phantom_alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
     }
 
@@ -260,31 +400,47 @@ function phantom_lc_add_click() {
 
     g_arranged_cloud_values[cloud_name] = entry;
 
-    $("#phantom_lc_order option[value='".concat(cloud_name).concat("']")).remove();
-
-    var new_opt = $('<option>', {'name': cloud_name, value: cloud_name, text: cloud_name});
-    $("#phantom_lc_order").append(new_opt);
+    var new_row = make_cloud_table_row(cloud_name, "Enabled");
+    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
+      .parent().replaceWith(new_row);
+    phantom_lc_order_selected_click(cloud_name);
 }
 
-function phantom_lc_save_click_internal() {
-    var lc_name = $("#phantom_lc_name_input").val();
+function phantom_lc_disable_click() {
 
-    var err_msg = undefined;
-    if (lc_name == undefined || lc_name == "") {
+    var cloud_name = g_selected_cloud;
+    delete g_arranged_cloud_values[cloud_name];
+
+    var new_row = make_cloud_table_row(cloud_name, "Disabled");
+    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
+      .parent().replaceWith(new_row);
+    phantom_lc_order_selected_click(cloud_name);
+}
+
+
+function phantom_lc_save_click_internal() {
+    var lc_name = g_selected_lc;
+
+    var err_msg = null;
+    if (!lc_name) {
         err_msg = "You must select a launch configuration name."
     }
 
-    if (err_msg != undefined) {
-        alert(err_msg);
+    if (err_msg) {
+        phantom_alert(err_msg);
         return;
     }
 
     var data = {'name': lc_name};
 
-    $('#phantom_lc_order option').each(function(i, option) {
+    $("#cloud_table_body td.cloud-data-site").each(function(i) {
 
-        var site_name = option.value;
+        var site_name = $(this).text();
         var cloud_data = g_arranged_cloud_values[site_name];
+
+        if (!cloud_data) {
+            return true; //each's equivalent of continue;
+        }
 
         var rank_key = site_name.concat(".").concat("rank");
         var cloud_key = site_name.concat(".").concat("cloud");
@@ -306,16 +462,22 @@ function phantom_lc_save_click_internal() {
     });
 
     var success_func = function(obj) {
-        phantom_lc_load_internal();
+        $("#alert-container").empty();
+        var unsaved_idx = g_unsaved_lcs.indexOf(lc_name);
+        if (unsaved_idx > -1) {
+            g_unsaved_lcs.splice(unsaved_idx, 1);
+        }
+        phantom_lc_buttons(true);
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_lc_buttons(true);
     }
 
     var url = make_url("api/launchconfig/save");
     phantomAjaxPost(url, data, success_func, error_func);
+    phantom_info("Saving " + lc_name + " launch configuration");
     phantom_lc_buttons(false);
 }
 
@@ -328,16 +490,32 @@ function phantom_lc_save_click() {
     }
 }
 
+function reset_cloud_and_options() {
+    $("#cloud_table_body").empty();
+    $("#phantom_lc_instance").empty();
+    $("#phantom_lc_max_vm").val("");
+    $("#phantom_lc_userdata").val("");
+    $("#phantom_lc_common_image_input").val("");
+    $("#phantom_lc_instance").empty();
+    $("#phantom_lc_user_images_choices").empty();
+    $("#launch_config_options_head").text("Launch Configuration");
+    $("#cloud_options_name").text("Cloud");
+}
+
 function phantom_lc_delete_internal(lc_name) {
 
     var success_func = function(obj) {
-        $("#phantom_lc_name_input").val("");
-        phantom_lc_load_internal();
+        g_selected_lc = null;
+        g_selected_cloud = null;
+        $("a.launch_config:contains('" + lc_name + "')").parent().remove();
+        reset_cloud_and_options();
+        phantom_lc_buttons(true);
+        //phantom_lc_load_internal();
     }
 
     var error_func = function(obj, message) {
         phantom_lc_buttons(true);
-        alert(message);
+        phantom_alert(message);
     }
 
     var url = make_url("api/launchconfig/delete");
@@ -345,14 +523,24 @@ function phantom_lc_delete_internal(lc_name) {
 
     $("#phantom_lc_name_select").empty();
     phantom_lc_buttons(false);
+
+    // If lc hasn't been saved yet
+    var unsaved_idx = g_unsaved_lcs.indexOf(lc_name);
+    if (unsaved_idx > -1) {
+        g_unsaved_lcs.splice(unsaved_idx, 1);
+        success_func();
+        return;
+    }
+
+    phantom_info("Deleting " + lc_name + " launch configuration");
     phantomAjaxPost(url, data, success_func, error_func);
 }
 
 function phantom_lc_delete_click() {
 
-    var lc_name = $("#phantom_lc_name_select").val();
-    if (lc_name == undefined || lc_name == "" || lc_name == g_blank_name) {
-        alert("You must select an existing launch configuration name to delete.")
+    var lc_name = g_selected_lc;
+    if (!lc_name) {
+        phantom_alert("You must select an existing launch configuration name to delete.")
         return;
     }
 
@@ -370,45 +558,51 @@ function phantom_lc_delete_click() {
     }
 }
 
-function phantom_lc_remove_click() {
-    var cloud_name = $("#phantom_lc_order").val();
-    $("#phantom_lc_order option:selected").remove();
-    delete g_arranged_cloud_values[cloud_name];
-}
+function phantom_lc_order_selected_click(cloud_name) {
 
-function phantom_lc_up_click() {
-    $('#phantom_lc_order option:selected').each(function(){
-        $(this).insertBefore($(this).prev()) });
-}
+    g_selected_cloud = cloud_name;
 
-function phantom_lc_down_click() {
-    $('#phantom_lc_order option:selected').each(function(){
-            $(this).insertAfter($(this).next()); });
-}
+    $("#cloud_table_body").children().removeClass("info");
+    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
+      .parent().addClass("info");
 
-function phantom_lc_order_selected_click() {
+    if (cloud_name.toLowerCase() === "ec2") {
+        $("#cloud_options_name").text(cloud_name.toUpperCase());
+    }
+    else {
+        $("#cloud_options_name").text(cloud_name.toProperCase());
+    }
+
     try {
-        var cloud_name = $("#phantom_lc_order").val();
         var cloud_val_dict = g_arranged_cloud_values[cloud_name];
+        if (cloud_val_dict) {
 
-        $("#phantom_lc_cloud").val(cloud_val_dict['cloud']);
-        phantom_lc_select_new_cloud_internal(cloud_val_dict['cloud']);
+            $("#phantom_lc_cloud").val(cloud_val_dict['cloud']);
+            phantom_lc_select_new_cloud_internal(cloud_val_dict['cloud']);
 
-        $("#phantom_lc_max_vm").val(cloud_val_dict['max_vm']);
-        $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
-        $("#phantom_lc_userdata").val(cloud_val_dict['user_data']);
+            $("#phantom_lc_max_vm").val(cloud_val_dict['max_vm']);
+            $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
+            $("#phantom_lc_userdata").val(cloud_val_dict['user_data']);
 
-        if (cloud_val_dict['common']) {
-            $("#phantom_lc_common_image_input").val(cloud_val_dict['image_id']);
-            $("#phantom_lc_common_choice_checked").attr('checked',true);
+            if (cloud_val_dict['common']) {
+                $("#phantom_lc_common_image_input").val(cloud_val_dict['image_id']);
+                $("#phantom_lc_common_choice_checked").attr('checked',true);
+            }
+            else {
+                $("#phantom_lc_user_images_choices").val(cloud_val_dict['image_id']);
+                $("#phantom_lc_user_choice_checked").attr('checked',true);
+            }
+            phantom_lc_change_image_type();
+            $("#cloud-disable-buttons").show();
+            $("#cloud-enable-buttons").hide();
         }
         else {
-            $("#phantom_lc_user_images_choices").val(cloud_val_dict['image_id']);
-            $("#phantom_lc_user_choice_checked").attr('checked',true);
+            phantom_lc_select_new_cloud_internal(cloud_name);
+            $("#cloud-disable-buttons").hide();
+            $("#cloud-enable-buttons").show();
         }
-        phantom_lc_change_image_type();
     }
     catch (err) {
-        alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
+        phantom_alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
     }
 }

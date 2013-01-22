@@ -11,25 +11,15 @@
     }
 }
 
-#details_table {
-  background-color: #FCFCFC;
-}
-
 #phantom_instance_context_menu {
     display: none;
-}
-
-#loading
-{
-    height: 23px;
 }
 
 #phantom_domain_loading_image {
     display: none;
 }
 
-#loading_details
-{
+#loading_details {
     height: 23px;
 }
 
