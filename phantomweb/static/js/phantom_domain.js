@@ -9,7 +9,6 @@ var g_current_details_request = null;
 var g_current_details_timer = null;
 var g_selected_instance = null;
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
-var ALERT_FADE_TIME_IN_MS = 10000;
 var DETAILS_TIMER_MS = 5000;
 
 $(document).ready(function() {
@@ -97,19 +96,6 @@ $(document).ready(function() {
 
 });
 
-
-function remove_element_after_delay(element, milliseconds) {
-    window.setTimeout(function() {
-        try {
-            element.fadeOut(200, function() {
-                $(this).remove();
-            });
-        }
-        catch(e) {
-            console.log(e);
-        }
-    }, milliseconds);
-}
 
 function phantom_domain_buttons(enabled) {
 

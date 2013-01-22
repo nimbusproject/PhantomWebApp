@@ -392,7 +392,7 @@ def phantom_sites_load(request_params, userobj):
         except Exception, boto_ex:
             g_general_log.error("Error connecting to the service %s" % (str(boto_ex)))
             ci_dict['keyname_list'] = []
-            ci_dict['status_msg'] = "Error communication with the specific cloud %s.  Please check your credentials." % (site_name)
+            ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
             ci_dict['status'] = 1
 
         out_info[site_name] = ci_dict

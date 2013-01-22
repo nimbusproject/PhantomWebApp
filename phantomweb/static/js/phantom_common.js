@@ -1,8 +1,27 @@
+var ALERT_FADE_TIME_IN_MS = 10000;
 
-function phantom_alert(alert_text) {
-    var new_alert = '<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>' + alert_text + '</div>'
+function remove_element_after_delay(element, milliseconds) {
+    window.setTimeout(function() {
+        try {
+            element.fadeOut(200, function() {
+                $(this).remove();
+            });
+        }
+        catch(e) {
+            console.log(e);
+        }
+    }, milliseconds);
+}
+
+function phantom_info(message_text, alert_type) {
+    alert_type = typeof alert_type !== 'undefined' ? alert_type : "alert-info";
+    var new_alert = '<div class="alert ' + alert_type + '"><button type="button" class="close" data-dismiss="alert">&times;</button>' + message_text + '</div>'
     $("#alert-container").append(new_alert);
     remove_element_after_delay($("#alert-container .alert").last(), ALERT_FADE_TIME_IN_MS);
+}
+
+function phantom_alert(alert_text) {
+    phantom_info(alert_text, "alert-error");
 }
 
 function make_url(p) {
@@ -86,9 +105,14 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
 
     var l_error_func = function(request, status, error)  {
 
+        if (request.responseText) {
+            var error_msg = request.responseText;
+        }
+        else {
             var error_msg = "Error communicating with the service ".concat(request.statusText);
-            error_func(url, error_msg);
-        };
+        }
+        error_func(url, error_msg);
+    };
 
     $.ajaxSetup({ cache: false });
     var xhr = $.ajax({
