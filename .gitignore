@@ -1,3 +1,5 @@
 phantomweb/settings.py
 *.pyc
 *.egg-info
+*.swp
+*.log
