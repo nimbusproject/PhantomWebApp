@@ -174,15 +174,6 @@ def django_lc_save(request):
 #
 #  manage cloud functions
 #
-@LogEntryDecorator
-@login_required
-def django_sites_html(request):
-    response_dict = {}
-    response_dict.update(csrf(request))
-    t = loader.get_template('../templates/cloudedit.html')
-    c = Context(response_dict)
-
-    return HttpResponse(t.render(c))
 
 @LogEntryDecorator
 @login_required
