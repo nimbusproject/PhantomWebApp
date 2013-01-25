@@ -5,6 +5,7 @@
 .inner-container {
     padding: 0;
 }
+
 @media (min-width: 768px) {
     .domain-well {
         min-height: 400px;
@@ -26,6 +27,11 @@
 #phantom_details_loading_image {
     float: right;
     display: none;
+}
+
+#details_table_container {
+    max-height: 180px;
+    overflow-y: auto;
 }
 
 #phantom_domain_filter_list {
