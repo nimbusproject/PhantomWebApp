@@ -21,13 +21,13 @@ urlpatterns = patterns('',
     url(r'^accounts/login/$', 'django.contrib.auth.views.login'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout'),
 
-    url(r'^phantom/sites$', 'phantomweb.views.django_sites_html'),
     url(r'^phantom/profile$', 'phantomweb.views.django_profile_html'),
     url(r'^phantom/api/sites/load$', 'phantomweb.views.django_sites_load'),
     url(r'^phantom/api/sites/delete$', 'phantomweb.views.django_sites_delete'),
     url(r'^phantom/api/sites/add$', 'phantomweb.views.django_sites_add'),
 
     url(r'^phantom$', 'phantomweb.views.django_phantom_html'),
+    url(r'^$', 'phantomweb.views.django_phantom_html'),
 
     url(r'^phantom/launchconfig$', 'phantomweb.views.django_lc_html'),
     url(r'^phantom/api/launchconfig/load$', 'phantomweb.views.django_lc_load'),
