@@ -3,3 +3,5 @@ phantomweb/settings.py
 *.egg-info
 *.swp
 *.log
+.DS_Store
+*.db
