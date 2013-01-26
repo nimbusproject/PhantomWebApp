@@ -16,6 +16,10 @@
     display: none;
 }
 
+#phantom_details_button_div {
+    display: none;
+}
+
 #phantom_domain_loading_image {
     display: none;
 }

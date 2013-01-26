@@ -94,6 +94,30 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#details_button_replace_vm").click(function() {
+        var instance_id = get_selected_instance_id();
+        var instance = get_instance(instance_id);
+        if (instance === null) {
+          return;
+        }
+        console.log(instance_id);
+        console.log(instance);
+        phantom_domain_instance_replace_click(instance.instance_id, instance.cloud);
+
+        return false;
+    });
+
+    $("#details_button_terminate_vm").click(function() {
+        var instance_id = get_selected_instance_id();
+        var instance = get_instance(instance_id);
+        if (instance === null) {
+          return;
+        }
+        phantom_domain_instance_terminate_click(instance.instance_id, instance.cloud);
+
+        return false;
+    });
+
 });
 
 
@@ -508,6 +532,7 @@ function phantom_domain_select_domain(domain, load_details) {
 function phantom_domain_deselect_domain() {
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
+    $("#phantom_details_button_div").hide();
     $("#details_table_body").empty();
     $("#instance_table_body").empty();
     $("#phantom_domain_main_combined_pane_inner").hide();
@@ -588,6 +613,11 @@ function human_lifecycle_state(state) {
     }
 }
 
+function get_selected_instance_id() {
+    var instance_id = $("#details_table tr.info td.instance_id").text();
+    return instance_id;
+}
+
 function get_instance(instance_id) {
 
     var instance = null;
@@ -625,6 +655,8 @@ function show_instance_details(instance_id) {
     if (instance === null) {
       return;
     }
+
+    $("#phantom_details_button_div").show();
 
     g_selected_instance = instance_id;
 
@@ -777,7 +809,7 @@ function phantom_domain_instance_terminate_click(instanceid, cloudname) {
 
     var obj = $("#phantom_domain_instance_context_menu");
     var msg = "Do you want to kill the VM instance ".concat(instanceid).concat("?");
-    var answer = confirm (msg);
+    var answer = confirm(msg);
 
     if (!answer) {
         return;
@@ -803,7 +835,7 @@ function phantom_domain_instance_replace_click(instanceid, cloudname) {
 
     var obj = $("#phantom_domain_instance_context_menu");
     var msg = "Do you want to kill and replace the VM instance ".concat(instanceid).concat("?");
-    var answer = confirm (msg);
+    var answer = confirm(msg);
 
     if (!answer) {
         return;
