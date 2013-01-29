@@ -1,4 +1,5 @@
 var g_cloud_map = {};
+var g_selected_cloud = null;
 var ENTER_KEYCODE = 13;
 
 
@@ -24,6 +25,13 @@ $(document).ready(function() {
         phantom_cloud_edit_change_cloud();
         return false;
     });
+
+    $("#cloud_table_body").on('click', 'tr', function(event){
+        $(this).parent().children().removeClass("info");
+        var cloud_name = $(this).children().first().text();
+        phantom_cloud_edit_change_cloud(cloud_name);
+    });
+
 
     $("#change_password_button").click(function() {
         change_password_click();
@@ -58,7 +66,6 @@ function phantom_cloud_edit_enable(enable) {
         $("#phantom_cloud_edit_remove").removeAttr("disabled", "disabled");
         $('#phantom_cloud_edit_name').removeAttr("disabled", "disabled");
 
-        console.log("len: " + $("#phantom_cloud_edit_keyname_list").children());
         if ($("#phantom_cloud_edit_keyname_list").children().length === 0) {
             $("#phantom_cloud_edit_keyname_list").parent().parent().hide();
         }
@@ -73,9 +80,6 @@ function phantom_cloud_edit_enable(enable) {
         $("#phantom_cloud_edit_remove").attr("disabled", "disabled");
         $("#phantom_cloud_edit_name").attr("disabled", "disabled");
         $('#loading').show();
-        $("#phantom_cloud_edit_access").val("");
-        $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname_list").empty();
     }
 }
 
@@ -128,7 +132,8 @@ function phantom_cloud_edit_add_click() {
     $("#cloud-credentials .help-inline").remove();
     $("#cloud-credentials div").removeClass("error");
 
-    var nameCtl = $("#phantom_cloud_edit_name").val().trim();
+    var nameCtl = $("#cloud_table_body tr.info td").first().text();
+    //var nameCtl = $("#phantom_cloud_edit_name").val().trim();
     var accessCtl = $("#phantom_cloud_edit_access").val().trim();
     var secretCtl = $("#phantom_cloud_edit_secret").val().trim();
     var keyCtl = $("#phantom_cloud_edit_keyname_list").val();
@@ -160,16 +165,11 @@ function phantom_cloud_edit_add_click() {
 
     //send call to service
     var success_func = function (obj) {
-        $("#phantom_cloud_edit_name").empty();
-        $("#phantom_cloud_edit_access").val("");
-        $("#phantom_cloud_edit_secret").val("");
-        $("#phantom_cloud_edit_keyname_list").empty();
-
         phantom_cloud_edit_load_sites();
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_cloud_edit_enable(true);
     }
 
@@ -179,8 +179,24 @@ function phantom_cloud_edit_add_click() {
 }
 
 
-function phantom_cloud_edit_change_cloud_internal ()  {
-    var selected_cloud_name = $("#phantom_cloud_edit_name").val();
+function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
+
+    if (!selected_cloud_name) {
+        if (g_selected_cloud) {
+            selected_cloud_name = g_selected_cloud;
+        }
+        else {
+            selected_cloud_name = $("#cloud_table_body tr td").first().text();
+        }
+    }
+
+    g_selected_cloud = selected_cloud_name;
+
+    $(".control-group").removeClass("error");
+
+    $("#cloud_table_body tr td:contains('" + selected_cloud_name + "')")
+      .parent().addClass("info");
+
     var val = g_cloud_map[selected_cloud_name];
 
     $("#phantom_cloud_edit_key_message").text("");
@@ -188,8 +204,10 @@ function phantom_cloud_edit_change_cloud_internal ()  {
     if (val == undefined) {
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
+        $("#phantom_cloud_edit_keyname_list").parent().parent().hide();
     }
     else {
+        $("#phantom_cloud_edit_keyname_list").parent().parent().show();
         $("#phantom_cloud_edit_access").val(val['access_key']);
         $("#phantom_cloud_edit_secret").val(val['secret_key']);
         if (val.status_msg) {
@@ -210,6 +228,7 @@ function phantom_cloud_edit_change_cloud_internal ()  {
         else {
             $("#phantom_cloud_edit_keyname_list").val(val.keyname);
         }
+
     }
 }
 
@@ -219,13 +238,35 @@ function show_cloud_edit_guides() {
     
 }
 
-function phantom_cloud_edit_change_cloud ()  {
+function phantom_cloud_edit_change_cloud (cloud_name) {
     try {
-        phantom_cloud_edit_change_cloud_internal();
+        phantom_cloud_edit_change_cloud_internal(cloud_name);
     }
     catch(err) {
         alert(err);
     }
+}
+
+function make_cloud_table_row(site, status) {
+
+    if (status === "Enabled") {
+        status = '<span class="label label-success">' + status + '</span>';
+    }
+    else if (status === "Incomplete") {
+        status = '<span class="label label-warning">' + status + '</span>';
+    }
+    else if (status === "Disabled") {
+        status = '<span class="label">' + status + '</span>';
+    }
+    else {
+        status = '<span class="label">' + status + '</span>';
+    }
+
+    var row = "<tr id='cloud-row-" + site + "'>" +
+      "<td class='cloud-data-site'>" + site + "</td>" +
+      "<td>" + status + "</td>" +
+      "</tr>";
+    return row;
 }
 
 function phantom_cloud_edit_load_sites() {
@@ -234,16 +275,27 @@ function phantom_cloud_edit_load_sites() {
     var success_func = function(obj){
 
         $("#cloud-credentials .help-inline").remove();
+        $("#cloud_table_body").empty();
         var selected_cloud_name = $("#phantom_cloud_edit_name").val();
-        for(var site in obj.sites) {
-            g_cloud_map = obj.sites;
-            var new_opt = $('<li>', {'name': site});
-            new_opt.text(site);
-        }
-        for(var site in obj.all_sites) {
-            site = obj.all_sites[site];
-            var new_choice = $('<option>',  {'name': site, value: site, text: site});
-            $("#phantom_cloud_edit_name").append(new_choice);
+
+        g_cloud_map = obj.sites;
+
+        for(var site_name in obj.all_sites) {
+            site = obj.all_sites[site_name];
+
+            var status = null;
+            if (site in obj.sites) {
+                if (!obj.sites[site]["keyname"]) {
+                    status = "Incomplete";
+                }
+                else {
+                    status = "Enabled";
+                }
+            }
+            else {
+                status = "Disabled";
+            }
+            $("#cloud_table_body").append(make_cloud_table_row(site, status));
         }
         phantom_cloud_edit_change_cloud_internal();
         phantom_cloud_edit_enable(true);
@@ -269,7 +321,7 @@ function phantom_cloud_edit_load_page() {
 }
 
 function phantom_cloud_edit_remove_click() {
-    var cloud_name = $("#phantom_cloud_edit_name").val();
+    var cloud_name = $("#cloud_table_body tr.info td").first().text();
     var q = "Are you sure you want to remove the cloud ".concat(cloud_name).concat(" from your configuration?");
     var doit = confirm(q);
 

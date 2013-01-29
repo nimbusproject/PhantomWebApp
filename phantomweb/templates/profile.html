@@ -42,15 +42,31 @@
     <div class="tab-content span10">
       <div class="tab-pane" id="cloud-credentials">
         <div class="well well-small">
+            <h5 class="magic-underline">Cloud Credentials</h5>
+          <div class="row-fluid">
+            <div class="span2">
+              <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
+                <thead>
+                  <tr>
+                    <th>Cloud</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="cloud_table_body">
+                </tbody>
+              </table>
+            </div>
+            <div class="span10 well well-small">
+
           <form action="." method="post" class="form-horizontal">{% csrf_token %}
             <fieldset>
-              <h5 class="magic-underline">Cloud Credentials</h5>
-              <div class="control-group" >
+              <!--<div class="control-group" >
                 <label for="phantom_cloud_edit_name" class="control-label">Cloud:</label>
                 <div class="controls">
                   <select id="phantom_cloud_edit_name" class="xphantom_cloud_edit_input"></select>
                 </div>
-              </div>
+              </div>-->
+
               <div class="control-group" >
                 <label class="control-label" for="phantom_cloud_edit_access">Access Key:</label>
                 <div class="controls">
@@ -71,8 +87,8 @@
               </div>
               <div class="control-group" >
                 <div class="controls">
-                  <input id="phantom_cloud_edit_add" type="button" class="btn btn-primary" value="Save"/>
-                  <input id="phantom_cloud_edit_remove" type="button" class="btn btn-danger" value="Remove"/>
+                  <input id="phantom_cloud_edit_add" type="button" class="btn btn-primary" value="Save Credentials"/>
+                  <input id="phantom_cloud_edit_remove" type="button" class="btn btn-danger" value="Disable"/>
                 </div>
               </div>
               <div class="phantom_cloud_edit_configured_list">
@@ -86,6 +102,8 @@
 
             </fieldset>
           </form>
+        </div>
+      </div>
         </div>
       </div><!--/span-->
       <div class="tab-pane" id="account-settings">
