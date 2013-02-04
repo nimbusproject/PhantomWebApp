@@ -1,8 +1,9 @@
-import hashlib
 import boto
 from boto.ec2.autoscale import Tag
 from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
+
+import json
 import logging
 import urlparse
 import boto.ec2.autoscale
@@ -10,6 +11,7 @@ from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
 from phantomsql import phantom_get_default_key_name
+
 
 import logging   # import the required logging module
 
@@ -24,6 +26,8 @@ g_engine_to_phantom_de_map = {
         }
 
 PHANTOM_REGION = 'phantom'
+
+OPENTSDB_METRICS = ["df.1kblocks.free","df.1kblocks.total","df.1kblocks.used","df.inodes.free","df.inodes.total","df.inodes.used","iostat.part.ios_in_progress","iostat.part.msec_read","iostat.part.msec_total","iostat.part.msec_weighted_total","iostat.part.msec_write","iostat.part.read_merged","iostat.part.read_requests","iostat.part.read_sectors","iostat.part.write_merged","iostat.part.write_requests","iostat.part.write_sectors","net.sockstat.ipfragqueues","net.sockstat.memory","net.sockstat.num_orphans","net.sockstat.num_sockets","net.sockstat.num_timewait","net.sockstat.sockets_inuse","net.stat.tcp.abort","net.stat.tcp.abort.failed","net.stat.tcp.congestion.recovery","net.stat.tcp.delayedack","net.stat.tcp.failed_accept","net.stat.tcp.memory.pressure","net.stat.tcp.memory.prune","net.stat.tcp.packetloss.recovery","net.stat.tcp.reording","net.stat.tcp.syncookies","proc.kernel.entropy_avail","proc.loadavg.15min","proc.loadavg.1min","proc.loadavg.5min","proc.loadavg.runnable","proc.loadavg.total_threads","proc.meminfo.active","proc.meminfo.anonpages","proc.meminfo.bounce","proc.meminfo.buffers","proc.meminfo.cached","proc.meminfo.commitlimit","proc.meminfo.committed_as","proc.meminfo.dirty","proc.meminfo.highfree","proc.meminfo.hightotal","proc.meminfo.inactive","proc.meminfo.lowfree","proc.meminfo.lowtotal","proc.meminfo.mapped","proc.meminfo.memfree","proc.meminfo.memtotal","proc.meminfo.nfs_unstable","proc.meminfo.pagetables","proc.meminfo.slab","tcollector.collector.lines_invalid","tcollector.collector.lines_received","tcollector.collector.lines_sent","tcollector.reader.lines_collected","tcollector.reader.lines_dropped"]
 
 #
 # we are only dealing with launch configurations that were made with the web app
@@ -202,7 +206,6 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     tags.append(scale_down_vms_tag)
 
     return tags
-
 
 @LogEntryDecorator
 def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_list_str, a_cloudname):
@@ -777,6 +780,11 @@ def phantom_instance_terminate(request_params, userobj):
 
     response_dict = {}
     return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_sensors_load(request_params, userobj):
+    return json.dumps(OPENTSDB_METRICS)
 
 @PhantomWebDecorator
 @LogEntryDecorator
