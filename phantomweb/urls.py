@@ -34,6 +34,8 @@ urlpatterns = patterns('',
     url(r'^phantom/api/launchconfig/save$', 'phantomweb.views.django_lc_save'),
     url(r'^phantom/api/launchconfig/delete$', 'phantomweb.views.django_lc_delete'),
 
+    url(r'^phantom/api/sensors/load$', 'phantomweb.views.django_sensors_load'),
+
     url(r'^phantom/domain$', 'phantomweb.views.django_domain_html'),
     url(r'^phantom/api/domain/load$', 'phantomweb.views.django_domain_load'),
     url(r'^phantom/api/domain/start$', 'phantomweb.views.django_domain_start'),

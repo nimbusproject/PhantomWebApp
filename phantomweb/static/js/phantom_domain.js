@@ -8,8 +8,10 @@ var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud
 var g_current_details_request = null;
 var g_current_details_timer = null;
 var g_selected_instance = null;
+var g_available_sensors = [];
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
 var DETAILS_TIMER_MS = 5000;
+var SENSOR_HINT_ITEMS = 25;
 
 $(document).ready(function() {
 
@@ -17,7 +19,19 @@ $(document).ready(function() {
 
     $("#phantom_domain_main_combined_pane_inner").hide();
 
-    $("#phantom_domain_sensors_input").tagsManager();
+    var $sensor_input = $("#phantom_domain_sensors_input").tagsManager({
+        typeahead: true,
+        typeaheadDelegate: {
+            source: function() {
+                return g_available_sensors;
+            },
+            minLength: 0,
+            items: SENSOR_HINT_ITEMS
+        }
+    });
+
+    //enable showing hints on click
+    $sensor_input.on('focus', $sensor_input.typeahead.bind($sensor_input, 'lookup'));
 
     $("input[name=hidden-tags]").change(function() {
         phantom_update_sensors();
@@ -118,6 +132,7 @@ $(document).ready(function() {
         return false;
     });
 
+    get_available_sensors();
 });
 
 
@@ -136,6 +151,25 @@ function phantom_domain_buttons(enabled) {
         $("#loading").show();
     }
 }
+
+function get_available_sensors(query, callback) {
+    var success = function(response) {
+        try {
+            g_available_sensors = JSON.parse(response);
+        }
+        catch(e) {
+            console.log("problem parsing: " + e);
+        }
+    }
+
+    var failure = function(response) {
+        console.log("Failure getting sensors");
+    }
+
+    var url = make_url('api/sensors/load')
+    ajaxCallREST(url, success, failure);
+}
+
 
 function phantom_domain_details_buttons(enabled) {
 
