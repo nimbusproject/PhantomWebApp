@@ -83,6 +83,8 @@ class UserCloudInfo(object):
             return self._connect_nimbus()
         elif self.driver_class == "libcloud.compute.drivers.ec2.EC2NodeDriver":
             return self._connect_ec2()
+        elif self.driver_class == "libcloud.compute.drivers.ec2.EucNodeDriver":
+            return self._connect_euca()
 
         raise PhantomWebException("Unknown driver type")
 
@@ -104,6 +106,26 @@ class UserCloudInfo(object):
 
     def _connect_ec2(self):
         ec2conn = EC2Connection(self.iaas_key, self.iaas_secret)
+        return ec2conn
+
+    def _connect_euca(self):
+        if 'driver_kwargs' not in self.site_desc:
+            raise PhantomWebException("The site %s is misconfigured." % (self.cloudname))
+        dets = self.site_desc['driver_kwargs']
+        if dets['secure']:
+            scheme = "https"
+        else:
+            scheme = "http"
+        site_url = "%s://%s:%s" % (scheme, dets['host'], str(dets['port']))
+
+        kwargs = {}
+        uparts = urlparse.urlparse(site_url)
+        is_secure = uparts.scheme == 'https'
+        if dets.get('path') is not None:
+            kwargs['path'] = dets['path']
+
+        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False, **kwargs)
+        ec2conn.host = uparts.hostname
         return ec2conn
 
 
