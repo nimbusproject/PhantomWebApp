@@ -209,6 +209,11 @@ function phantom_update_sensors() {
     $("#phantom_domain_metric_choice").empty();
     for (var i=0; i<metrics.length; i++) {
         var metric = metrics[i];
+        if (metric.lastIndexOf("domain:", 0) === 0) {
+            var metric_cleaned = metric.split("domain:")[1];
+            metric = metric_cleaned;
+        }
+        
         var new_opt = $('<option>', {'name': metric, value: metric, text: metric});
         $("#phantom_domain_metric_choice").append(new_opt);
     }
@@ -343,7 +348,24 @@ function gather_domain_params_from_ui() {
     var lc_name = $("#phantom_domain_lc_choice").val();
     var domain_name = $("#phantom_domain_name_label").text();
     var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
-    var monitor_sensors = $("input[name=hidden-tags]").val();
+    var monitor_sensors_raw = $("input[name=hidden-tags]").val();
+
+    var all_sensors = monitor_sensors_raw.split(",");
+    var monitor_sensors_array = [];
+    var monitor_domain_sensors_array = [];
+    for (var i=0; i < all_sensors.length; i++) {
+        var s = all_sensors[i];
+        if (s.lastIndexOf("domain:", 0) === 0) {
+
+            var s_cleaned = s.split("domain:")[1];
+            monitor_domain_sensors_array.push(s_cleaned);
+        }
+        else {
+            monitor_sensors_array.push(s);
+        }
+    }
+    var monitor_sensors = monitor_sensors_array.join(",");
+    var monitor_domain_sensors = monitor_domain_sensors_array.join(",");
 
     // Multicloud attrs
     var vm_count = $("#phantom_domain_size_input").val();
@@ -367,7 +389,8 @@ function gather_domain_params_from_ui() {
         error_msg = "You must specify a domain name";
     }
 
-    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name, "monitor_sensors": monitor_sensors};
+    var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name,
+        "monitor_sensors": monitor_sensors, "monitor_domain_sensors": monitor_domain_sensors};
 
     if (de_name == "multicloud") {
         if (! vm_count) {
@@ -513,6 +536,8 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
     var domain_data = g_domain_data[domain_name];
     $("#phantom_domain_name_label").text(domain_name);
 
+    $("#details-nav a[href='#vm-details-tab']").tab("show");
+
     if (Object.keys(domain_data).length == 0) {
         phantom_select_de(DEFAULT_DECISION_ENGINE);
         $("#phantom_domain_start_buttons").show();
@@ -529,6 +554,11 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
         var sensors = String(domain_data.monitor_sensors).split(",");
         for (var i=0; i<sensors.length; i++) {
             $("#phantom_domain_sensors_input").tagsManager('pushTag', sensors[i]);
+        }
+
+        var domain_sensors = String(domain_data.monitor_domain_sensors).split(",");
+        for (var i=0; i<domain_sensors.length; i++) {
+            $("#phantom_domain_sensors_input").tagsManager('pushTag', "domain:" + domain_sensors[i]);
         }
  
         if (domain_data.de_name == "multicloud") {
@@ -591,8 +621,8 @@ function phantom_domain_load_instances() {
 
     var table_body = $("#details_table_body").empty();
 
-    for(var i in g_domain_details) {
-        var instance = g_domain_details[i];
+    for(var i in g_domain_details.instances) {
+        var instance = g_domain_details.instances[i];
 
         var filter = $("#phantom_domain_filter_list").val();
         if (filter != "All VMs") {
@@ -655,8 +685,9 @@ function get_selected_instance_id() {
 function get_instance(instance_id) {
 
     var instance = null;
-    for(var i in g_domain_details) {
-        var inst = g_domain_details[i];
+    for(var i in g_domain_details.instances) {
+      
+        var inst = g_domain_details.instances[i];
         if (inst.instance_id === instance_id) {
             instance = inst;
             break;
@@ -664,6 +695,44 @@ function get_instance(instance_id) {
     }
     return instance;
 }
+
+function show_domain_details(domain_id) {
+    function make_row(key, value) {
+      return "<tr><td><strong>" + key + ":</strong></td><td>" + value + "</td></tr>";
+    }
+
+    if (domain_id === null) {
+        return;
+    }
+
+    var $table = $("#domain-table-body").empty();
+    var domain = g_domain_details_cache[domain_id];
+    if (domain === null) {
+      return;
+    }
+
+    var data = "";
+    var sensor_data = domain.domain_metrics;
+    for (var metric in sensor_data) {
+        for (var sensor_type in sensor_data[metric]) {
+            if (sensor_type === "Series") {
+                // Ignore series data because it is ugly :)
+                continue;
+            }
+
+            data += make_row(metric, sensor_data[metric][sensor_type]);
+        }
+    }
+    $table.append(data);
+
+    if ($table.children().length === 0) {
+        $("#domain-metrics").hide();
+    }
+    else {
+        $("#domain-metrics").show();
+    }
+}
+
 
 function show_instance_details(instance_id) {
     function make_row(key, value) {
@@ -717,22 +786,6 @@ function show_instance_details(instance_id) {
     table.append(data);
 }
 
-
-function sensor_data_to_string(sensor_data) {
-
-    var str = "";
-    for (var metric in sensor_data) {
-        for (var sensor_type in sensor_data[metric]) {
-            if (sensor_type === "Series") {
-                // Ignore series data because it is ugly :)
-                continue;
-            }
-            str += metric + ": " + sensor_type + ": " + sensor_data[metric][sensor_type] + " <br>";
-        }
-    }
-    return str;
-}
-
 function phantom_domain_details_internal() {
 
     phantom_domain_details_abort();
@@ -744,6 +797,7 @@ function phantom_domain_details_internal() {
         g_domain_details = g_domain_details_cache[domain_name];
         phantom_domain_load_instances();
         show_instance_details(g_selected_instance);
+        show_domain_details(domain_name);
     }
 
     var url = make_url("api/domain/details");
@@ -755,8 +809,8 @@ function phantom_domain_details_internal() {
         var lc_name = obj.lc_name;
         var vm_count = obj.domain_size;
 
-        g_domain_details = obj.instances;
-        g_domain_details_cache[domain_name] = obj.instances;
+        g_domain_details = obj;
+        g_domain_details_cache[domain_name] = obj;
         $("#phantom_domain_size_input").val(vm_count);
         $("#phantom_domain_lc_choice").val(lc_name);
 
@@ -764,6 +818,7 @@ function phantom_domain_details_internal() {
         phantom_domain_buttons(true);
         phantom_domain_details_buttons(true);
         show_instance_details(g_selected_instance);
+        show_domain_details(domain_name);
         phantom_start_details_timer();
     }
 

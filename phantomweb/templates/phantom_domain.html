@@ -148,44 +148,61 @@
 
     <div class="span5">
       <div id="details_pane" class="well well-small domain-well">
-        <div id="loading_details">
-          <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
-            <option>All VMs</option>
-            <option>Healthy</option>
-            <option>Errors</option>
-            <option>RUNNING</option>
-            <option>PENDING</option>
-            <option>TERMINATING</option>
-            <option>FAILED</option>
-          </select>
-          <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
-        </div>
-        <div id="details_table_container">
-          <table class="table table-bordered table-hover table-white" id="details_table">
-            <thead>
-              <tr>
-                <th>Instance ID</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="details_table_body">
-            </tbody>
-          </table>
-        </div>
+        <ul class="nav nav-pills" id="details-nav">
+          <li><a href="#vm-details-tab" data-toggle="pill">VM Details</a></li>
+          <li><a href="#domain-details-tab" data-toggle="pill">Domain Details</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane" id="vm-details-tab">
+            <div id="loading_details">
+              <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
+                <option>All VMs</option>
+                <option>Healthy</option>
+                <option>Errors</option>
+                <option>RUNNING</option>
+                <option>PENDING</option>
+                <option>TERMINATING</option>
+                <option>FAILED</option>
+              </select>
+              <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
+            </div>
+            <div id="details_table_container">
+              <table class="table table-bordered table-hover table-white" id="details_table">
+                <thead>
+                  <tr>
+                    <th>Instance ID</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="details_table_body">
+                </tbody>
+              </table>
+            </div>
 
-        <table class="table table-condensed" id="instance_table">
-          <tbody id="instance_table_body">
-          </tbody>
-        </table>
+            <table class="table table-condensed" id="instance_table">
+              <tbody id="instance_table_body">
+              </tbody>
+            </table>
 
-        <div id="phantom_details_button_div" class="control-group pull-right">
-          <input type="button" id="details_button_replace_vm" class="btn btn-mini" value="Replace"/>
-          <input type="button" id="details_button_terminate_vm" class="btn btn-mini btn-danger" value="Terminate"/>
+            <div id="phantom_details_button_div" class="control-group pull-right">
+              <input type="button" id="details_button_replace_vm" class="btn btn-mini" value="Replace"/>
+              <input type="button" id="details_button_terminate_vm" class="btn btn-mini btn-danger" value="Terminate"/>
+            </div>
+            <div style="clear: both"></div>
+            <!-- Hack that I don't understand, but is standard practice? Makes parent div inherit height of
+            contained elements
+            -->
+          </div>
+          <div class="tab-pane" id="domain-details-tab">
+            <div id="#domain-metrics">
+              <h5 class="magic-underline">Domain Metrics</h5>
+              <table class="table table-condensed" id="domain-table">
+                <tbody id="domain-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div style="clear: both"></div>
-        <!-- Hack that I don't understand, but is standard practice? Makes parent div inherit height of
-             contained elements
-         -->
       </div>
     </div>
   </div>

@@ -6,6 +6,10 @@
     padding: 0;
 }
 
+#details-nav {
+  border-bottom: 1px solid #e3e3e3;
+}
+
 @media (min-width: 768px) {
     .domain-well {
         min-height: 400px;

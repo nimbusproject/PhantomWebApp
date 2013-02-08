@@ -98,6 +98,7 @@ def _get_all_domains_dashi(userobj):
         ent['lc_name'] = engine_conf.get('dtname')
         ent['metric'] = engine_conf.get('metric')
         ent['monitor_sensors'] = engine_conf.get('monitor_sensors')
+        ent['monitor_domain_sensors'] = engine_conf.get('monitor_domain_sensors')
         ent['sensor_cooldown'] = engine_conf.get('cooldown_period')
         ent['sensor_minimum_vms'] = engine_conf.get('minimum_vms')
         ent['sensor_maximum_vms'] = engine_conf.get('maximum_vms')
@@ -230,6 +231,9 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         ordered_clouds_key = 'clouds'
         monitor_sensors_key = 'monitor_sensors'
         monitor_sensors = de_params.get('monitor_sensors', '')
+        monitor_domain_sensors_key = 'monitor_domain_sensors'
+        monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
+        print "MONITOR DOMAIN: %s" % monitor_domain_sensors
         sample_function_key =  'sample_function'
         sample_function = 'Average'
         # TODO: this should eventually be configurable
@@ -240,6 +244,7 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         policy_variant_tag = Tag(connection=phantom_con, key=policy_variant_key, value=policy_variant, resource_id=domain_name)
         clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
         monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+        monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
         sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
         sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
@@ -247,6 +252,7 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         tags.append(policy_variant_tag)
         tags.append(clouds_tag)
         tags.append(monitor_sensors_tag)
+        tags.append(monitor_domain_sensors_tag)
         tags.append(sample_function_tag)
         tags.append(sensor_type_tag)
 
@@ -624,6 +630,7 @@ def phantom_domain_start(request_params, userobj):
 
     de_params = {}
     de_params["monitor_sensors"] = request_params["monitor_sensors"];
+    de_params["monitor_domain_sensors"] = request_params["monitor_domain_sensors"];
     if de_name == "sensor":
         for p in sensor_params:
             if p not in request_params:
@@ -822,10 +829,16 @@ def phantom_domain_details(request_params, userobj):
     site_dict = _get_launch_configuration(phantom_con, lc_db_object)
 
     # TODO: this should come from the REST interface
-    metrics = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
+    domain = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
     instance_metrics = {}
-    if metrics is not None:
-        for instance in metrics.get('instances', []):
+    if domain is not None:
+        
+        #TODO: replace with real data
+        #domain_metrics = {'metric': {'Average': 5, 'Series': [1, 2, 3]}}
+        domain_metrics = domain.get('sensor_data')
+        print "DOMAIN: %s" % domain
+
+        for instance in domain.get('instances', []):
             instance_metrics[instance.get('iaas_id')] = '', instance.get('sensor_data')
 
     inst_list = []
@@ -870,7 +883,8 @@ def phantom_domain_details(request_params, userobj):
     response_dict = {
         'instances': inst_list,
         'lc_name': asg.launch_config_name,
-        'domain_size': asg.desired_capacity
+        'domain_size': asg.desired_capacity,
+        'domain_metrics': domain_metrics
     }
     return response_dict
 
