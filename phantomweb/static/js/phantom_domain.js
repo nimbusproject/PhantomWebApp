@@ -18,6 +18,8 @@ $(document).ready(function() {
     $("#nav-domains").addClass("active");
 
     $("#phantom_domain_main_combined_pane_inner").hide();
+    $("#scaling_sensor_value").hide();
+    $("#domain-metrics").hide();
 
     var $sensor_input = $("#phantom_domain_sensors_input").tagsManager({
         typeahead: true,
@@ -114,8 +116,6 @@ $(document).ready(function() {
         if (instance === null) {
           return;
         }
-        console.log(instance_id);
-        console.log(instance);
         phantom_domain_instance_replace_click(instance.instance_id, instance.cloud);
 
         return false;
@@ -209,6 +209,9 @@ function phantom_update_sensors() {
     $("#phantom_domain_metric_choice").empty();
     for (var i=0; i<metrics.length; i++) {
         var metric = metrics[i];
+
+        $(".myTag span:contains('domain:')").parent().addClass("domain_sensor_tag");
+
         if (metric.lastIndexOf("domain:", 0) === 0) {
             var metric_cleaned = metric.split("domain:")[1];
             metric = metric_cleaned;
@@ -553,11 +556,17 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
         $("#phantom_domain_sensors_input").tagsManager('empty');
         var sensors = String(domain_data.monitor_sensors).split(",");
         for (var i=0; i<sensors.length; i++) {
+            if (!sensors[i]) {
+                continue;
+            }
             $("#phantom_domain_sensors_input").tagsManager('pushTag', sensors[i]);
         }
 
         var domain_sensors = String(domain_data.monitor_domain_sensors).split(",");
         for (var i=0; i<domain_sensors.length; i++) {
+            if (!domain_sensors[i]) {
+                continue;
+            }
             $("#phantom_domain_sensors_input").tagsManager('pushTag', "domain:" + domain_sensors[i]);
         }
  
@@ -565,8 +574,7 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
             $("#phantom_domain_size_input").val(domain_data.vm_size);
         }
         else if (domain_data.de_name == "sensor") {
-            //TODO: load all tags
-            $("#phantom_domain_sensors_input").tagsManager('pushTag', domain_data.metric);
+            //$("#phantom_domain_sensors_input").tagsManager('pushTag', domain_data.metric);
             $("#phantom_domain_metric_choice").val(domain_data.metric);
             $("#phantom_domain_cooldown_input").val(domain_data.sensor_cooldown);
             $("#phantom_domain_minimum_input").val(domain_data.sensor_minimum_vms);
@@ -599,6 +607,10 @@ function phantom_domain_deselect_domain() {
     $("#phantom_details_button_div").hide();
     $("#details_table_body").empty();
     $("#instance_table_body").empty();
+    $("#scaling_sensor_value").hide();
+    $("#scaling_table_body").empty();
+    $("#domain_table_body").empty();
+    $("#domain-metrics").hide();
     $("#phantom_domain_main_combined_pane_inner").hide();
     $("#phantom_domain_main_combined_pane_inner input[type='text']").val("");
     $("#phantom_domain_main_combined_pane_inner select").empty();
@@ -705,7 +717,7 @@ function show_domain_details(domain_id) {
         return;
     }
 
-    var $table = $("#domain-table-body").empty();
+    var $table = $("#domain_table_body").empty();
     var domain = g_domain_details_cache[domain_id];
     if (domain === null) {
       return;
@@ -724,12 +736,45 @@ function show_domain_details(domain_id) {
         }
     }
     $table.append(data);
-
-    if ($table.children().length === 0) {
+    if ($table.children("tr").length === 0) {
         $("#domain-metrics").hide();
     }
     else {
         $("#domain-metrics").show();
+    }
+
+    var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
+    if (de_name === "sensor") {
+
+        var scaling_metric = g_domain_data[domain_id]['metric'];
+        var domain_metrics = domain.domain_metrics;
+        var sensor_data = null;
+        if (domain.domain_metrics && scaling_metric in domain.domain_metrics) {
+            sensor_data = domain.domain_metrics[scaling_metric]['Average'];
+        }
+        else {
+            var instance_metrics = [];
+            for (var i=0; i<domain.instances.length; i++) {
+                var instance = domain.instances[i];
+                if (instance.sensor_data && scaling_metric in instance.sensor_data) {
+                    instance_metrics.push(instance.sensor_data[scaling_metric]['Average']);
+                }
+            }
+            if (instance_metrics.length > 0){
+                var sum = 0;
+                for (var j=0; j<instance_metrics.length; j++) {
+                    sum += parseFloat(instance_metrics[j]);
+                }
+                sensor_data = sum/instance_metrics.length;
+            }
+
+        }
+
+        if (sensor_data !== null) {
+            $("#scaling_sensor_value").show();
+            var row = make_row(scaling_metric, sensor_data);
+            $("#scaling_table_body").empty().append(row);
+        }
     }
 }
 

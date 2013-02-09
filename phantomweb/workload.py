@@ -112,7 +112,7 @@ def _get_all_domains_dashi(userobj):
         return_asgs[a['name']] = ent
 
     return return_asgs
-        
+
 
 @LogEntryDecorator
 def _get_phantom_con(userobj):
@@ -137,6 +137,8 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
 
     monitor_sensors_key = 'monitor_sensors'
     monitor_sensors = de_params.get('monitor_sensors', '')
+    monitor_domain_sensors_key = 'monitor_domain_sensors'
+    monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
     sample_function_key =  'sample_function'
     sample_function = 'Average'
     # TODO: this should eventually be configurable
@@ -144,12 +146,14 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
     sensor_type = 'opentsdb'
 
     monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
     sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
     sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
     tags = []
     tags.append(policy_tag)
     tags.append(monitor_sensors_tag)
+    tags.append(monitor_domain_sensors_tag)
     tags.append(sample_function_tag)
     tags.append(sensor_type_tag)
 
@@ -166,6 +170,8 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
     monitor_sensors_key = 'monitor_sensors'
     monitor_sensors = de_params.get('monitor_sensors', '')
+    monitor_domain_sensors_key = 'monitor_domain_sensors'
+    monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
 
     cooldown_key = 'cooldown_period'
     cooldown = de_params.get('sensor_cooldown')
@@ -186,6 +192,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
     metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
     monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
     sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
     sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
     cooldown_tag = Tag(connection=phantom_con, key=cooldown_key, value=cooldown, resource_id=domain_name)
@@ -198,6 +205,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     tags.append(policy_tag)
     tags.append(metric_tag)
     tags.append(monitor_sensors_tag)
+    tags.append(monitor_domain_sensors_tag)
     tags.append(sample_function_tag)
     tags.append(sensor_type_tag)
     tags.append(cooldown_tag)
@@ -233,7 +241,6 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         monitor_sensors = de_params.get('monitor_sensors', '')
         monitor_domain_sensors_key = 'monitor_domain_sensors'
         monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
-        print "MONITOR DOMAIN: %s" % monitor_domain_sensors
         sample_function_key =  'sample_function'
         sample_function = 'Average'
         # TODO: this should eventually be configurable
@@ -304,7 +311,7 @@ def update_desired_size(request_params, userobj):
         e_msg = "The domain %s does not exist." % (asg_name)
         raise PhantomWebException(e_msg)
     asgs[0].set_capacity(asg_new_desired_size)
-    
+
     response_dict = {
         'Success': True,
     }
@@ -616,11 +623,11 @@ def phantom_domain_load(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_start(request_params, userobj):
-    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms", 
-            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms",
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms",
             "sensor_scale_down_threshold", "sensor_scale_down_vms"]
     multicloud_params = ["vm_count",]
-    mandatory_params = ['name', "lc_name", "de_name", "monitor_sensors"]
+    mandatory_params = ['name', "lc_name", "de_name", "monitor_sensors", "monitor_domain_sensors"]
     for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
@@ -684,11 +691,11 @@ def phantom_domain_start(request_params, userobj):
 @PhantomWebDecorator
 @LogEntryDecorator
 def phantom_domain_resize(request_params, userobj):
-    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms", 
-            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms", 
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms",
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms",
             "sensor_scale_down_threshold", "sensor_scale_down_vms"]
     multicloud_params = ["vm_count",]
-    mandatory_params = ["name", "de_name", "monitor_sensors"]
+    mandatory_params = ["name", "de_name", "monitor_sensors", "monitor_domain_sensors"]
     for p in mandatory_params:
         if p not in request_params:
             raise PhantomWebException('Missing parameter %s' % (p))
@@ -697,6 +704,7 @@ def phantom_domain_resize(request_params, userobj):
 
     de_params = {}
     de_params["monitor_sensors"] = request_params["monitor_sensors"];
+    de_params["monitor_domain_sensors"] = request_params["monitor_domain_sensors"];
     if de_name == "sensor":
         for p in sensor_params:
             if p not in request_params:
@@ -824,7 +832,7 @@ def phantom_domain_details(request_params, userobj):
         msg = "Could not find the launch configuration '%s' associated with the domain '%s'" % (lc_name, domain_name)
         g_general_log.error(msg)
         raise PhantomWebException(msg)
-    
+
     lc_db_object = lc_db_objects_a[0]
     site_dict = _get_launch_configuration(phantom_con, lc_db_object)
 
@@ -832,11 +840,9 @@ def phantom_domain_details(request_params, userobj):
     domain = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
     instance_metrics = {}
     if domain is not None:
-        
+
         #TODO: replace with real data
-        #domain_metrics = {'metric': {'Average': 5, 'Series': [1, 2, 3]}}
         domain_metrics = domain.get('sensor_data')
-        print "DOMAIN: %s" % domain
 
         for instance in domain.get('instances', []):
             instance_metrics[instance.get('iaas_id')] = '', instance.get('sensor_data')
@@ -872,7 +878,7 @@ def phantom_domain_details(request_params, userobj):
                 error_msg = "The user %s does not have a cloud configured %s.  They must have deleted it after starting the domain." % (userobj._user_dbobject.access_key, cloud_name)
                 g_general_log.error(error_msg)
                 raise PhantomWebException(error_msg)
-            
+
             iaas_con = iaas_cloud.get_iaas_compute_con()
             boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
             if boto_insts and boto_insts[0].instances:

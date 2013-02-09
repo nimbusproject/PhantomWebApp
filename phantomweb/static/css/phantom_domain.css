@@ -16,6 +16,10 @@
     }
 }
 
+span.domain_sensor_tag {
+    background-color: #d9edf7;
+}
+
 #phantom_instance_context_menu {
     display: none;
 }
