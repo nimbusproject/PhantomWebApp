@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <title>{% block title %}Nimbus{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,75 +20,92 @@
 
     {% block headscripts %}{% endblock %}
 
-</head>
+    <script type="text/javascript">
+      {% load value_from_settings %}
+      var gaAccount = '{% value_from_settings GOOGLE_ANALYTICS_CODE %}';
 
-<body {% block bodytag %}{% endblock %}>
+      if (gaAccount !== '') {
 
-<div id="nimbus_logo" class="hidden-phone outer-container">
-<!--NIMBUS-->
-<img src="/static/images/nimbus_logo.png" />
-</div>
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', gaAccount]);
+        _gaq.push(['_trackPageview']);
 
-<div class="container-fluid outer-container">
-    <div class="row-fluid">
-        <div class="topbar navbar">
-            <div class="navbar-inner">
-                <div class="container">
-                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </a>
-                    <a href="/phantom" class="brand">Phantom</a>
-                    <div class="nav-collapse">
-                        <ul class="nav">
-                            <li id="nav-profile"><a href="/phantom/profile">Profile</a></li>
-                            <li id="nav-launchconfig"><a href="/phantom/launchconfig">Launch Configurations</a></li>
-                            <li id="nav-domains"><a href="/phantom/domain">Domains</a></li>
-                            <li id="nav-logout"><a href="/accounts/logout">Logout</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row-fluid">
-        <div class="span12 well">
-        {% block nimbus_body %}{% endblock %}
-        </div>
-    </div>
-</div>
+        (function() {
+         var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+         ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+         var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+         })();
+      }
+     </script>
 
-<br class="clear" />
-<div id="footer" class="container-fluid outer-container">
-    <div class="row-fluid">
-        <div class="navbar">
-            <div class="navbar-inner">
-                <small>
-                    <ul class="nav">
-                        <li><a href="/" title="Home"><span class="first">Home</span></a></li>
-                        <li><a href="http://www.nimbusproject.org/about/" title="About">About Nimbus</a></li>
-                        <li><a href="/doc/nimbus/faq/" title="FAQ">FAQ</a></li>
-                        <li><a href="/doc/nimbus/" title="Documentation">Documentation</a></li>
-                        <li><a href="http://www.nimbusproject.org/contact/" title="Community Resources">Community Resources</a></li>
-                        <li><a href="http://www.nimbusproject.org/downloads/" title="Software">Download</a></li>
+   </head>
 
-                        <li><a href="http://www.nimbusproject.org/pubs/" title="Publications">Publications</a></li>
-                        <li class="last"><a href="http://www.nimbusproject.org/news/" title="News">News</a></li>
-                        <li><a href="#">&copy; University of Chicago</a></li>
-                    </ul>
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
+   <body {% block bodytag %}{% endblock %}>
+
+     <div id="nimbus_logo" class="hidden-phone outer-container">
+       <!--NIMBUS-->
+       <img src="/static/images/nimbus_logo.png" />
+     </div>
+     <div class="container-fluid outer-container">
+       <div class="row-fluid">
+         <div class="topbar navbar">
+           <div class="navbar-inner">
+             <div class="container">
+               <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                 <span class="icon-bar"></span>
+                 <span class="icon-bar"></span>
+                 <span class="icon-bar"></span>
+               </a>
+               <a href="/phantom" class="brand">Phantom</a>
+               <div class="nav-collapse">
+                 <ul class="nav">
+                   <li id="nav-profile"><a href="/phantom/profile">Profile</a></li>
+                   <li id="nav-launchconfig"><a href="/phantom/launchconfig">Launch Configurations</a></li>
+                   <li id="nav-domains"><a href="/phantom/domain">Domains</a></li>
+                   <li id="nav-logout"><a href="/accounts/logout">Logout</a></li>
+                 </ul>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+       <div class="row-fluid">
+         <div class="span12 well">
+           {% block nimbus_body %}{% endblock %}
+         </div>
+       </div>
+     </div>
+
+     <br class="clear" />
+     <div id="footer" class="container-fluid outer-container">
+       <div class="row-fluid">
+         <div class="navbar">
+           <div class="navbar-inner">
+             <small>
+               <ul class="nav">
+                 <li><a href="/" title="Home"><span class="first">Home</span></a></li>
+                 <li><a href="http://www.nimbusproject.org/about/" title="About">About Nimbus</a></li>
+                 <li><a href="/doc/nimbus/faq/" title="FAQ">FAQ</a></li>
+                 <li><a href="/doc/nimbus/" title="Documentation">Documentation</a></li>
+                 <li><a href="http://www.nimbusproject.org/contact/" title="Community Resources">Community Resources</a></li>
+                 <li><a href="http://www.nimbusproject.org/downloads/" title="Software">Download</a></li>
+
+                 <li><a href="http://www.nimbusproject.org/pubs/" title="Publications">Publications</a></li>
+                 <li class="last"><a href="http://www.nimbusproject.org/news/" title="News">News</a></li>
+                 <li><a href="#">&copy; University of Chicago</a></li>
+               </ul>
+             </small>
+           </div>
+         </div>
+       </div>
+     </div>
 
 
-<br class="clear" />
+     <br class="clear" />
 
-<div id="bottom"><p>&nbsp;</p></div>
+     <div id="bottom"><p>&nbsp;</p></div>
 
-</body>
-</html>
+   </body>
+ </html>
 
 
