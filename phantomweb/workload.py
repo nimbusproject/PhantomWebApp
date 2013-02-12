@@ -1,201 +1,290 @@
-import hashlib
 import boto
-from boto.ec2.connection import EC2Connection
+from boto.ec2.autoscale import Tag
+from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
+
+import json
 import logging
 import urlparse
 import boto.ec2.autoscale
+from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
 from phantomsql import phantom_get_default_key_name
+
 
 import logging   # import the required logging module
 
 g_general_log = logging.getLogger('phantomweb.general')
 
+# at some point this should come from some sort of DB
+g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
+
+g_engine_to_phantom_de_map = {
+        "epu.decisionengine.impls.phantom_multi_site_overflow.PhantomMultiSiteOverflowEngine": "multicloud",
+        "epu.decisionengine.impls.sensor.SensorEngine": "sensor",
+        }
+
+PHANTOM_REGION = 'phantom'
+
+OPENTSDB_METRICS = ["df.1kblocks.free","df.1kblocks.total","df.1kblocks.used","df.inodes.free","df.inodes.total","df.inodes.used","iostat.part.ios_in_progress","iostat.part.msec_read","iostat.part.msec_total","iostat.part.msec_weighted_total","iostat.part.msec_write","iostat.part.read_merged","iostat.part.read_requests","iostat.part.read_sectors","iostat.part.write_merged","iostat.part.write_requests","iostat.part.write_sectors","net.sockstat.ipfragqueues","net.sockstat.memory","net.sockstat.num_orphans","net.sockstat.num_sockets","net.sockstat.num_timewait","net.sockstat.sockets_inuse","net.stat.tcp.abort","net.stat.tcp.abort.failed","net.stat.tcp.congestion.recovery","net.stat.tcp.delayedack","net.stat.tcp.failed_accept","net.stat.tcp.memory.pressure","net.stat.tcp.memory.prune","net.stat.tcp.packetloss.recovery","net.stat.tcp.reording","net.stat.tcp.syncookies","proc.kernel.entropy_avail","proc.loadavg.15min","proc.loadavg.1min","proc.loadavg.5min","proc.loadavg.runnable","proc.loadavg.total_threads","proc.meminfo.active","proc.meminfo.anonpages","proc.meminfo.bounce","proc.meminfo.buffers","proc.meminfo.cached","proc.meminfo.commitlimit","proc.meminfo.committed_as","proc.meminfo.dirty","proc.meminfo.highfree","proc.meminfo.hightotal","proc.meminfo.inactive","proc.meminfo.lowfree","proc.meminfo.lowtotal","proc.meminfo.mapped","proc.meminfo.memfree","proc.meminfo.memtotal","proc.meminfo.nfs_unstable","proc.meminfo.pagetables","proc.meminfo.slab","tcollector.collector.lines_invalid","tcollector.collector.lines_received","tcollector.collector.lines_sent","tcollector.reader.lines_collected","tcollector.reader.lines_dropped"]
+
+#
+# we are only dealing with launch configurations that were made with the web app
+#
+def _get_launch_configuration(phantom_con, lc_db_object):
+    lc_name = lc_db_object.name
+    site_dict = {}
+    host_vm_db_objs_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
+    for host_vm_db_obj in host_vm_db_objs_a:
+        site_name = host_vm_db_obj.cloud_name
+        shoe_horn_lc_name = "%s@%s" % (lc_name, site_name)
+        try:
+            lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name,])
+        except Exception, ex:
+            raise PhantomWebException("Error communicating with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
+
+        if len(lcs) != 1:
+            raise PhantomWebException("Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % shoe_horn_lc_name)
+        lc = lcs[0]
+        site_entry = {
+            'cloud': site_name,
+            'image_id': lc.image_id,
+            'instance_type': lc.instance_type,
+            'keyname': lc.key_name,
+            'user_data': lc.user_data,
+            'common': host_vm_db_obj.common_image,
+            'max_vm': host_vm_db_obj.max_vms,
+            'rank': host_vm_db_obj.rank
+        }
+        site_dict[site_name] = site_entry
+
+    return site_dict
+
+def _get_all_launch_configurations(phantom_con, username):
+    all_lc_dict = {}
+    lc_db_objects_a = LaunchConfigurationDB.objects.filter(username=username)
+    for lc_db_object in lc_db_objects_a:
+        site_dict = _get_launch_configuration(phantom_con, lc_db_object)
+        all_lc_dict[lc_db_object.name] = site_dict
+    return all_lc_dict
+
+def _get_all_domains(phantom_con):
+
+    asgs = phantom_con.get_all_groups()
+
+    return_asgs = {}
+    for a in asgs:
+        ent = {}
+        ent['name'] = a.name
+        ent['vm_size'] = a.desired_capacity
+        ent['lc_name'] = a.launch_config_name # .replace("[LaunchConfiguration:", "")
+        return_asgs[a.name] = ent
+
+    return return_asgs
+
+def _get_all_domains_dashi(userobj):
+
+    asgs = userobj.get_all_groups()
+
+    return_asgs = {}
+    for a in asgs:
+        engine_conf = a.get('config', {}).get('engine_conf', {})
+
+        ent = {}
+        ent['name'] = a['name']
+        ent['vm_size'] = engine_conf.get('minimum_vms')
+
+        ent['lc_name'] = engine_conf.get('dtname')
+        ent['metric'] = engine_conf.get('metric')
+        ent['monitor_sensors'] = engine_conf.get('monitor_sensors')
+        ent['monitor_domain_sensors'] = engine_conf.get('monitor_domain_sensors')
+        ent['sensor_cooldown'] = engine_conf.get('cooldown_period')
+        ent['sensor_minimum_vms'] = engine_conf.get('minimum_vms')
+        ent['sensor_maximum_vms'] = engine_conf.get('maximum_vms')
+        ent['sensor_scale_up_threshold'] = engine_conf.get('scale_up_threshold')
+        ent['sensor_scale_up_vms'] = engine_conf.get('scale_up_n_vms')
+        ent['sensor_scale_down_threshold'] = engine_conf.get('scale_down_threshold')
+        ent['sensor_scale_down_vms'] = engine_conf.get('scale_down_n_vms')
+        ent['sensor_scale_down_vms'] = engine_conf.get('scale_down_n_vms')
+        ent['de_name'] = engine_conf.get('phantom_de_name')
+
+        return_asgs[a['name']] = ent
+
+    return return_asgs
+
+
 @LogEntryDecorator
 def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
-    g_general_log.debug("Getting phantom can at %s" % (url))
-
+    g_general_log.debug("Getting phantom connection at %s" % (url))
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
-    region = RegionInfo(endpoint=uparts.hostname)
+    region = RegionInfo(name=PHANTOM_REGION, endpoint=uparts.hostname)
     con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
 
-@LogEntryDecorator
-def _get_iaas_compute_con(iaas_cloud):
-    uparts = urlparse.urlparse(iaas_cloud.cloud_url)
-    is_secure = uparts.scheme == 'https'
-    ec2conn = EC2Connection(iaas_cloud.iaas_key, iaas_cloud.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False)
-    ec2conn.host = uparts.hostname
-    return ec2conn
+def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
+    """multicloud_tags_from_de_params
+
+    Creates tags to update sensors monitored
+    """
+
+    policy_name_key = 'PHANTOM_DEFINITION'
+    policy_name = 'error_overflow_n_preserving'
+    policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+
+    monitor_sensors_key = 'monitor_sensors'
+    monitor_sensors = de_params.get('monitor_sensors', '')
+    monitor_domain_sensors_key = 'monitor_domain_sensors'
+    monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
+    sample_function_key =  'sample_function'
+    sample_function = 'Average'
+    # TODO: this should eventually be configurable
+    sensor_type_key = 'sensor_type'
+    sensor_type = 'opentsdb'
+
+    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+
+    tags = []
+    tags.append(policy_tag)
+    tags.append(monitor_sensors_tag)
+    tags.append(monitor_domain_sensors_tag)
+    tags.append(sample_function_tag)
+    tags.append(sensor_type_tag)
+
+    return tags
+
+def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
+
+    policy_name_key = 'PHANTOM_DEFINITION'
+    policy_name = 'error_overflow_n_preserving'
+    policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+
+    metric_key = 'metric'
+    metric = de_params.get('sensor_metric')
+
+    monitor_sensors_key = 'monitor_sensors'
+    monitor_sensors = de_params.get('monitor_sensors', '')
+    monitor_domain_sensors_key = 'monitor_domain_sensors'
+    monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
+
+    cooldown_key = 'cooldown_period'
+    cooldown = de_params.get('sensor_cooldown')
+    scale_up_threshold_key = 'scale_up_threshold'
+    scale_up_threshold = de_params.get('sensor_scale_up_threshold')
+    scale_up_vms_key = 'scale_up_n_vms'
+    scale_up_vms = de_params.get('sensor_scale_up_vms')
+    scale_down_threshold_key = 'scale_down_threshold'
+    scale_down_threshold = de_params.get('sensor_scale_down_threshold')
+    scale_down_vms_key = 'scale_down_n_vms'
+    scale_down_vms = de_params.get('sensor_scale_down_vms')
+
+    # TODO: This is hardcoded for this sync, should be exposed in the UI
+    sample_function_key =  'sample_function'
+    sample_function = 'Average'
+    sensor_type_key = 'sensor_type'
+    sensor_type = 'opentsdb'
+
+    metric_tag = Tag(connection=phantom_con, key=metric_key, value=metric, resource_id=domain_name)
+    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
+    cooldown_tag = Tag(connection=phantom_con, key=cooldown_key, value=cooldown, resource_id=domain_name)
+    scale_up_threshold_tag = Tag(connection=phantom_con, key=scale_up_threshold_key, value=scale_up_threshold, resource_id=domain_name)
+    scale_up_vms_tag = Tag(connection=phantom_con, key=scale_up_vms_key, value=scale_up_vms, resource_id=domain_name)
+    scale_down_threshold_tag = Tag(connection=phantom_con, key=scale_down_threshold_key, value=scale_down_threshold, resource_id=domain_name)
+    scale_down_vms_tag = Tag(connection=phantom_con, key=scale_down_vms_key, value=scale_down_vms, resource_id=domain_name)
+
+    tags = []
+    tags.append(policy_tag)
+    tags.append(metric_tag)
+    tags.append(monitor_sensors_tag)
+    tags.append(monitor_domain_sensors_tag)
+    tags.append(sample_function_tag)
+    tags.append(sensor_type_tag)
+    tags.append(cooldown_tag)
+    tags.append(scale_up_threshold_tag)
+    tags.append(scale_up_vms_tag)
+    tags.append(scale_down_threshold_tag)
+    tags.append(scale_down_vms_tag)
+
+    return tags
 
 @LogEntryDecorator
-def _get_keys(ec2conn):
-    r = ec2conn.get_all_key_pairs()
-    rs = [k.name for k in r]
-    return rs
+def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_list_str, a_cloudname):
 
-@PhantomWebDecorator
-@LogEntryDecorator
-def get_iaas_info(request_params, userobj):
-
-    params = ['cloud',]
-    for p in params:
-        if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
-
-    cloud_name = request_params['cloud']
-    iaas_cloud = userobj.get_cloud(cloud_name)
-
-    ec2conn = _get_iaas_compute_con(iaas_cloud)
-    g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
-    l = ec2conn.get_all_images()
-    common_images = [c.id for c in l if c.is_public]
-    user_images = [u.id for u in l if not u.is_public]
-
-    response_dict = {
-        'name': 'hello',
-        'user_images': user_images,
-        'common_images': common_images,
-    }
-    return response_dict
-
-@PhantomWebDecorator
-@LogEntryDecorator
-def list_domains(request_params, userobj):
-    con = _get_phantom_con(userobj)
-
-    domain_names = None
-    if 'domain_name' in request_params:
-        domain_name = request_params['domain_name']
-        domain_names = [domain_name,]
-    g_general_log.debug("Looking up domain names %s for user %s" % (str(domain_names), userobj._user_dbobject.access_key))
-
-    asgs = con.get_all_groups(names=domain_names)
-    return_asgs = []
-
-    for a in asgs:
-        ent = {}
-        ent['name'] = a.name
-        ent['desired_capacity'] = a.desired_capacity
-        lc_name = a.launch_config_name
-        lcs = con.get_all_launch_configurations(names=[lc_name,])
-        ent['cloudname'] = a.availability_zones[0]
-        if lcs:
-            lc = lcs[0]
-            ent['lc_name'] = lc.name
-            ent['image_id'] = lc.image_id
-            ent['key_name'] = lc.key_name
-            ent['instance_type'] = lc.instance_type
-        inst_list = []
-        for instance in a.instances:
-            i_d = {}
-            i_d['cloud'] = instance.availability_zone
-            i_d['health_status'] = instance.health_status
-            i_d['instance_id'] = instance.instance_id.strip()
-            i_d['lifecycle_state'] = instance.lifecycle_state
-            inst_list.append(i_d)
-            i_d['hostname'] = "unknown"
-
-            if i_d['instance_id']:
-                # look up more info with boto.  this could be optimized for network communication
-                iaas_cloud = userobj.get_cloud(i_d['cloud'])
-                iaas_con = _get_iaas_compute_con(iaas_cloud)
-                boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
-                if boto_insts and boto_insts[0].instances:
-                    boto_i = boto_insts[0].instances[0]
-                    i_d['hostname'] = boto_i.dns_name
-
-        ent['instances'] = inst_list
-
-        return_asgs.append(ent)
-
-    response_dict = {
-        'name': 'hello',
-        'domains': return_asgs,
-    }
-    return response_dict
-
-
-@LogEntryDecorator
-def _find_or_create_config(con, size, image, keyname, common, lc_name, user_data):
-    lcs = con.get_all_launch_configurations(names=[lc_name,])
-    if not lcs:
-        lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(con, name=lc_name, image_id=image, key_name=keyname, security_groups='default', instance_type=size, user_data=user_data)
-        con.create_launch_configuration(lc)
-        return lc
-    return lcs[0]   
-
-
-@PhantomWebDecorator
-@LogEntryDecorator
-def start_domain(request_params, userobj):
-    con = _get_phantom_con(userobj)
-
-    params = ['size', 'name', 'image', 'cloud', 'common', 'desired_size', 'user_data']
-    for p in params:
-        if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
-
-    image_name = request_params['image']
-    size = request_params['size']
-    asg_name = request_params['name']
-    cloud = request_params['cloud']
-    common = request_params['common']
-    user_data = request_params['user_data']
-    user_data_digest = hashlib.md5(user_data).hexdigest()
-
+    shoe_horn = "%s@%s" % (lc_name, a_cloudname)
     try:
-        desired_size = int(request_params['desired_size'])
-    except:
-        e_msg = 'Please set the desired size to an integer, not %s' % (str(request_params['desired_size']))
-        g_general_log.error(e_msg)
-        raise PhantomWebException(e_msg)
+        lc = phantom_con.get_all_launch_configurations(names=[shoe_horn,])
+    except EC2ResponseError, ec2re:
+        lc = None
+    if not lc:
+        raise PhantomWebException("The LC %s no longer exists." % (lc_name))
 
-    lc_name = "WEB-%s-%s-%s-%s" % (size, image_name, common, user_data_digest)
-    key_name = phantom_get_default_key_name()
+    lc = lc[0]
 
-    g_general_log.debug("starting to launch: %s %s %s %s %d" % (image_name, str(size), asg_name, cloud, desired_size))
+    tags = []
 
-    iaas_cloud = userobj.get_cloud(cloud)
-    ec2con = _get_iaas_compute_con(iaas_cloud)
-    kps = _get_keys(ec2con)
-    if key_name not in kps:
-        e_msg = "The key name %s is not known.  Please provide a public key in the settings section." % (key_name)
-        g_general_log.error(e_msg)
-        raise PhantomWebException(e_msg)
+    if de_name == 'multicloud':
+        policy_name_key = 'PHANTOM_DEFINITION'
+        policy_name = 'error_overflow_n_preserving'
+        policy_variant_key = 'phantom_de_name'
+        policy_variant = de_name
+        ordered_clouds_key = 'clouds'
+        monitor_sensors_key = 'monitor_sensors'
+        monitor_sensors = de_params.get('monitor_sensors', '')
+        monitor_domain_sensors_key = 'monitor_domain_sensors'
+        monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
+        sample_function_key =  'sample_function'
+        sample_function = 'Average'
+        # TODO: this should eventually be configurable
+        sensor_type_key = 'sensor_type'
+        sensor_type = 'opentsdb'
 
-    lc_name = "%s@%s" % (lc_name, cloud)
-    lc = _find_or_create_config(con, size, image_name, key_name, common, lc_name, user_data)
-    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=con, group_name=asg_name, availability_zones=[cloud], min_size=desired_size, max_size=desired_size, validate_certs=False)
-    con.create_auto_scaling_group(asg)
-    response_dict = {
-        'Success': True,
-    }
-    return response_dict
+        policy_tag = Tag(connection=phantom_con, key=policy_name_key, value=policy_name, resource_id=domain_name)
+        policy_variant_tag = Tag(connection=phantom_con, key=policy_variant_key, value=policy_variant, resource_id=domain_name)
+        clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
+        monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
+        monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
+        sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+        sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
-@PhantomWebDecorator
-@LogEntryDecorator
-def delete_domain(request_params, userobj):
-    con = _get_phantom_con(userobj)
+        tags.append(policy_tag)
+        tags.append(policy_variant_tag)
+        tags.append(clouds_tag)
+        tags.append(monitor_sensors_tag)
+        tags.append(monitor_domain_sensors_tag)
+        tags.append(sample_function_tag)
+        tags.append(sensor_type_tag)
 
-    params = ['name']
-    for p in params:
-        if p not in request_params:
-            return None
+        min_size = de_params.get('vm_count')
+        max_size = de_params.get('vm_count')
 
-    asg_name = request_params['name']
-    g_general_log.debug("deleting %s" % (asg_name))
-    con.delete_auto_scaling_group(asg_name)
-    response_dict = {
-        'Success': True,
-    }
-    return response_dict
+    elif de_name == 'sensor':
 
+        ordered_clouds_key = 'clouds'
+        policy_variant_key = 'phantom_de_name'
+        policy_variant = de_name
+
+        policy_variant_tag = Tag(connection=phantom_con, key=policy_variant_key, value=policy_variant, resource_id=domain_name)
+        clouds_tag = Tag(connection=phantom_con, key=ordered_clouds_key, value=host_list_str, resource_id=domain_name)
+
+        tags.append(policy_variant_tag)
+        tags.append(clouds_tag)
+
+        min_size = de_params.get('sensor_minimum_vms')
+        max_size = de_params.get('sensor_maximum_vms')
+
+        tags = tags + sensor_tags_from_de_params(phantom_con, domain_name, de_params)
+
+    asg = boto.ec2.autoscale.group.AutoScalingGroup(launch_config=lc, connection=phantom_con, group_name=domain_name, availability_zones=["us-east-1"], min_size=min_size, max_size=max_size, tags=tags)
+    phantom_con.create_auto_scaling_group(asg)
 
 @PhantomWebDecorator
 @LogEntryDecorator
@@ -231,30 +320,18 @@ def update_desired_size(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_main_html(request_params, userobj):
-    instance_types = ["m1.small", "m1.large", "m1.xlarge"]
-    cloud_locations = userobj.iaasclouds.keys()
-    response_dict = {
-        'instance_types': instance_types,
-        'cloud_locations': cloud_locations,
-    }
-    return response_dict
-
-
-@PhantomWebDecorator
-@LogEntryDecorator
 def terminate_iaas_instance(request_params, userobj):
 
     params = ['cloud','instance']
     for p in params:
         if p not in request_params:
-            raise PhantomWebDecorator('Missing parameter %s' % (p))
+            raise PhantomWebException('Missing parameter %s' % (p))
 
     cloud_name = request_params['cloud']
     iaas_cloud = userobj.get_cloud(cloud_name)
     instance = request_params['instance']
 
-    ec2conn = _get_iaas_compute_con(iaas_cloud)
+    ec2conn = iaas_cloud.get_iaas_compute_con()
     g_general_log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
     ec2conn.terminate_instances(instance_ids=[instance,])
 
@@ -265,3 +342,556 @@ def terminate_iaas_instance(request_params, userobj):
         'cloud': cloud_name
     }
     return response_dict
+
+#
+#  cloud site management pages
+#
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_sites_delete(request_params, userobj):
+    params = ['cloud',]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    site_name = request_params['cloud']
+
+    userobj.delete_site(site_name)
+    userobj._load_clouds()
+    response_dict = {
+    }
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_sites_add(request_params, userobj):
+    params = ['cloud', "access", "secret", "keyname"]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    site_name = request_params['cloud']
+    keyname = request_params['keyname']
+    access = request_params['access']
+    secret = request_params['secret']
+
+    userobj.add_site(site_name, access, secret, keyname)
+    response_dict = {
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_sites_load(request_params, userobj):
+    sites = userobj.get_clouds()
+    all_sites = userobj.get_possible_sites()
+
+    out_info = {}
+    for site_name in sites:
+        ci = sites[site_name]
+        ci_dict = {
+            'username': ci.username,
+            'access_key': ci.iaas_key,
+            'secret_key': ci.iaas_secret,
+            'keyname': ci.keyname,
+            'status': 0,
+            'status_msg': ""
+        }
+
+        ec2conn = ci.get_iaas_compute_con()
+        try:
+            keypairs = ec2conn.get_all_key_pairs()
+            keyname_list = [k.name for k in keypairs]
+            ci_dict['keyname_list'] = keyname_list
+            ci_dict['status_msg'] = ""
+        except Exception, boto_ex:
+            g_general_log.error("Error connecting to the service %s" % (str(boto_ex)))
+            ci_dict['keyname_list'] = []
+            ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
+            ci_dict['status'] = 1
+
+        out_info[site_name] = ci_dict
+
+    response_dict = {
+        'sites': out_info,
+        'all_sites': all_sites
+    }
+    return response_dict
+
+def _parse_param_name(needle, haystack, request_params, lc_dict):
+    ndx = haystack.find("." + needle)
+    if ndx < 0:
+        return lc_dict
+    site_name = haystack[:ndx]
+    val = request_params[haystack]
+
+    if site_name in lc_dict:
+        entry = lc_dict[site_name]
+    else:
+        entry = {}
+    entry[needle] = val
+    lc_dict[site_name] = entry
+
+    return lc_dict
+
+#
+#  cloud launch config functions
+#
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_load(request_params, userobj):
+    global g_instance_types
+
+    clouds_d = userobj.get_clouds()
+
+    phantom_con = _get_phantom_con(userobj)
+
+    all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
+    iaas_info = {}
+    for cloud_name in clouds_d:
+        try:
+            cloud_info = {}
+            cloud = clouds_d[cloud_name]
+            ec2conn = cloud.get_iaas_compute_con()
+            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+            l = ec2conn.get_all_images(owners=['self'])
+            user_images = [u.id for u in l if not u.is_public]
+
+            cloud_info['personal_images'] = user_images
+            cloud_info['instances'] = g_instance_types
+            cloud_info['status'] = 0
+        except Exception, ex:
+            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            cloud_info = {'error': str(ex)}
+            cloud_info['status'] = 1
+        iaas_info[cloud_name] = cloud_info
+
+    response_dict = {
+        'cloud_info': iaas_info,
+        'lc_info': all_lc_dict
+    }
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_save(request_params, userobj):
+    lc_name = request_params['name']
+
+    lc_dict = {}
+    # we need to convert params to a usable dict
+    for param_name in request_params:
+        _parse_param_name("cloud", param_name, request_params, lc_dict)
+        _parse_param_name("image_id", param_name, request_params, lc_dict)
+        _parse_param_name("instance_type", param_name, request_params, lc_dict)
+        _parse_param_name("max_vm", param_name, request_params, lc_dict)
+        _parse_param_name("common", param_name, request_params, lc_dict)
+        _parse_param_name("rank", param_name, request_params, lc_dict)
+        _parse_param_name("user_data", param_name, request_params, lc_dict)
+
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
+    if not lc_db_object:
+        lc_db_object = LaunchConfigurationDB.objects.create(name=lc_name, username=userobj._user_dbobject.access_key)
+    else:
+        lc_db_object = lc_db_object[0]
+    lc_db_object.save()
+
+    phantom_con = _get_phantom_con(userobj)
+
+    try:
+        sites_dict = userobj.get_clouds()
+        for site_name in lc_dict:
+
+            if site_name not in sites_dict:
+                raise PhantomWebException("The site %s is not configured." % (site_name))
+            site_ent = sites_dict[site_name]
+            if not site_ent.keyname:
+                raise PhantomWebException("There is no key configured for the site %s.  Please see your Profile." % (site_name))
+
+            lc_conf_name = "%s@%s" % (lc_name, site_name)
+            entry = lc_dict[site_name]
+
+            # check for valid image
+            cloud_object = userobj.get_cloud(site_name)
+            ec2conn = cloud_object.get_iaas_compute_con()
+            try:
+                tmp_img = ec2conn.get_all_images(image_ids=[entry['image_id']])
+            except EC2ResponseError, boto_image_ex:
+                tmp_img = None
+            if not tmp_img:
+                raise PhantomWebException("No such image %s for cloud %s" % (entry['image_id'], site_name))
+
+            try:
+                # we probably need to list everything with the base name and delete it
+                phantom_con.delete_launch_configuration(lc_conf_name)
+            except Exception, boto_del_ex:
+                # delete in case this is an update
+                pass
+            lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con,
+                    name=lc_conf_name, image_id=entry['image_id'],
+                    key_name=site_ent.keyname, security_groups=['default'],
+                    instance_type=entry['instance_type'],
+                    user_data=entry['user_data'])
+            phantom_con.create_launch_configuration(lc)
+
+            is_common = entry['common'].lower() == "true"
+            host_max_db_a = HostMaxPairDB.objects.filter(cloud_name=site_name, launch_config=lc_db_object)
+            if host_max_db_a:
+                host_max_db_a.update(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
+            else:
+                host_max_db = HostMaxPairDB.objects.create(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
+                host_max_db.save()
+    except Exception, boto_ex:
+        g_general_log.exception("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
+        raise PhantomWebException(str(boto_ex))
+
+    response_dict = {}
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_lc_delete(request_params, userobj):
+    params = ["name",]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    lc_name = request_params['name']
+
+    phantom_con = _get_phantom_con(userobj)
+    try:
+        lcs = phantom_con.get_all_launch_configurations()
+    except Exception, ex:
+        raise PhantomWebException("Error communication with Phantom REST: %s" % (str(ex)))
+
+    error_message = ""
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
+    if not lc_db_object or len(lc_db_object) < 1:
+        raise PhantomWebException("No such launch configuration %s. Misconfigured service" % (lc_name))
+    lc_db_object = lc_db_object[0]
+    host_vm_db_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
+    if not host_vm_db_a:
+        error_message = error_message + "No such launch configuration %s. Misconfigured service.  " % (lc_name)
+        g_general_log.warn(error_message)
+
+    for lc in lcs:
+        ndx = lc.name.find(lc_name)
+        if ndx == 0:
+            try:
+                lc.delete()
+            except Exception, lc_del_ex:
+                error_message = error_message + "Error deleting the LC: %s.  " % (str(lc_del_ex))
+                g_general_log.warn(error_message)
+
+    for host_vm_db in host_vm_db_a:
+        try:
+            host_vm_db.delete()
+        except Exception, host_db_del:
+            error_message = error_message + "Error deleting the host entry: %s" % (str(host_db_del))
+            g_general_log.warn(error_message)
+    lc_db_object.delete()
+
+    if error_message:
+        raise PhantomWebException(error_message)
+
+    response_dict = {}
+
+    return response_dict
+
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_load(request_params, userobj):
+
+    phantom_con = _get_phantom_con(userobj)
+    domains = _get_all_domains_dashi(userobj)
+    all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
+
+    lc_names = []
+    for name in all_lc_dict.keys():
+        lc_names.append(name)
+
+    response_dict = {
+        'launchconfigs': lc_names,
+        'domains': domains
+        }
+
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_start(request_params, userobj):
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms",
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms",
+            "sensor_scale_down_threshold", "sensor_scale_down_vms"]
+    multicloud_params = ["vm_count",]
+    mandatory_params = ['name', "lc_name", "de_name", "monitor_sensors", "monitor_domain_sensors"]
+    for p in mandatory_params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+    domain_name = request_params["name"]
+    lc_name = request_params["lc_name"]
+    de_name = request_params["de_name"]
+
+    de_params = {}
+    de_params["monitor_sensors"] = request_params["monitor_sensors"];
+    de_params["monitor_domain_sensors"] = request_params["monitor_domain_sensors"];
+    if de_name == "sensor":
+        for p in sensor_params:
+            if p not in request_params:
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["sensor_metric"] = request_params["sensor_metric"]
+        de_params["sensor_cooldown"] = request_params["sensor_cooldown"]
+        de_params["sensor_minimum_vms"] = request_params["sensor_minimum_vms"]
+        de_params["sensor_maximum_vms"] = request_params["sensor_maximum_vms"]
+        de_params["sensor_scale_up_threshold"] = request_params["sensor_scale_up_threshold"]
+        de_params["sensor_scale_up_vms"] = request_params["sensor_scale_up_vms"]
+        de_params["sensor_scale_down_threshold"] = request_params["sensor_scale_down_threshold"]
+        de_params["sensor_scale_down_vms"] = request_params["sensor_scale_down_vms"]
+
+    elif de_name == "multicloud":
+        for p in multicloud_params:
+            if p not in request_params:
+                g_general_log.debug("%s not in %s" % (p, request_params))
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["vm_count"] = request_params["vm_count"]
+
+
+    g_general_log.info("starting with params: %s" % de_params)
+
+    lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
+    if not lc_db_object or len(lc_db_object) < 1:
+        raise PhantomWebException("The launch configuration %s is not known to the web application." % (lc_name))
+
+    lc_db_object = lc_db_object[0]
+    host_vm_dbs = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
+
+    sorted_by_rank = sorted(host_vm_dbs, key=lambda hm: hm.rank)
+
+    # we need just any cloud name from the list to properly fake the AWS lc name
+    a_cloudname = None
+    ordered_hosts = ""
+    delim = ""
+    for hm in sorted_by_rank:
+        ordered_hosts = ordered_hosts + delim + "%s:%d" % (hm.cloud_name, hm.max_vms)
+        a_cloudname = hm.cloud_name
+        delim = ","
+
+
+    phantom_con = _get_phantom_con(userobj)
+    _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, ordered_hosts, a_cloudname)
+
+    response_dict = {}
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_resize(request_params, userobj):
+    sensor_params = ["sensor_metric", "sensor_cooldown", "sensor_minimum_vms",
+            "sensor_maximum_vms", "sensor_scale_up_threshold", "sensor_scale_up_vms",
+            "sensor_scale_down_threshold", "sensor_scale_down_vms"]
+    multicloud_params = ["vm_count",]
+    mandatory_params = ["name", "de_name", "monitor_sensors", "monitor_domain_sensors"]
+    for p in mandatory_params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+    domain_name = request_params["name"]
+    de_name = request_params["de_name"]
+
+    de_params = {}
+    de_params["monitor_sensors"] = request_params["monitor_sensors"];
+    de_params["monitor_domain_sensors"] = request_params["monitor_domain_sensors"];
+    if de_name == "sensor":
+        for p in sensor_params:
+            if p not in request_params:
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["sensor_metric"] = request_params["sensor_metric"]
+        de_params["sensor_cooldown"] = request_params["sensor_cooldown"]
+        de_params["sensor_minimum_vms"] = request_params["sensor_minimum_vms"]
+        de_params["sensor_maximum_vms"] = request_params["sensor_maximum_vms"]
+        de_params["sensor_scale_up_threshold"] = request_params["sensor_scale_up_threshold"]
+        de_params["sensor_scale_up_vms"] = request_params["sensor_scale_up_vms"]
+        de_params["sensor_scale_down_threshold"] = request_params["sensor_scale_down_threshold"]
+        de_params["sensor_scale_down_vms"] = request_params["sensor_scale_down_vms"]
+
+    elif de_name == "multicloud":
+        for p in multicloud_params:
+            if p not in request_params:
+                g_general_log.debug("%s not in %s" % (p, request_params))
+                raise PhantomWebException('Missing parameter %s' % (p))
+
+        de_params["minimum_vms"] = request_params["vm_count"]
+        de_params["maximum_vms"] = request_params["vm_count"]
+
+
+    domain_name = request_params["name"]
+    new_size = request_params.get("vm_count")
+
+    try:
+        phantom_con = _get_phantom_con(userobj)
+
+        if de_name == "sensor":
+            tags = sensor_tags_from_de_params(phantom_con, domain_name, de_params)
+            phantom_con.create_or_update_tags(tags)
+        elif de_name == "multicloud":
+            tags = multicloud_tags_from_de_params(phantom_con, domain_name, de_params)
+            phantom_con.create_or_update_tags(tags)
+
+            asg = phantom_con.get_all_groups(names=[domain_name,])
+            if not asg:
+                raise PhantomWebException("domain %s not found" % (domain_name))
+            asg = asg[0]
+
+            if new_size is not None:
+                asg.set_capacity(new_size)
+
+    except PhantomWebException:
+        raise
+    except Exception, ex:
+        g_general_log.exception("Error in resize")
+        raise PhantomWebException(str(ex))
+    response_dict = {}
+    return response_dict
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_terminate(request_params, userobj):
+    params = ['name',]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    domain_name = request_params["name"]
+
+    g_general_log.debug("deleting %s" % (domain_name))
+    phantom_con = _get_phantom_con(userobj)
+    phantom_con.delete_auto_scaling_group(domain_name)
+
+    response_dict = {}
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_instance_terminate(request_params, userobj):
+    params = ['instance', "adjust"]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    instance_id = request_params["instance"]
+    adjust = request_params["adjust"]
+    adjust = adjust.lower() == "true"
+
+    g_general_log.debug("deleting %s" % (instance_id))
+    phantom_con = _get_phantom_con(userobj)
+
+    phantom_con.terminate_instance(instance_id, decrement_capacity=adjust)
+
+    response_dict = {}
+    return response_dict
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_sensors_load(request_params, userobj):
+    return json.dumps(OPENTSDB_METRICS)
+
+@PhantomWebDecorator
+@LogEntryDecorator
+def phantom_domain_details(request_params, userobj):
+    params = ['name',]
+    for p in params:
+        if p not in request_params:
+            raise PhantomWebException('Missing parameter %s' % (p))
+
+    domain_name = request_params["name"]
+
+    phantom_con = _get_phantom_con(userobj)
+
+    g_general_log.debug("Looking up domain name %s for user %s" % (str(domain_name), userobj._user_dbobject.access_key))
+
+    try:
+        asgs = phantom_con.get_all_groups(names=[domain_name,])
+    except Exception, ex:
+        raise PhantomWebException("There was a problem finding the domain %s: %s" % (domain_name, str(ex)))
+    if not asgs:
+        raise PhantomWebException("No domain named %s was found" % (domain_name))
+
+    asg = asgs[0]
+
+    cloud_edit_dict = userobj.get_clouds()
+
+    lc_name = asg.launch_config_name
+    lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
+    if not lc_db_objects_a:
+        msg = "Could not find the launch configuration '%s' associated with the domain '%s'" % (lc_name, domain_name)
+        g_general_log.error(msg)
+        raise PhantomWebException(msg)
+
+    lc_db_object = lc_db_objects_a[0]
+    site_dict = _get_launch_configuration(phantom_con, lc_db_object)
+
+    # TODO: this should come from the REST interface
+    domain = userobj.describe_domain(userobj._user_dbobject.access_key, domain_name)
+    instance_metrics = {}
+    if domain is not None:
+
+        #TODO: replace with real data
+        domain_metrics = domain.get('sensor_data')
+
+        for instance in domain.get('instances', []):
+            instance_metrics[instance.get('iaas_id')] = '', instance.get('sensor_data')
+
+    inst_list = []
+    for instance in asg.instances:
+        i_d = {}
+        i_d['health_status'] = instance.health_status
+        i_d['instance_id'] = instance.instance_id.strip()
+        i_d['lifecycle_state'] = instance.lifecycle_state
+        i_d['hostname'] = "unknown"
+        if not instance.availability_zone or instance.availability_zone not in site_dict.keys():
+            error_msg = "No availabilty zone for %s in domain %s" % (str(instance), domain_name)
+            g_general_log.error(error_msg)
+            raise PhantomWebException(error_msg)
+        cloud_name = instance.availability_zone
+        i_d['cloud'] = cloud_name
+
+        cloud_edit_ent = cloud_edit_dict[cloud_name]
+        site = site_dict[cloud_name]
+        i_d['image_id'] = site['image_id']
+        i_d['instance_type'] = site['instance_type']
+        i_d['keyname'] = cloud_edit_ent.keyname
+        i_d['user_data'] = site['user_data']
+
+        if instance_metrics.get(i_d['instance_id']):
+            i_d['metric'], i_d['sensor_data'] = instance_metrics.get(i_d['instance_id'])
+
+        if i_d['instance_id']:
+            # look up more info with boto. this could be optimized for network communication
+            iaas_cloud = userobj.get_cloud(cloud_name)
+            if not iaas_cloud:
+                error_msg = "The user %s does not have a cloud configured %s.  They must have deleted it after starting the domain." % (userobj._user_dbobject.access_key, cloud_name)
+                g_general_log.error(error_msg)
+                raise PhantomWebException(error_msg)
+
+            iaas_con = iaas_cloud.get_iaas_compute_con()
+            boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
+            if boto_insts and boto_insts[0].instances:
+                boto_i = boto_insts[0].instances[0]
+                i_d['hostname'] = boto_i.dns_name
+        inst_list.append(i_d)
+
+    response_dict = {
+        'instances': inst_list,
+        'lc_name': asg.launch_config_name,
+        'domain_size': asg.desired_capacity,
+        'domain_metrics': domain_metrics
+    }
+    return response_dict
+
+

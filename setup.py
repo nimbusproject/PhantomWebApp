@@ -1,6 +1,6 @@
 #!/usr/bin/env pythonv
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import sys
 Version = "0.2.1"
@@ -20,11 +20,13 @@ setup(name=Name,
       keywords = "Nimbus auto scale",
       long_description="""Some other time""",
       license="Apache2",
-      packages=['phantomweb'],
+      packages=['phantomweb', 'phantomweb.templatetags'],
       include_package_data=True,
       package_data={ 'phantomweb': ['templates/registration/*.html', 'templates/*.html', 'static/css/*', 'static/js/*', 'static/images/*']  },
-      install_requires = ["django == 1.4", "boto == 2.6", "phantomsql"],
-      
+      install_requires = ["django >= 1.4, < 1.5", "boto == 2.6", "phantomsql == 0.2.1", "ceiclient"],
+      dependency_links=[
+          "http://github.com/nimbusproject/PhantomSQL/tarball/master#egg=phantomsql-0.2.1",
+          "http://github.com/nimbusproject/ceiclient/tarball/master#egg=ceiclient-0.1"],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Environment :: Console',

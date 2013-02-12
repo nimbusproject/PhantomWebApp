@@ -1,0 +1,323 @@
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+.inner-container {
+    padding: 0;
+}
+
+#details-nav {
+  border-bottom: 1px solid #e3e3e3;
+}
+
+@media (min-width: 768px) {
+    .domain-well {
+        min-height: 400px;
+    }
+}
+
+span.domain_sensor_tag {
+    background-color: #d9edf7;
+}
+
+#phantom_instance_context_menu {
+    display: none;
+}
+
+#phantom_details_button_div {
+    display: none;
+}
+
+#phantom_domain_loading_image {
+    display: none;
+}
+
+#loading_details {
+    height: 23px;
+}
+
+#phantom_details_loading_image {
+    float: right;
+    display: none;
+}
+
+#details_table_container {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+#phantom_domain_filter_list {
+    height: 23px;
+    width: 105px;
+    font-size: 11px;
+    margin: 0;
+}
+
+#phantom_domain_content
+{
+    display: table;
+    /*width: 900px;*/
+    height: 500px;
+}
+
+#phantom_domain_sensors_label
+{
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+#phantom_domain_status_bar_div
+{
+    height: 25px;
+}
+
+#phantom_domain_list_pane
+{
+    float: left;
+    position: relative;
+    overflow: hidden;
+    width: 12%%;
+    height: 410px;
+    margin: 4px;
+    margin-left: 0px;
+    margin-right: 1px;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 0px;
+}
+
+#phantom_domain_list_domains
+{
+    height: 400px;
+    overflow: hidden;
+    padding: 4px;
+    margin: -5px -20px -5px -5px;
+}
+
+#phantom_domain_button_add_div
+{
+    padding-top: 0;
+}
+
+#xphantom_domain_button_add
+{
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#phantom_domain_main_combined_pane
+{
+    float: left;
+    position: relative;
+    width: 38%;
+}
+
+.phantom_domain_de_pref {
+    display: none;
+}
+
+.phantom_domain_section_div
+{
+    border-bottom: solid;
+    border-bottom-width: 1px;
+    padding-top: 0px;
+    padding-bottom: 4px;
+}
+
+.phantom_domain_row
+{
+    width: 100%;
+    padding-top: 5px;
+    display: inherit;
+}
+
+.phantom_domain_label
+{
+    display: inline-block;
+    width: 45%;
+}
+
+.phantom_domain_value
+{
+    display: inline-block;
+    width: 40%;
+}
+
+#phantom_domain_lc_div
+{
+    
+}
+#phantom_domain_lc_div:hover
+{
+    background-color: #e6e6fa;
+}
+
+.phantom_domain_button
+{
+    width: 80px;
+    text-align: Center;
+}
+
+#phantom_domain_button_div
+{
+    padding-top: 5px;
+    margin-top: 5px;
+}
+
+#phantom_domain_details_pane
+{
+    position: relative;
+    float: left;
+    width: 41%;
+}
+
+#phantom_domain_details_filter_div
+{
+}
+
+
+#phantom_domain_instance_details
+{
+
+}
+
+.phantom_domain_form_pane
+{
+    border: solid;
+    border-color: #AAA;
+    border-width: 1px;
+    padding: 10px;
+    height: 400px;
+    margin: 4px;
+    margin-left: 0px;
+    margin-right: 1px;
+}
+
+.phantom_domain_control_buttons
+{
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.phantom_domain_combo
+{
+    position: relative;
+    left: 0px;
+    width: 150px;
+}
+
+#phantom_domain_size_input
+{
+    width: 2pc;
+}
+
+.phantom_domain_instance_status_div
+{
+}
+
+.phantom_domain_instance_status_name
+{
+}
+
+.phantom_domain_instance_status_details_list
+{
+}
+
+.phantom_domain_instance_status_details_item
+{
+}
+
+#phantom_domain_instance_context_menu
+{
+    display: none;
+    background: #5d78a5;
+    box-shadow: 0 0 12px rgba( 0, 0, 0, .3 );
+    border: 1px solid white;
+    position: absolute;
+    top: 0; left: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 190px;
+    z-index: 10000;
+}
+
+#phantom_domain_instance_context_menu li
+{
+    position: relative;
+    border-bottom-color: white;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+#phantom_domain_instance_context_menu li:hover
+{
+    background: #83a0d3;
+}
+
+#phantom_domain_instance_context_menu div
+{
+    color: #fffbef;
+    display: inline-block;
+    padding: 6px;
+    text-decoration: none;
+    text-align: center;
+}
+
+#phantom_domain_details_list_div
+{
+    overflow-y: scroll;
+    height: 330px;
+    background-color: #f6f6ff;
+}
+
+#phantom_domain_details_list_div ul
+{
+    list-style-type: none;
+}
+
+#phantom_domain_details_list_div li:hover
+{
+    background-color: #e6e6fa;
+}
+
+#phantomInstanceContextMenu
+{
+    display: none;
+    background: #5d78a5;
+    box-shadow: 0 0 12px rgba( 0, 0, 0, .3 );
+    border: 1px solid white;
+    position: absolute;
+    top: 0; left: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 100px;
+    z-index: 10000;
+}
+
+#phantomInstanceContextMenu li
+{
+    position: relative;
+    border-bottom-color: white;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+}
+
+#phantomInstanceContextMenu li:hover
+{
+    background: #83a0d3;
+}
+
+#phantomInstanceContextMenu div
+{
+    color: #fffbef;
+    display: inline-block;
+    padding: 8px;
+    text-decoration: none;
+    width: 80%;
+    text-align: center;
+}

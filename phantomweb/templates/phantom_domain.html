@@ -1,0 +1,220 @@
+{% extends "../templates/base.html" %}
+{% block title %}Domains - Phantom{% endblock %}
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_domain.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+
+    <script src="/static/js/bootstrap-tagmanager.js"></script>
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_domain.js"></script>
+{% endblock %}
+{% block bodytag %}{% endblock %}
+
+
+
+{% block nimbus_body  %}
+<div id="phantom_instance_context_menu_div">
+  <ul id="phantom_domain_instance_context_menu">
+    <li><div id="context_terminate">Terminate</div></li>
+    <li><div id="context_replace">Replace</div></li>
+  </ul>
+</div>
+
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped progress-phantom active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+
+    <div class="span2">
+      <div class="well well-small sidebar-nav domain-well">
+        <ul class="nav nav-list" id="domain-nav">
+          <li class=""><a id="phantom_domain_button_add" href="#">Add Domain</a></li>
+          <li class="divider"></li>
+          <li class="nav-header" id="domain-header">Domains</li>
+        </ul>
+      </div><!--/.well -->
+    </div><!--/span-->
+
+    <div class="span5">
+      <div id="xphantom_domain_main_combined_pane" class="well well-small domain-well">
+        <div id="phantom_domain_main_combined_pane_inner">
+          <h5 class="phantom_area_header magic-underline">Configuration for <span id="phantom_domain_name_label"></span></h5>
+
+          <form class="form-horizontal">                           
+
+            <div class="control-group" >
+              <label class="control-label" for="phantom_domain_lc_choice">Launch Configuration:</label>
+              <div class="controls">
+                <select id="phantom_domain_lc_choice" class="span12">
+                </select>
+              </div>
+            </div>
+
+            <div class="control-group" >
+              <label class="control-label" for="phantom_domain_sensors_input">Sensors to Monitor:</label>
+              <div class="controls">
+                <input name="tags" id="phantom_domain_sensors_input" type="text" placeholder="Add Sensor" class="span5"></input>
+              </div>
+            </div>
+
+            <div class="control-group" >
+              <label class="control-label" id="phantom_domain_de_div">Scaling Policy:</label>
+              <div class="controls">
+                <select id="phantom_domain_de_choice" class="span12">
+                </select>
+              </div>
+            </div>
+
+            <div class="control-group" id="phantom_domain_multicloud_preferences">
+              <label for="phantom_domain_size_input" class="control-label">Number of VMs:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_size_input" class=""/>
+              </div>
+            </div>
+
+            <div class="control-group" id="phantom_domain_sensor_preferences">
+              <label for="phantom_domain_metric_choice" class="control-label">Metric:</label>
+              <div class="controls">
+                <select id="phantom_domain_metric_choice" class="phantom_domain_value phantom_domain_combo"></select>
+              </div>
+
+              <label for="phantom_domain_cooldown_input" class="control-label">Cooldown (s):</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_cooldown_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_minimum_input" class="control-label">Minimum:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_minimum_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_maximum_input" class="control-label">Maximum:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_maximum_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_up_threshold_input" class="control-label">Scale Up Threshold:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_up_threshold_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_up_n_vms_input" class="control-label">Scale Up By:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_up_n_vms_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_down_threshold_input" class="control-label">Scale Down Threshold:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_down_threshold_input" class="phantom_domain_value"/>
+              </div>
+
+              <label for="phantom_domain_scale_down_n_vms_input" class="control-label">Scale Down By:</label>
+              <div class="controls">
+                <input type='text' id="phantom_domain_scale_down_n_vms_input" class="phantom_domain_value"/>
+              </div>
+            </div>
+
+
+            <div id="phantom_domain_button_div" class="control-group">
+              <div id="phantom_domain_start_buttons" class="span12 pagination-centered">
+                <input type="button" id="phantom_domain_button_start" class="btn btn-primary" value="Start"/>
+              </div>
+              <div id="phantom_domain_running_buttons" class="span12 pagination-centered">
+                <input type="button" id="phantom_domain_button_resize" class="btn" value="Update"/>
+                <input type="button" id="phantom_domain_button_terminate" class="btn btn-danger" value="Terminate"/>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div><!-- /.span -->
+
+    <div class="span5">
+      <div id="details_pane" class="well well-small domain-well">
+        <ul class="nav nav-pills" id="details-nav">
+          <li><a href="#vm-details-tab" data-toggle="pill">VM Details</a></li>
+          <li><a href="#domain-details-tab" data-toggle="pill">Domain Details</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane" id="vm-details-tab">
+            <div id="loading_details">
+              <select name="phantom_domain_filter_list" id="phantom_domain_filter_list">
+                <option>All VMs</option>
+                <option>Healthy</option>
+                <option>Errors</option>
+                <option>RUNNING</option>
+                <option>PENDING</option>
+                <option>TERMINATING</option>
+                <option>FAILED</option>
+              </select>
+              <img src="/static/images/loading0.gif" id="phantom_details_loading_image"/>
+            </div>
+            <div id="details_table_container">
+              <table class="table table-bordered table-hover table-white" id="details_table">
+                <thead>
+                  <tr>
+                    <th>Instance ID</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="details_table_body">
+                </tbody>
+              </table>
+            </div>
+
+            <table class="table table-condensed" id="instance_table">
+              <tbody id="instance_table_body">
+              </tbody>
+            </table>
+
+            <div id="phantom_details_button_div" class="control-group pull-right">
+              <input type="button" id="details_button_replace_vm" class="btn btn-mini" value="Replace"/>
+              <input type="button" id="details_button_terminate_vm" class="btn btn-mini btn-danger" value="Terminate"/>
+            </div>
+            <div style="clear: both"></div>
+            <!-- Hack that I don't understand, but is standard practice? Makes parent div inherit height of
+            contained elements
+            -->
+          </div>
+          <div class="tab-pane" id="domain-details-tab">
+            <div id="#scaling_sensor_value">
+              <h5 class="magic-underline">Scale Sensor Value</h5>
+              <p class="help-block"><small>This sensor value is the calculated number that Phantom uses to scale your domain.</small></p>
+              <table class="table table-condensed" id="scaling_table">
+                <tbody id="scaling_table_body">
+                </tbody>
+              </table>
+            </div>
+            <div id="#domain-metrics">
+              <h5 class="magic-underline">Domain Metrics</h5>
+              <p class="help-block"><small>These are metrics that are monitored on a domain-wide level.</small></p>
+              <table class="table table-condensed" id="domain-table">
+                <tbody id="domain_table_body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

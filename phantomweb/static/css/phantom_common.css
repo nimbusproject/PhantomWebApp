@@ -1,0 +1,95 @@
+
+body {
+    background: url(http://www.nimbusproject.org/images/body_bg.jpg) repeat-x;
+}
+
+/* Phone-specific CSS */
+@media (max-width: 767px) {
+    body {
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+}
+
+.table-white {
+  background-color: #FCFCFC;
+}
+
+.magic-underline {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+
+a.myTagRemover {
+    color: #444;
+}
+
+span.myTag {
+    background: none repeat scroll 0 0 #EEE;
+    border: 1px solid #AAA;
+    border-radius: 3px 3px 3px 3px;
+    color: #555;
+
+    font-size: 11px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    padding: 3px 2px 2px 3px;
+    text-decoration: none;
+
+    vertical-align: middle;
+    line-height: 18px;
+    height:18px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+}
+
+body div.container-fluid {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.progress-phantom {
+    height: 23px;
+}
+
+.move-icon:hover {
+    cursor: ns-resize;
+}
+
+#nimbus_logo {
+    margin-bottom: 5px;
+}
+
+.topbar {
+    margin-bottom: 5px;
+}
+
+#phantom_content {
+    display: table;
+    width: 900px;
+    height: 500px;
+}
+
+.phantom_links {
+    display: inline;
+    padding-right: 20px;
+}
+
+#phantom_links_div {
+    display: inline;
+    width: 100%;
+    text-align: left;
+}
+
+#phantom_reset_pw_div li {
+    list-style-type: none;
+}
+
+.phantom_headings {
+    font-size: x-large;
+    padding-top: 20px;
+    padding-right: 25px;
+}
+
+.phantom_area_header {
+    margin-top: -0px;
+}

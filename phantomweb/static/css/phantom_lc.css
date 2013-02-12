@@ -1,0 +1,117 @@
+
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+@media (min-width: 768px) {
+    .lc-well {
+        min-height: 400px;
+    }
+}
+
+#phantom_lc_heading_div
+{
+    padding-bottom: 5px;
+}
+
+#phantom_lc_heading_label
+{
+}
+
+#phantom_lc_name_select
+{
+    width: 150px;
+}
+
+.phantom_lc_name_item
+{
+}
+
+#phantom_lc_header_table
+{
+}
+
+#phantom_lc_name_input
+{
+    width: 150px;
+}
+
+.phantom_lc_checkbox_label
+{
+}
+
+.phantom_lc_checkbox
+{
+}
+
+
+.phantom_lc_info_label
+{
+    width: 50%;
+    float: left;
+    text-align: left;
+    margin-top: 5px;
+}
+
+.phantom_lc_info_combo
+{
+    width: 50%;
+}
+
+#phantom_lc_max_vm
+{
+    width: 10%;
+}
+
+#phantom_lc_cloud
+{
+}
+
+.phantom_lc_info_row
+{
+    width: 100%;
+    padding-top: 5px;
+    display: table;
+}
+
+.phantom_lc_button_row
+{
+    width: 100%;
+    padding-top: 10px;
+    display: table;
+}
+
+.phantom_lc_area_row
+{
+    width: 100%;
+    padding-top: 1px;
+    display: table;
+}
+
+
+.phantom_lc_button
+{
+    width: 90px;
+}
+
+#phantom_lc_order
+{
+    margin-bottom: 25px;
+    width: 100%;
+    height: 100%;
+}
+
+
+#phantom_lc_name_combo_div
+{
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: table;
+}
+
+#phantom_lc_name_label_div
+{
+    padding-top: 10px;
+    padding-right: 25px;
+}

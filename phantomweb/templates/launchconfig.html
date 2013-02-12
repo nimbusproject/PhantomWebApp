@@ -1,0 +1,128 @@
+{% extends "../templates/base.html" %}
+{% block title %}Launch Configurations - Phantom{% endblock %}
+
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_lc.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_lc.js"></script>
+{% endblock %}
+{% block bodytag %}{% endblock %}
+{% block nimbus_body  %}
+
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped progress-phantom active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
+</div>
+
+<div id="phantom_lc_content" class="container-fluid inner-container">
+  <div class="row-fluid">
+
+    <div class="span2">
+      <div class="well well-small sidebar-nav lc-well">
+        <ul class="nav nav-list" id="lc-nav">
+          <li class=""><a id="phantom_lc_button_add" href="#">Add Launch Config</a></li>
+          <li class="divider"></li>
+          <li class="nav-header" id="lc-header">Launch Configs</li>
+        </ul>
+      </div><!--/.well -->
+    </div><!--/span-->
+
+    <div class="span5">
+      <div class="well well-small lc-well">
+        <div id="phantom_lc_order_area">
+          <h5 class="phantom_area_header magic-underline" id="launch_config_options_head">Launch Configuration</h5>
+          <p class="help-block"><small>Virtual machines are launched on your enabled clouds in the order that the clouds are listed below. You can change this priority by dragging the clouds into the order you would like your virtual machines to start.</small>
+          </p>
+          <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
+            <thead>
+              <tr>
+                <th>Cloud</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="cloud_table_body">
+            </tbody>
+          </table>
+
+          <div id="lc-buttons" class="btn-toolbar">
+
+            <div class="pull-right">
+              <input id="phantom_lc_save" class="btn btn-primary" type="button" value="Save"/>
+              <input id="phantom_lc_delete" class="btn btn-danger" type="button" value="Delete"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="span5">
+      <div class="well well-small lc-well">
+        <div id="phantom_lc_info_area">
+
+          <h5 class="phantom_area_header magic-underline"><span id="cloud_options_name">Cloud</span> Options</h5>
+
+          <form class="form-horizontal">
+
+            <div class="control-group">
+              <label for="phantom_lc_max_vm" class="phantom_lc_info_label">Maximum VMs:</label>
+              <input type="text" id="phantom_lc_max_vm"/>
+            </div>
+
+            <div class="control-group">
+              <label for="phantom_lc_instance" class="phantom_lc_info_label">Instance Type:</label>
+              <select id="phantom_lc_instance" class="span6 pull-right">
+              </select>
+            </div>
+
+            <div class="control-group form-inline">
+              <label class="radio" for="phantom_lc_common_choice_checked">
+                <input id="phantom_lc_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_lc_change_image_type()"/> Public Image
+              </label>
+              <input type="text" id="phantom_lc_common_image_input" class="pull-right span6"/>
+            </div>
+
+            <div class="control-group form-inline">
+              <label class="radio" for="phantom_lc_user_choice_checked">
+                <input class="" id="phantom_lc_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_lc_change_image_type()"/> Personal Image
+              </label>
+              <select name="user_images" id="phantom_lc_user_images_choices" class="pull-right span6"></select>
+            </div>
+
+            <div class="control-group">
+              <label class="" for="phantom_lc_userdata">User Data</label>
+
+              <textarea class="span12" rows="5" id="phantom_lc_userdata"></textarea>
+            </div>
+
+            <div class="control-group" id="cloud-enable-buttons" style="display: none">
+              <input id="phantom_lc_add" class="btn btn-primary" type="button" value="Enable"/>
+            </div>
+
+            <div class="control-group" id="cloud-disable-buttons" style="display: none">
+              <input id="phantom_lc_disable_cloud" class="btn btn-danger" type="button" value="Disable"/>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+{% endblock %}
