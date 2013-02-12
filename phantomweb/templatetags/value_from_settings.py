@@ -10,10 +10,13 @@ def value_from_settings(parser, token):
         tag_name, var = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError, "%r tag requires a single argument" % token.contents.split()[0]
-    return ValueFromSettings(var)
+    return ValueFromSettings(tag_name, var)
 
 class ValueFromSettings(template.Node):
-    def __init__(self, var):
+    def __init__(self, tag_name, var):
+        self.argname = tag_name
         self.arg = template.Variable(var)
     def render(self, context):        
-        return getattr(settings, str(self.arg), "")
+        attr = getattr(settings, str(self.arg), "")
+        context[str(self.arg)] = attr
+        return ''

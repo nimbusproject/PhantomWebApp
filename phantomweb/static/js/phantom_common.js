@@ -12,6 +12,15 @@ if(!Array.prototype.indexOf) {
     };
 }
 
+function phantom_log(message) {
+
+    if (typeof Exceptional !== 'undefined') {
+        var line = 0; //TODO: get the line number from the stack?
+        Exceptional.handle(message, document.URL, line);
+    };
+    console.log(message);
+}
+
 String.prototype.toProperCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
@@ -38,6 +47,7 @@ function phantom_info(message_text, alert_type) {
 
 function phantom_alert(alert_text) {
     phantom_info(alert_text, "alert-error");
+    phantom_log(alert_text);
 }
 
 function make_url(p) {
