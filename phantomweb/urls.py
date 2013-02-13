@@ -9,7 +9,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
 
     url(r'^accounts/password/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$', password_reset_confirm),
-    url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/images/favicon.ico'}),
+    url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/img/favicon.ico'}),
     url(r'^accounts/ajax_change_password/$', 'phantomweb.views.django_change_password'),
     url(r'^accounts/change_password/$', password_change, {
         'post_change_redirect' : '/accounts/change_password/done/'})                                                                            ,

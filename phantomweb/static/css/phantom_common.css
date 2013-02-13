@@ -1,6 +1,6 @@
 
 body {
-    background: url(http://www.nimbusproject.org/images/body_bg.jpg) repeat-x;
+    background: url(/static/img/body_bg.jpg) repeat-x;
 }
 
 /* Phone-specific CSS */
