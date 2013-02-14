@@ -1,6 +1,6 @@
 var Exceptional = {
   KEY : null,
-  HOST : 'api.getexceptional.com',
+  HOST : 'api.exceptional.io',
   action : '',
   handle: function (msg,url,line) {
     if (Exceptional.KEY) {
