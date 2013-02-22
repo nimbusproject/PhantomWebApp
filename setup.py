@@ -24,7 +24,7 @@ setup(name=Name,
       include_package_data=True,
       package_data={ 'phantomweb': ['templates/registration/*.html', 'templates/*.html', 'static/css/*', 'static/js/*', 'static/images/*']  },
       install_requires = ["django >= 1.4, < 1.5", "boto >= 2.6", "phantomsql", "ceiclient"],
-      dependency_links=["http://github.com/nimbusproject/PhantomSQL/tarball/master#egg=phantomsql-0.2.1"],
+      dependency_links=["https://github.com/nimbusproject/PhantomSQL/archive/master.tar.gz#egg=phantomsql-0.2.1"],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Environment :: Console',
