@@ -134,6 +134,14 @@ function phantom_lc_reload_success_func(obj) {
             $("#phantom_lc_name_select").val(lc_name_from_saved);
         }
 
+        if (g_selected_lc === null) {
+            var first_lc = $("a.launch_config").first().text();
+            if (first_lc) {
+                g_selected_lc = first_lc;
+                phantom_lc_load_lc_names();
+            }
+        }
+
         phantom_lc_buttons(true);
     }
     catch (err) {
@@ -308,7 +316,6 @@ function phantom_lc_change_lc_internal(lc_name) {
         table_body.append(row);
     }
 
-
     for(var site in g_cloud_map) {
         if (ordered.indexOf(site) > -1) {
             continue;
@@ -316,8 +323,6 @@ function phantom_lc_change_lc_internal(lc_name) {
         var row = make_cloud_table_row(site, "Disabled");
         table_body.append(row);
     }
-
-
 
     for(var ndx in ordered) {
         var site = ordered[ndx];

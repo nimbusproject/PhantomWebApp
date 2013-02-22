@@ -7,6 +7,7 @@ var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud
 var g_decision_engines_by_type = {'sensor': 'Sensor', 'multicloud': 'Multi Cloud'};
 var g_current_details_request = null;
 var g_current_details_timer = null;
+var g_selected_domain = null;
 var g_selected_instance = null;
 var g_available_sensors = [];
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
@@ -40,9 +41,6 @@ $(document).ready(function() {
         return false;
     });
 
-    $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE);
-    phantom_select_de(DEFAULT_DECISION_ENGINE);
-    phantom_domain_load();
 
     $("body").click(function() {
         phantom_domain_noncontext_mouse_down();
@@ -133,6 +131,10 @@ $(document).ready(function() {
     });
 
     get_available_sensors();
+
+    $("#phantom_domain_de_choice").val(DEFAULT_DECISION_ENGINE);
+    phantom_select_de(DEFAULT_DECISION_ENGINE);
+    phantom_domain_load();
 });
 
 
@@ -275,6 +277,8 @@ function phantom_select_de(decision_engine) {
 
 function phantom_domain_load_internal(select_domain_on_success) {
 
+    select_domain_on_success = typeof select_domain_on_success !== 'undefined' ? select_domain_on_success : null;
+
     var success_func = function(obj) {
         g_domain_data = obj.domains;
         g_launch_config_names = obj.launchconfigs;
@@ -283,9 +287,16 @@ function phantom_domain_load_internal(select_domain_on_success) {
         phantom_domain_load_domain_names();
         phantom_domain_load_de_names();
         phantom_domain_buttons(true);
-        if (typeof select_domain_on_success !== 'undefined') {
+        if (select_domain_on_success) {
             phantom_domain_select_domain(select_domain_on_success);
         }
+        else if (g_selected_domain === null) {
+            var domain_name = $("a.domain").first().text();
+            if (domain_name) {
+                phantom_domain_select_domain(domain_name);
+            }
+        }
+
     };
 
     var error_func = function(obj, message) {
@@ -530,6 +541,7 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
     if (!domain_name) {
         return;
     }
+    g_selected_domain = domain_name;
     $("a.domain").parent().removeClass("active");
     $("a.domain:contains('" + domain_name + "')").parent().addClass("active");
 
