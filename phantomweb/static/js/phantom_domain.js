@@ -12,7 +12,7 @@ var g_selected_instance = null;
 var g_available_sensors = [];
 var DEFAULT_DECISION_ENGINE = 'Multi Cloud';
 var DETAILS_TIMER_MS = 5000;
-var SENSOR_HINT_ITEMS = 25;
+var SENSOR_HINT_ITEMS = 200;
 
 $(document).ready(function() {
 
