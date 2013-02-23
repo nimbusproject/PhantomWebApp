@@ -140,6 +140,10 @@ function phantom_lc_reload_success_func(obj) {
                 g_selected_lc = first_lc;
                 phantom_lc_load_lc_names();
             }
+            else {
+                $("#phantom_lc_info_area").hide();
+                $("#phantom_lc_order_area").hide();
+            }
         }
 
         phantom_lc_buttons(true);
@@ -269,6 +273,7 @@ function make_cloud_table_row(site, status) {
 function phantom_lc_change_lc_internal(lc_name) {
 
     if (!lc_name) {
+        $("#phantom_lc_order_area").hide();
         return;
     }
 
@@ -329,6 +334,8 @@ function phantom_lc_change_lc_internal(lc_name) {
         var new_opt = $('<option>', {'name': site, value: site, text: site});
         $("#phantom_lc_order").append(new_opt);
     }
+
+    $("#phantom_lc_order_area").show();
 }
 
 function phantom_lc_change_lc_click(lc_name) {
@@ -515,7 +522,8 @@ function phantom_lc_delete_internal(lc_name) {
         $("a.launch_config:contains('" + lc_name + "')").parent().remove();
         reset_cloud_and_options();
         phantom_lc_buttons(true);
-        //phantom_lc_load_internal();
+        $("#phantom_lc_info_area").hide();
+        $("#phantom_lc_order_area").hide();
     }
 
     var error_func = function(obj, message) {
@@ -566,6 +574,8 @@ function phantom_lc_delete_click() {
 function phantom_lc_order_selected_click(cloud_name) {
 
     g_selected_cloud = cloud_name;
+
+    $("#phantom_lc_info_area").show();
 
     $("#cloud_table_body").children().removeClass("info");
     $("#cloud_table_body tr td:contains('" + cloud_name + "')")

@@ -14,6 +14,14 @@
     padding-bottom: 5px;
 }
 
+#phantom_lc_order_area {
+    display: none;
+}
+
+#phantom_lc_info_area {
+    display: none;
+}
+
 #phantom_lc_heading_label
 {
 }
