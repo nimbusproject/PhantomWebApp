@@ -376,7 +376,7 @@ function phantom_lc_enable_click() {
         common = true;
     }
     else {
-        image_id = $("#phantom_lc_user_images_choices").val().trim();
+        image_id = ($("#phantom_lc_user_images_choices").val() || "").trim();
         common = false;
     }
 
