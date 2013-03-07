@@ -214,7 +214,6 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
         var new_opt = $('<option>', {'name': i, value: i, text: i});
         $("#phantom_lc_instance").append(new_opt);
     }
-    //XXXXXXXXXx$("#phantom_lc_common_image_input").text("");
     $("#phantom_lc_common_image_input").val("");
 
     $("#phantom_lc_user_images_choices").empty();

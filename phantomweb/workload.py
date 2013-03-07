@@ -10,10 +10,7 @@ import boto.ec2.autoscale
 from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
-from phantomsql import phantom_get_default_key_name
 
-
-import logging   # import the required logging module
 
 g_general_log = logging.getLogger('phantomweb.general')
 
@@ -21,18 +18,44 @@ g_general_log = logging.getLogger('phantomweb.general')
 g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
 
 g_engine_to_phantom_de_map = {
-        "epu.decisionengine.impls.phantom_multi_site_overflow.PhantomMultiSiteOverflowEngine": "multicloud",
-        "epu.decisionengine.impls.sensor.SensorEngine": "sensor",
-        }
+    "epu.decisionengine.impls.phantom_multi_site_overflow.PhantomMultiSiteOverflowEngine": "multicloud",
+    "epu.decisionengine.impls.sensor.SensorEngine": "sensor",
+}
 
 PHANTOM_REGION = 'phantom'
 
-OPENTSDB_METRICS = ["df.1kblocks.free","df.1kblocks.total","df.1kblocks.used","df.inodes.free","df.inodes.total","df.inodes.used","iostat.part.ios_in_progress","iostat.part.msec_read","iostat.part.msec_total","iostat.part.msec_weighted_total","iostat.part.msec_write","iostat.part.read_merged","iostat.part.read_requests","iostat.part.read_sectors","iostat.part.write_merged","iostat.part.write_requests","iostat.part.write_sectors","net.sockstat.ipfragqueues","net.sockstat.memory","net.sockstat.num_orphans","net.sockstat.num_sockets","net.sockstat.num_timewait","net.sockstat.sockets_inuse","net.stat.tcp.abort","net.stat.tcp.abort.failed","net.stat.tcp.congestion.recovery","net.stat.tcp.delayedack","net.stat.tcp.failed_accept","net.stat.tcp.memory.pressure","net.stat.tcp.memory.prune","net.stat.tcp.packetloss.recovery","net.stat.tcp.reording","net.stat.tcp.syncookies","proc.net.bytes","proc.net.dropped","proc.net.errs","proc.net.packets","proc.net.tcp","proc.kernel.entropy_avail","proc.loadavg.15min","proc.loadavg.1min","proc.loadavg.5min","proc.loadavg.runnable","proc.loadavg.total_threads","proc.meminfo.active","proc.meminfo.anonpages","proc.meminfo.bounce","proc.meminfo.buffers","proc.meminfo.cached","proc.meminfo.commitlimit","proc.meminfo.committed_as","proc.meminfo.dirty","proc.meminfo.highfree","proc.meminfo.hightotal","proc.meminfo.inactive","proc.meminfo.lowfree","proc.meminfo.lowtotal","proc.meminfo.mapped","proc.meminfo.memfree","proc.meminfo.memtotal","proc.meminfo.nfs_unstable","proc.meminfo.pagetables","proc.meminfo.slab","tcollector.collector.lines_invalid","tcollector.collector.lines_received","tcollector.collector.lines_sent","tcollector.reader.lines_collected","tcollector.reader.lines_dropped"]
+OPENTSDB_METRICS = [
+    "df.1kblocks.free", "df.1kblocks.total", "df.1kblocks.used",
+    "df.inodes.free", "df.inodes.total", "df.inodes.used", "iostat.part.ios_in_progress",
+    "iostat.part.msec_read", "iostat.part.msec_total", "iostat.part.msec_weighted_total",
+    "iostat.part.msec_write", "iostat.part.read_merged", "iostat.part.read_requests",
+    "iostat.part.read_sectors", "iostat.part.write_merged", "iostat.part.write_requests",
+    "iostat.part.write_sectors", "net.sockstat.ipfragqueues", "net.sockstat.memory",
+    "net.sockstat.num_orphans", "net.sockstat.num_sockets", "net.sockstat.num_timewait",
+    "net.sockstat.sockets_inuse", "net.stat.tcp.abort", "net.stat.tcp.abort.failed",
+    "net.stat.tcp.congestion.recovery", "net.stat.tcp.delayedack",
+    "net.stat.tcp.failed_accept", "net.stat.tcp.memory.pressure",
+    "net.stat.tcp.memory.prune", "net.stat.tcp.packetloss.recovery",
+    "net.stat.tcp.reording", "net.stat.tcp.syncookies", "proc.net.bytes",
+    "proc.net.dropped", "proc.net.errs", "proc.net.packets", "proc.net.tcp",
+    "proc.kernel.entropy_avail", "proc.loadavg.15min", "proc.loadavg.1min",
+    "proc.loadavg.5min", "proc.loadavg.runnable", "proc.loadavg.total_threads",
+    "proc.meminfo.active", "proc.meminfo.anonpages", "proc.meminfo.bounce",
+    "proc.meminfo.buffers", "proc.meminfo.cached", "proc.meminfo.commitlimit",
+    "proc.meminfo.committed_as", "proc.meminfo.dirty", "proc.meminfo.highfree",
+    "proc.meminfo.hightotal", "proc.meminfo.inactive", "proc.meminfo.lowfree",
+    "proc.meminfo.lowtotal", "proc.meminfo.mapped", "proc.meminfo.memfree",
+    "proc.meminfo.memtotal", "proc.meminfo.nfs_unstable", "proc.meminfo.pagetables",
+    "proc.meminfo.slab", "tcollector.collector.lines_invalid",
+    "tcollector.collector.lines_received", "tcollector.collector.lines_sent",
+    "tcollector.reader.lines_collected", "tcollector.reader.lines_dropped"
+]
 
-#
-# we are only dealing with launch configurations that were made with the web app
-#
+
 def _get_launch_configuration(phantom_con, lc_db_object):
+    """
+    we are only dealing with launch configurations that were made with the web app
+    """
     lc_name = lc_db_object.name
     site_dict = {}
     host_vm_db_objs_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
@@ -40,12 +63,16 @@ def _get_launch_configuration(phantom_con, lc_db_object):
         site_name = host_vm_db_obj.cloud_name
         shoe_horn_lc_name = "%s@%s" % (lc_name, site_name)
         try:
-            lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name,])
+            lcs = phantom_con.get_all_launch_configurations(names=[shoe_horn_lc_name, ])
         except Exception, ex:
-            raise PhantomWebException("Error communicating with Phantom REST.  %s might be misconfigured | %s" % (shoe_horn_lc_name, str(ex)))
+            raise PhantomWebException(
+                "Error communicating with Phantom REST.  %s might be misconfigured | %s" % (
+                shoe_horn_lc_name, str(ex)))
 
         if len(lcs) != 1:
-            raise PhantomWebException("Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % shoe_horn_lc_name)
+            raise PhantomWebException(
+                "Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % (
+                shoe_horn_lc_name, ))
         lc = lcs[0]
         site_entry = {
             'cloud': site_name,
@@ -61,6 +88,7 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 
     return site_dict
 
+
 def _get_all_launch_configurations(phantom_con, username):
     all_lc_dict = {}
     lc_db_objects_a = LaunchConfigurationDB.objects.filter(username=username)
@@ -68,6 +96,7 @@ def _get_all_launch_configurations(phantom_con, username):
         site_dict = _get_launch_configuration(phantom_con, lc_db_object)
         all_lc_dict[lc_db_object.name] = site_dict
     return all_lc_dict
+
 
 def _get_all_domains(phantom_con):
 
@@ -78,10 +107,11 @@ def _get_all_domains(phantom_con):
         ent = {}
         ent['name'] = a.name
         ent['vm_size'] = a.desired_capacity
-        ent['lc_name'] = a.launch_config_name # .replace("[LaunchConfiguration:", "")
+        ent['lc_name'] = a.launch_config_name
         return_asgs[a.name] = ent
 
     return return_asgs
+
 
 def _get_all_domains_dashi(userobj):
 
@@ -121,9 +151,13 @@ def _get_phantom_con(userobj):
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(name=PHANTOM_REGION, endpoint=uparts.hostname)
-    con = boto.ec2.autoscale.AutoScaleConnection(aws_access_key_id=userobj._user_dbobject.access_key, aws_secret_access_key=userobj._user_dbobject.access_secret, is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
+    con = boto.ec2.autoscale.AutoScaleConnection(
+        aws_access_key_id=userobj._user_dbobject.access_key,
+        aws_secret_access_key=userobj._user_dbobject.access_secret,
+        is_secure=is_secure, port=uparts.port, region=region, validate_certs=False)
     con.host = uparts.hostname
     return con
+
 
 def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
     """multicloud_tags_from_de_params
@@ -222,7 +256,7 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
     shoe_horn = "%s@%s" % (lc_name, a_cloudname)
     try:
         lc = phantom_con.get_all_launch_configurations(names=[shoe_horn,])
-    except EC2ResponseError, ec2re:
+    except EC2ResponseError:
         lc = None
     if not lc:
         raise PhantomWebException("The LC %s no longer exists." % (lc_name))
@@ -517,7 +551,7 @@ def phantom_lc_save(request_params, userobj):
             ec2conn = cloud_object.get_iaas_compute_con()
             try:
                 tmp_img = ec2conn.get_all_images(image_ids=[entry['image_id']])
-            except EC2ResponseError, boto_image_ex:
+            except EC2ResponseError:
                 tmp_img = None
             if not tmp_img:
                 raise PhantomWebException("No such image %s for cloud %s" % (entry['image_id'], site_name))
@@ -525,7 +559,7 @@ def phantom_lc_save(request_params, userobj):
             try:
                 # we probably need to list everything with the base name and delete it
                 phantom_con.delete_launch_configuration(lc_conf_name)
-            except Exception, boto_del_ex:
+            except Exception:
                 # delete in case this is an update
                 pass
             lc = boto.ec2.autoscale.launchconfig.LaunchConfiguration(phantom_con,
