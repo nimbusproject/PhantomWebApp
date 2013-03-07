@@ -5,6 +5,7 @@ var g_unsaved_lcs = [];
 var g_blank_name = "<new name>";
 var g_selected_lc = null;
 var g_selected_cloud = null;
+var MAX_PUBLIC_IMAGES_ITEMS = 200;
 
 $(document).ready(function() {
     $("#nav-launchconfig").addClass("active");
@@ -34,6 +35,16 @@ $(document).ready(function() {
             return $helper;
           },
     });
+
+    var $phantom_lc_common_image_input = $("#phantom_lc_common_image_input").typeahead({
+        minLength: 0,
+        items: MAX_PUBLIC_IMAGES_ITEMS,
+    });
+
+    //enable showing hints on click
+    $phantom_lc_common_image_input.on('focus', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
+    $phantom_lc_common_image_input.on('click', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
+
 
     $("#phantom_lc_add").click(function() {
         phantom_lc_enable_click();
@@ -207,6 +218,10 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
     if (cloud_data.status != 0) {
         return;
     }
+
+    var public_images_typeahead = $('#phantom_lc_common_image_input').data('typeahead');
+    public_images_typeahead.hide();
+
     $("#phantom_lc_max_vm").val("");
     $("#phantom_lc_instance").empty();
     for (instance in cloud_data.instances) {
@@ -221,6 +236,9 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
         var i = cloud_data.personal_images[personal];
         var new_opt = $('<option>', {'name': i, value: i, text: i});
         $("#phantom_lc_user_images_choices").append(new_opt);
+    }
+    if (public_images_typeahead) {
+        public_images_typeahead.source = cloud_data.public_images;
     }
 }
 

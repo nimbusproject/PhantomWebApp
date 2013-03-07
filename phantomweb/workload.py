@@ -173,7 +173,7 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
     monitor_sensors = de_params.get('monitor_sensors', '')
     monitor_domain_sensors_key = 'monitor_domain_sensors'
     monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
-    sample_function_key =  'sample_function'
+    sample_function_key = 'sample_function'
     sample_function = 'Average'
     # TODO: this should eventually be configurable
     sensor_type_key = 'sensor_type'
@@ -192,6 +192,7 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
     tags.append(sensor_type_tag)
 
     return tags
+
 
 def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
@@ -219,7 +220,7 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
     scale_down_vms = de_params.get('sensor_scale_down_vms')
 
     # TODO: This is hardcoded for this sync, should be exposed in the UI
-    sample_function_key =  'sample_function'
+    sample_function_key = 'sample_function'
     sample_function = 'Average'
     sensor_type_key = 'sensor_type'
     sensor_type = 'opentsdb'
@@ -250,12 +251,13 @@ def sensor_tags_from_de_params(phantom_con, domain_name, de_params):
 
     return tags
 
+
 @LogEntryDecorator
 def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_list_str, a_cloudname):
 
     shoe_horn = "%s@%s" % (lc_name, a_cloudname)
     try:
-        lc = phantom_con.get_all_launch_configurations(names=[shoe_horn,])
+        lc = phantom_con.get_all_launch_configurations(names=[shoe_horn, ])
     except EC2ResponseError:
         lc = None
     if not lc:
@@ -275,7 +277,7 @@ def _start_domain(phantom_con, domain_name, lc_name, de_name, de_params, host_li
         monitor_sensors = de_params.get('monitor_sensors', '')
         monitor_domain_sensors_key = 'monitor_domain_sensors'
         monitor_domain_sensors = de_params.get('monitor_domain_sensors', '')
-        sample_function_key =  'sample_function'
+        sample_function_key = 'sample_function'
         sample_function = 'Average'
         # TODO: this should eventually be configurable
         sensor_type_key = 'sensor_type'
@@ -492,7 +494,15 @@ def phantom_lc_load(request_params, userobj):
             l = ec2conn.get_all_images(owners=['self'])
             user_images = [u.id for u in l if not u.is_public]
 
+            # We don't fetch EC2 public images because there are thousands
+            public_images = []
+            if cloud.driver_class != "libcloud.compute.drivers.ec2.EC2NodeDriver":
+                g_general_log.debug("Looking up public images on %s" % cloud_name)
+                l = ec2conn.get_all_images()
+                public_images = [u.id for u in l if u.is_public]
+
             cloud_info['personal_images'] = user_images
+            cloud_info['public_images'] = public_images
             cloud_info['instances'] = g_instance_types
             cloud_info['status'] = 0
         except Exception, ex:
