@@ -1,16 +1,18 @@
-from boto.ec2.connection import EC2Connection
-from boto.exception import BotoServerError
-from django.template import Context, loader
-from django.http import HttpResponse
 import logging
 import urlparse
-from phantomweb.models import UserPhantomInfoDB
-from phantomweb.phantom_web_exceptions import PhantomWebException
-from phantomsql import PhantomSQL
-from phantomweb.models import PhantomInfoDB, RabbitInfoDB
+
+from boto.ec2.connection import EC2Connection
+from boto.exception import BotoServerError
 from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
+from django.http import HttpResponse
+from django.template import Context, loader
+from phantomsql import PhantomSQL
+import boto.ec2
 
+from phantomweb.models import PhantomInfoDB, RabbitInfoDB
+from phantomweb.models import UserPhantomInfoDB
+from phantomweb.phantom_web_exceptions import PhantomWebException
 
 g_general_log = logging.getLogger('phantomweb.general')
 
@@ -68,62 +70,62 @@ def get_user_object(username):
 
 class UserCloudInfo(object):
 
-    def __init__(self, cloudname, username, iaas_key, iaas_secret, keyname, driver_class, site_desc=None):
+    def __init__(self, cloudname, username, iaas_key, iaas_secret, keyname, site_desc):
         self.cloudname = cloudname
         self.username = username
         self.iaas_key = iaas_key
         self.iaas_secret = iaas_secret
         self.keyname = keyname
-        self.driver_class = driver_class
-        if site_desc:
-            self.site_desc = site_desc.copy()
+        self.site_desc = site_desc.copy()
 
     def get_iaas_compute_con(self):
         site_url = "INVALID"
-        if self.driver_class == "libcloud.compute.drivers.ec2.NimbusNodeDriver":
+        if self.site_desc['type'] == "nimbus":
             return self._connect_nimbus()
-        elif self.driver_class == "libcloud.compute.drivers.ec2.EC2NodeDriver":
+        elif self.site_desc['type'] == "ec2":
             return self._connect_ec2()
-        elif self.driver_class == "libcloud.compute.drivers.ec2.EucNodeDriver":
+        elif self.site_desc['type'] == "openstack":
             return self._connect_euca()
 
-        raise PhantomWebException("Unknown driver type")
+        raise PhantomWebException("Unknown site type")
 
     def _connect_nimbus(self):
-        if 'driver_kwargs' not in self.site_desc:
+        if 'host' and 'port' not in self.site_desc:
             raise PhantomWebException("The site %s is misconfigured." % (self.cloudname))
-        dets = self.site_desc['driver_kwargs']
-        if dets['secure']:
+        if self.site_desc['secure']:
             scheme = "https"
         else:
             scheme = "http"
-        site_url = "%s://%s:%s" % (scheme, dets['host'], str(dets['port']))
+        site_url = "%s://%s:%s" % (scheme, self.site_desc['host'], str(self.site_desc['port']))
 
         uparts = urlparse.urlparse(site_url)
         is_secure = uparts.scheme == 'https'
-        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure,  validate_certs=False)
+        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False)
         ec2conn.host = uparts.hostname
         return ec2conn
 
     def _connect_ec2(self):
-        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret)
+        ec2_region = self.site_desc.get("region")
+        if ec2_region is not None:
+            region = boto.ec2.get_region(ec2_region)
+
+        ec2conn = EC2Connection(self.iaas_key, self.iaas_secret, region=region)
         return ec2conn
 
     def _connect_euca(self):
-        if 'driver_kwargs' not in self.site_desc:
+        if 'host' and 'port' not in self.site_desc:
             raise PhantomWebException("The site %s is misconfigured." % (self.cloudname))
-        dets = self.site_desc['driver_kwargs']
-        if dets['secure']:
+        if self.site_desc['secure']:
             scheme = "https"
         else:
             scheme = "http"
-        site_url = "%s://%s:%s" % (scheme, dets['host'], str(dets['port']))
+        site_url = "%s://%s:%s" % (scheme, self.site_desc['host'], str(self.site_desc['port']))
 
         kwargs = {}
         uparts = urlparse.urlparse(site_url)
         is_secure = uparts.scheme == 'https'
-        if dets.get('path') is not None:
-            kwargs['path'] = dets['path']
+        if self.site_desc.get('path') is not None:
+            kwargs['path'] = self.site_desc['path']
 
         ec2conn = EC2Connection(self.iaas_key, self.iaas_secret, host=uparts.hostname, port=uparts.port, is_secure=is_secure, validate_certs=False, **kwargs)
         ec2conn.host = uparts.hostname
@@ -200,7 +202,7 @@ class UserObjectMySQL(UserObject):
             try:
                 site_desc = dtrs_client.describe_site(site_name)
                 desc = dtrs_client.describe_credentials(self._user_dbobject.access_key, site_name)
-                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc['driver_class'], site_desc=site_desc)
+                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
             except Exception, ex:
                 g_general_log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self._user_dbobject.displayname, str(ex)))

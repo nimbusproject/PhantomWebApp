@@ -496,7 +496,7 @@ def phantom_lc_load(request_params, userobj):
 
             # We don't fetch EC2 public images because there are thousands
             public_images = []
-            if cloud.driver_class != "libcloud.compute.drivers.ec2.EC2NodeDriver":
+            if cloud.site_desc["type"] != "ec2":
                 g_general_log.debug("Looking up public images on %s" % cloud_name)
                 l = ec2conn.get_all_images()
                 public_images = [u.id for u in l if u.is_public]
