@@ -194,8 +194,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     $(".control-group").removeClass("error");
 
-    $("#cloud_table_body tr td:contains('" + selected_cloud_name + "')")
-      .parent().addClass("info");
+    $("#cloud-row-" + selected_cloud_name).addClass("info");
 
     var val = g_cloud_map[selected_cloud_name];
 
