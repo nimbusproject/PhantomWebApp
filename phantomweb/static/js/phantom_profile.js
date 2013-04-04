@@ -3,6 +3,10 @@ var g_selected_cloud = null;
 var ENTER_KEYCODE = 13;
 
 
+function jq(myid) {
+    return '#' + myid.replace(/(:|\.)/g,'\\$1');
+}
+
 $(document).ready(function() {
     $("#nav-profile").addClass("active");
     $('a.nav-profile-menu').click(function (e) {
@@ -194,7 +198,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     $(".control-group").removeClass("error");
 
-    $("#cloud-row-" + selected_cloud_name).addClass("info");
+    $(jq("cloud-row-" + selected_cloud_name)).addClass("info");
 
     var val = g_cloud_map[selected_cloud_name];
 
