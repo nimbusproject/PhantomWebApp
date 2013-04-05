@@ -179,7 +179,6 @@ function phantom_lc_add_lc_click() {
 
     g_unsaved_lcs.push(new_lc_name);
     g_lc_info[new_lc_name] = {};
-    g_arranged_cloud_values[new_lc_name] = {};
     g_selected_lc = new_lc_name;
     phantom_lc_load_lc_names();
 }
