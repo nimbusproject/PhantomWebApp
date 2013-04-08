@@ -197,8 +197,6 @@ function phantom_add_domain_click() {
     phantom_domain_load_domain_names();
 
     phantom_domain_deselect_domain();
-    phantom_domain_load_lc_names();
-    phantom_domain_load_de_names();
     $("#phantom_domain_list_domains").val(new_domain_name);
     phantom_domain_select_domain(new_domain_name, false);
 }
@@ -283,9 +281,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
         g_domain_data = obj.domains;
         g_launch_config_names = obj.launchconfigs;
 
-        phantom_domain_load_lc_names();
         phantom_domain_load_domain_names();
-        phantom_domain_load_de_names();
         phantom_domain_buttons(true);
         if (select_domain_on_success) {
             phantom_domain_select_domain(select_domain_on_success);
@@ -543,6 +539,8 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
     }
 
     phantom_domain_deselect_domain();
+    phantom_domain_load_lc_names();
+    phantom_domain_load_de_names();
 
     g_selected_domain = domain_name;
     $("a.domain").parent().removeClass("active");
@@ -617,6 +615,7 @@ function phantom_domain_select_domain(domain, load_details) {
 }
 
 function phantom_domain_deselect_domain() {
+    console.log("deselecting domain");
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
     $("#phantom_details_button_div").hide();
