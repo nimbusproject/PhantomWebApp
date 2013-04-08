@@ -381,6 +381,8 @@ function phantom_lc_load() {
 
 function phantom_lc_enable_click() {
 
+    $("#phantom_lc_info_area div").removeClass("error");
+
     var cloud_name = g_selected_cloud;
     var max_vm = $("#phantom_lc_max_vm").val().trim();
     var instance_type = $("#phantom_lc_instance").val().trim();
@@ -401,18 +403,29 @@ function phantom_lc_enable_click() {
         return;
     }
     if (!max_vm) {
+        $("#phantom_lc_max_vm").parent().addClass("error");
         phantom_alert("You must select a maximum number of VMs for this cloud.");
         return;
     }
     if (!image_id) {
+        if ($("#phantom_lc_common_choice_checked").is(":checked")) {
+            console.log("Common checked");
+            $("#phantom_lc_common_image_input").parent().addClass("error");
+        }
+        else {
+            console.log("Personal checked");
+            $("#phantom_lc_user_images_choices").parent().addClass("error");
+        }
         phantom_alert("You must select an image.");
         return;
     }
     if (!instance_type) {
+        $("#phantom_lc_instance").parent().addClass("error");
         phantom_alert("You must select an instance type.");
         return;
     }
     if (max_vm < -1 || max_vm > 32000) {
+        $("#phantom_lc_max_vm").parent().addClass("error");
         phantom_alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
     }
