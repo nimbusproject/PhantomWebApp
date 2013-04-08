@@ -541,6 +541,9 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
     if (!domain_name) {
         return;
     }
+
+    phantom_domain_deselect_domain();
+
     g_selected_domain = domain_name;
     $("a.domain").parent().removeClass("active");
     $("a.domain").filter(function() {return $(this).text() == domain_name}).parent().addClass("active");
