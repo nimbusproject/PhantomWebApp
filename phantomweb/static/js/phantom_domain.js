@@ -543,7 +543,7 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
     }
     g_selected_domain = domain_name;
     $("a.domain").parent().removeClass("active");
-    $("a.domain:contains('" + domain_name + "')").parent().addClass("active");
+    $("a.domain").filter(function() {return $(this).text() == domain_name}).parent().addClass("active");
 
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
