@@ -25,10 +25,10 @@ def LogEntryDecorator(func):
             raise
         finally:
             g_general_log.debug("Exiting %s." % (func.func_name))
+    wrapped.__name__ = func.__name__
     return wrapped
 
 def PhantomWebDecorator(func):
-
     def wrapped(*args, **kw):
         try:
             response_dict = func(*args,**kw)
@@ -44,6 +44,7 @@ def PhantomWebDecorator(func):
             }
         g_general_log.debug("returning response_dict %s" % (str(response_dict)))
         return response_dict
+    wrapped.__name__ = func.__name__
     return wrapped
 
 
