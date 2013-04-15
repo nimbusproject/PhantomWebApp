@@ -2,6 +2,7 @@ import boto
 from boto.ec2.autoscale import Tag
 from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
+import statsd
 
 import json
 import logging
@@ -369,7 +370,13 @@ def terminate_iaas_instance(request_params, userobj):
 
     ec2conn = iaas_cloud.get_iaas_compute_con()
     g_general_log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
+    timer = statsd.Timer('phantomweb')
+    timer_cloud = statsd.Timer('phantomweb')
+    timer.start()
+    timer_cloud.start()
     ec2conn.terminate_instances(instance_ids=[instance,])
+    timer.stop('terminate_instances.timing')
+    timer_cloud.stop('terminate_instances.%s.timing' % cloud_name)
 
     response_dict = {
         'name': 'terminating',
@@ -437,7 +444,13 @@ def phantom_sites_load(request_params, userobj):
 
         ec2conn = ci.get_iaas_compute_con()
         try:
+            timer = statsd.Timer('phantomweb')
+            timer_cloud = statsd.Timer('phantomweb')
+            timer.start()
+            timer_cloud.start()
             keypairs = ec2conn.get_all_key_pairs()
+            timer.stop('get_all_key_pairs.timing')
+            timer_cloud.stop('get_all_key_pairs.%s.timing' % site_name)
             keyname_list = [k.name for k in keypairs]
             ci_dict['keyname_list'] = keyname_list
             ci_dict['status_msg'] = ""
@@ -491,14 +504,26 @@ def phantom_lc_load(request_params, userobj):
             cloud = clouds_d[cloud_name]
             ec2conn = cloud.get_iaas_compute_con()
             g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+            timer = statsd.Timer('phantomweb')
+            timer_cloud = statsd.Timer('phantomweb')
+            timer.start()
+            timer_cloud.start()
             l = ec2conn.get_all_images(owners=['self'])
+            timer.stop('get_all_images.timing')
+            timer_cloud.stop('get_all_images.%s.timing' % cloud_name)
             user_images = [u.id for u in l if not u.is_public]
 
             # We don't fetch EC2 public images because there are thousands
             public_images = []
             if cloud.site_desc["type"] != "ec2":
                 g_general_log.debug("Looking up public images on %s" % cloud_name)
+                timer = statsd.Timer('phantomweb')
+                timer_cloud = statsd.Timer('phantomweb')
+                timer.start()
+                timer_cloud.start()
                 l = ec2conn.get_all_images()
+                timer.stop('get_all_images.timing')
+                timer_cloud.stop('get_all_images.%s.timing' % cloud_name)
                 public_images = [u.id for u in l if u.is_public]
 
             cloud_info['personal_images'] = user_images
@@ -560,7 +585,13 @@ def phantom_lc_save(request_params, userobj):
             cloud_object = userobj.get_cloud(site_name)
             ec2conn = cloud_object.get_iaas_compute_con()
             try:
+                timer = statsd.Timer('phantomweb')
+                timer_cloud = statsd.Timer('phantomweb')
+                timer.start()
+                timer_cloud.start()
                 tmp_img = ec2conn.get_all_images(image_ids=[entry['image_id']])
+                timer.stop('get_all_images.timing')
+                timer_cloud.stop('get_all_images.%s.timing' % site_name)
             except EC2ResponseError:
                 tmp_img = None
             if not tmp_img:
@@ -924,7 +955,13 @@ def phantom_domain_details(request_params, userobj):
                 raise PhantomWebException(error_msg)
 
             iaas_con = iaas_cloud.get_iaas_compute_con()
+            timer = statsd.Timer('phantomweb')
+            timer_cloud = statsd.Timer('phantomweb')
+            timer.start()
+            timer_cloud.start()
             boto_insts = iaas_con.get_all_instances(instance_ids=[i_d['instance_id'],])
+            timer.stop('get_all_instances.timing')
+            timer_cloud.stop('get_all_instances.%s.timing' % cloud_name)
             if boto_insts and boto_insts[0].instances:
                 boto_i = boto_insts[0].instances[0]
                 i_d['hostname'] = boto_i.dns_name
