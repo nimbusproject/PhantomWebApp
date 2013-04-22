@@ -34,7 +34,9 @@ $(document).ready(function() {
     });
 
     //enable showing hints on click
-    $sensor_input.on('focus', $sensor_input.typeahead.bind($sensor_input, 'lookup'));
+    if ($sensor_input.typeahead.bind) {
+        $sensor_input.on('focus', $sensor_input.typeahead.bind($sensor_input, 'lookup'));
+    }
 
     $("input[name=hidden-tags]").change(function() {
         phantom_update_sensors();
