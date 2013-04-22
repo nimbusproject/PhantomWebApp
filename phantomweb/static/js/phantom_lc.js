@@ -42,8 +42,10 @@ $(document).ready(function() {
     });
 
     //enable showing hints on click
-    $phantom_lc_common_image_input.on('focus', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
-    $phantom_lc_common_image_input.on('click', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
+    if ($phantom_lc_common_image_input.typeahead.bind) {
+        $phantom_lc_common_image_input.on('focus', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
+        $phantom_lc_common_image_input.on('click', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
+    }
 
 
     $("#phantom_lc_add").click(function() {
