@@ -50,6 +50,10 @@ function phantom_alert(alert_text) {
     phantom_log(alert_text);
 }
 
+function phantom_warning(alert_text) {
+    phantom_info(alert_text, "");
+}
+
 function make_url(p) {
     var base_url = document.location.href.concat("/");
 

@@ -401,12 +401,12 @@ function phantom_lc_enable_click() {
     }
 
     if (!cloud_name) {
-        phantom_alert("You must select a cloud.");
+        phantom_warning("You must select a cloud.");
         return;
     }
     if (!max_vm) {
         $("#phantom_lc_max_vm").parent().addClass("error");
-        phantom_alert("You must select a maximum number of VMs for this cloud.");
+        phantom_warning("You must select a maximum number of VMs for this cloud.");
         return;
     }
     if (!image_id) {
@@ -418,7 +418,7 @@ function phantom_lc_enable_click() {
             console.log("Personal checked");
             $("#phantom_lc_user_images_choices").parent().addClass("error");
         }
-        phantom_alert("You must select an image.");
+        phantom_warning("You must select an image.");
         return;
     }
     if (!instance_type) {
@@ -428,7 +428,7 @@ function phantom_lc_enable_click() {
     }
     if (max_vm < -1 || max_vm > 32000) {
         $("#phantom_lc_max_vm").parent().addClass("error");
-        phantom_alert("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
+        phantom_warning("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
     }
 
@@ -584,7 +584,7 @@ function phantom_lc_delete_click() {
 
     var lc_name = g_selected_lc;
     if (!lc_name) {
-        phantom_alert("You must select an existing launch configuration name to delete.")
+        phantom_warning("You must select an existing launch configuration name to delete.")
         return;
     }
 
