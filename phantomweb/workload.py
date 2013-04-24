@@ -71,9 +71,10 @@ def _get_launch_configuration(phantom_con, lc_db_object):
                 shoe_horn_lc_name, str(ex)))
 
         if len(lcs) != 1:
-            raise PhantomWebException(
+            g_general_log.error(
                 "Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % (
                 shoe_horn_lc_name, ))
+            continue
         lc = lcs[0]
         site_entry = {
             'cloud': site_name,
@@ -180,9 +181,12 @@ def multicloud_tags_from_de_params(phantom_con, domain_name, de_params):
     sensor_type_key = 'sensor_type'
     sensor_type = 'opentsdb'
 
-    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key, value=monitor_sensors, resource_id=domain_name)
-    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key, value=monitor_domain_sensors, resource_id=domain_name)
-    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key, value=sample_function, resource_id=domain_name)
+    monitor_sensors_tag = Tag(connection=phantom_con, key=monitor_sensors_key,
+        value=monitor_sensors, resource_id=domain_name)
+    monitor_domain_sensors_tag = Tag(connection=phantom_con, key=monitor_domain_sensors_key,
+        value=monitor_domain_sensors, resource_id=domain_name)
+    sample_function_tag = Tag(connection=phantom_con, key=sample_function_key,
+        value=sample_function, resource_id=domain_name)
     sensor_type_tag = Tag(connection=phantom_con, key=sensor_type_key, value=sensor_type, resource_id=domain_name)
 
     tags = []
