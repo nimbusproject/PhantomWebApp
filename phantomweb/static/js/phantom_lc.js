@@ -179,6 +179,11 @@ function phantom_lc_add_lc_click() {
         return false;
     }
 
+    if (g_lc_info.hasOwnProperty(new_lc_name)) {
+        phantom_warning("You already have a launch config called " + new_domain_name);
+        return false;
+    }
+
     g_unsaved_lcs.push(new_lc_name);
     g_lc_info[new_lc_name] = {};
     g_selected_lc = new_lc_name;

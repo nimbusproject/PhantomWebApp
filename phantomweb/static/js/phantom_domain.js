@@ -195,6 +195,10 @@ function phantom_add_domain_click() {
     if (new_domain_name === null) {
         return false;
     }
+    if (g_domain_data.hasOwnProperty(new_domain_name)) {
+        phantom_warning("You already have a domain called " + new_domain_name);
+        return false;
+    }
     g_domain_data[new_domain_name] = {};
     phantom_domain_load_domain_names();
 
@@ -448,7 +452,7 @@ function gather_domain_params_from_ui() {
     }
 
     if (error_msg != undefined) {
-        phantom_alert(error_msg);
+        phantom_warning(error_msg);
         return null;
     }
 
@@ -496,7 +500,7 @@ function phantom_domain_terminate_click_internal() {
         error_msg = "You must specify a domain name";
     }
     if (error_msg != undefined) {
-        phantom_alert(error_msg);
+        phantom_warning(error_msg);
         return;
     }
 
