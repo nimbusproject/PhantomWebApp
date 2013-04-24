@@ -1,14 +1,18 @@
 #!/bin/bash
 TESTDIR=tests
-
+INCLUDEDIR=include
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 which coffeelint 2>&1 >/dev/null
 COFFEELINT_AVAILABLE=$?
 if [ "$COFFEELINT_AVAILABLE" -eq 0 ]; then
-    echo "Running tests through coffeelint..."
     coffeelint -q $TESTDIR/*.coffee *.coffee | grep -e "^$" -v
+    if [ "$?" -ne 0 ]; then
+        exit 1
+    fi
 fi
 
-casperjs test $TESTDIR --pre=login.coffee --includes=inc.coffee
+includes=`find $INCLUDEDIR -name '*.coffee' | tr "\\n" "," | sed 's/,$//'`
+
+casperjs test $TESTDIR --pre=login.coffee --includes=$includes #--fail-fast
