@@ -306,7 +306,7 @@ function phantom_lc_change_lc_internal(lc_name) {
     $("#launch_config_options_head").text(lc_name + " Launch Configuration");
 
     $("a.launch_config").parent().removeClass("active");
-    $("a.launch_config:contains('" + lc_name + "')").parent().addClass("active");
+    $("a.launch_config").filter(function() { return $(this).text() == lc_name}).parent().addClass("active");
 
     $("#cloud_options_name").text("cloud");
     $("#cloud_table_body").empty();
@@ -449,7 +449,7 @@ function phantom_lc_enable_click() {
     g_arranged_cloud_values[cloud_name] = entry;
 
     var new_row = make_cloud_table_row(cloud_name, "Enabled");
-    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
+    $("#cloud_table_body tr td").filter(function() { return $(this).text() == cloud_name})
       .parent().replaceWith(new_row);
     phantom_lc_order_selected_click(cloud_name);
 }
@@ -460,7 +460,7 @@ function phantom_lc_disable_click() {
     delete g_arranged_cloud_values[cloud_name];
 
     var new_row = make_cloud_table_row(cloud_name, "Disabled");
-    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
+    $("#cloud_table_body tr td").filter(function() { return $(this).text() == cloud_name})
       .parent().replaceWith(new_row);
     phantom_lc_order_selected_click(cloud_name);
 }
@@ -555,7 +555,7 @@ function phantom_lc_delete_internal(lc_name) {
     var success_func = function(obj) {
         g_selected_lc = null;
         g_selected_cloud = null;
-        $("a.launch_config:contains('" + lc_name + "')").parent().remove();
+        $("a.launch_config").filter(function() { return $(this).text() == lc_name}).parent().remove();
         reset_cloud_and_options();
         phantom_lc_buttons(true);
         $("#phantom_lc_info_area").hide();
@@ -614,8 +614,7 @@ function phantom_lc_order_selected_click(cloud_name) {
     $("#phantom_lc_info_area").show();
 
     $("#cloud_table_body").children().removeClass("info");
-    $("#cloud_table_body tr td:contains('" + cloud_name + "')")
-      .parent().addClass("info");
+    $("#cloud_table_body tr td").filter(function() { return $(this).text() == cloud_name}).parent().addClass("info");
 
     if (cloud_name.toLowerCase() === "ec2") {
         $("#cloud_options_name").text(cloud_name.toUpperCase());
