@@ -180,7 +180,7 @@ function phantom_lc_add_lc_click() {
     }
 
     if (g_lc_info.hasOwnProperty(new_lc_name)) {
-        phantom_warning("You already have a launch config called " + new_domain_name);
+        phantom_warning("You already have a launch config called " + new_lc_name);
         return false;
     }
 
