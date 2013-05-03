@@ -11,11 +11,6 @@ casper.removeFilter = (filterName) ->
   if @_filters.hasOwnProperty filterName
     delete @_filters[filterName]
 
-casper.setFilter 'page.prompt', (msg, value) ->
-  if msg == "Enter a new launch config name:"
-    return casper.launch_config
-  else if msg == "Enter a new domain name:"
-    return casper.domain_name
 
 casper.getPhantomURL = ->
   phantomURL = system.env.PHANTOM_URL

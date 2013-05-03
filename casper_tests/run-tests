@@ -7,7 +7,7 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 which coffeelint 2>&1 >/dev/null
 COFFEELINT_AVAILABLE=$?
 if [ "$COFFEELINT_AVAILABLE" -eq 0 ]; then
-    coffeelint -q $TESTDIR/*.coffee *.coffee | grep -e "^$" -v
+    coffeelint -q $TESTDIR/*.coffee $INCLUDEDIR/*.coffee *.coffee | grep -e "^$" -v
     if [ "$?" -ne 0 ]; then
         exit 1
     fi
@@ -15,4 +15,5 @@ fi
 
 includes=`find $INCLUDEDIR -name '*.coffee' | tr "\\n" "," | sed 's/,$//'`
 
-casperjs test $TESTDIR --pre=login.coffee --includes=$includes #--fail-fast
+echo casperjs test $TESTDIR --pre=login.coffee --includes=$includes --fail-fast
+casperjs test $TESTDIR/*domain.coffee --pre=login.coffee --includes=$includes --fail-fast
