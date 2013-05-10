@@ -7,11 +7,9 @@ from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
 from django.http import HttpResponse
 from django.template import Context, loader
-from phantomsql import PhantomSQL
 import boto.ec2
 
-from phantomweb.models import PhantomInfoDB, RabbitInfoDB
-from phantomweb.models import UserPhantomInfoDB
+from phantomweb.models import RabbitInfoDB, PhantomUser
 from phantomweb.phantom_web_exceptions import PhantomWebException
 
 g_general_log = logging.getLogger('phantomweb.general')
@@ -48,13 +46,6 @@ def PhantomWebDecorator(func):
         return response_dict
     wrapped.__name__ = func.__name__
     return wrapped
-
-
-def render_template(fname, d):
-    t = loader.get_template(full_path)
-    c = Context(response_dict)
-    return HttpResponse(t.render(c))
-
 
 
 class UserCloudInfo(object):
@@ -124,37 +115,25 @@ class UserCloudInfo(object):
 class UserObject(object):
     pass
 
+
 class UserObjectMySQL(UserObject):
-
     def __init__(self, username):
-
         self.username = username
-        phantom_info_objects = PhantomInfoDB.objects.all()
-        if not phantom_info_objects:
-            raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
+
+        phantom_user = PhantomUser.objects.get(username=username)
+        if phantom_user is None:
+            raise PhantomWebException('The user %s is not associated with an access key ID. Please contact your sysadmin' % (username))
+        self.access_key = phantom_user.access_key_id
+
         rabbit_info_objects = RabbitInfoDB.objects.all()
         if not rabbit_info_objects:
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
-
-        self.phantom_info = phantom_info_objects[0]
         self.rabbit_info = rabbit_info_objects[0]
-        g_general_log.debug("Using dburl %s" % (self.phantom_info.dburl))
-        self._authz = PhantomSQL(self.phantom_info.dburl)
-        self._user_dbobject = self._authz.get_user_object_by_display_name(username)
-        if not self._user_dbobject:
-            raise PhantomWebException('The user %s is not associated with cloud user database.  Please contact your sysadmin' % (username))
-        self.access_key = self._user_dbobject.access_key
 
         ssl = self.rabbit_info.rabbitssl
         self._dashi_conn = DashiCeiConnection(self.rabbit_info.rabbithost, self.rabbit_info.rabbituser, self.rabbit_info.rabbitpassword, exchange=self.rabbit_info.rabbitexchange, timeout=60, port=self.rabbit_info.rabbitport, ssl=ssl)
         self.epum = EPUMClient(self._dashi_conn)
         self.dtrs = DTRSClient(self._dashi_conn)
-
-        self._load_clouds()
-
-
-    def close(self):
-        self._authz.close()
 
     def describe_domain(self, username, domain):
         # TODO: this should eventually be part of the REST API
@@ -177,33 +156,32 @@ class UserObjectMySQL(UserObject):
             dts.append(dt)
         return dts
 
-    def load_clouds(self):
-        self._load_clouds()
-
     def _load_clouds(self):
         dtrs_client = DTRSClient(self._dashi_conn)
-        sites = dtrs_client.list_credentials(self._user_dbobject.access_key)
+        sites = dtrs_client.list_credentials(self.access_key)
         self.iaasclouds = {}
         for site_name in sites:
             try:
-                site_desc = dtrs_client.describe_site(self._user_dbobject.access_key, site_name)
-                desc = dtrs_client.describe_credentials(self._user_dbobject.access_key, site_name)
-                uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc)
+                site_desc = dtrs_client.describe_site(self.access_key, site_name)
+                desc = dtrs_client.describe_credentials(self.access_key, site_name)
+                uci = UserCloudInfo(site_name, self.username, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
             except Exception, ex:
-                g_general_log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self._user_dbobject.displayname, str(ex)))
+                g_general_log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self.username, str(ex)))
 
     def get_cloud(self, name):
+        self._load_clouds()
         if name not in self.iaasclouds:
             raise PhantomWebException("No cloud named %s associated with the user" % (name))
         return self.iaasclouds[name]
 
     def get_clouds(self):
+        self._load_clouds()
         return self.iaasclouds
 
     def get_possible_sites(self):
         site_client = DTRSClient(self._dashi_conn)
-        l = site_client.list_sites(self._user_dbobject.access_key)
+        l = site_client.list_sites(self.access_key)
         return l
 
     def add_site(self, site_name, access_key, secret_key, key_name):
@@ -213,15 +191,16 @@ class UserObjectMySQL(UserObject):
             'secret_key': secret_key,
             'key_name': key_name
         }
+        self.get_clouds()
         if site_name in self.iaasclouds:
-            cred_client.update_credentials(self._user_dbobject.access_key, site_name, site_credentials)
+            cred_client.update_credentials(self.access_key, site_name, site_credentials)
         else:
-            cred_client.add_credentials(self._user_dbobject.access_key, site_name, site_credentials)
+            cred_client.add_credentials(self.access_key, site_name, site_credentials)
         self._load_clouds()
 
     def delete_site(self, site_name):
         cred_client = DTRSClient(self._dashi_conn)
-        cred_client.remove_credentials(self._user_dbobject.access_key, site_name)
+        cred_client.remove_credentials(self.access_key, site_name)
         self._load_clouds()
 
 
