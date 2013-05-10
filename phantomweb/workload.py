@@ -430,6 +430,12 @@ def phantom_sites_add(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
+def phantom_get_sites(request_params, userobj):
+    return userobj.get_possible_sites()
+
+
+@PhantomWebDecorator
+@LogEntryDecorator
 def phantom_sites_load(request_params, userobj):
     sites = userobj.get_clouds()
     all_sites = userobj.get_possible_sites()
