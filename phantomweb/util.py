@@ -200,7 +200,7 @@ class UserObjectMySQL(UserObject):
         self.iaasclouds = {}
         for site_name in sites:
             try:
-                site_desc = dtrs_client.describe_site(site_name)
+                site_desc = dtrs_client.describe_site(self._user_dbobject.access_key, site_name)
                 desc = dtrs_client.describe_credentials(self._user_dbobject.access_key, site_name)
                 uci = UserCloudInfo(site_name, self._user_dbobject.displayname, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
@@ -217,7 +217,7 @@ class UserObjectMySQL(UserObject):
 
     def get_possible_sites(self):
         site_client = DTRSClient(self._dashi_conn)
-        l = site_client.list_sites()
+        l = site_client.list_sites(self._user_dbobject.access_key)
         return l
 
     def add_site(self, site_name, access_key, secret_key, key_name):
