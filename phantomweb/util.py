@@ -167,9 +167,6 @@ class UserObjectMySQL(UserObject):
     def close(self):
         self._authz.close()
 
-    def has_phantom_data(self):
-        return True
-
     def describe_domain(self, username, domain):
         # TODO: this should eventually be part of the REST API
         describe = self.epum.describe_domain(domain, caller=username)
