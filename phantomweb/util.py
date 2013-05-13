@@ -55,17 +55,6 @@ def render_template(fname, d):
     c = Context(response_dict)
     return HttpResponse(t.render(c))
 
-def get_cloud_objects(username):
-    clouds = UserCloudInfoDB.objects.filter(username=username)
-    return clouds
-
-def get_user_object(username):
-    phantom_l = UserPhantomInfoDB.objects.filter(username=username)
-    if not phantom_l:
-        return None
-    if len(phantom_l) > 1:
-        raise PhantomWebException("There are multiple users by the name %s.  The admin must clean this." % (username))
-    return phantom_l[0]
 
 
 class UserCloudInfo(object):
