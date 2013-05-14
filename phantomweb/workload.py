@@ -1,16 +1,20 @@
+import json
+import statsd
+import logging
+import urlparse
+import threading
 import boto
+import boto.ec2.autoscale
+
 from boto.ec2.autoscale import Tag
 from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
-import statsd
 
-import json
-import logging
-import urlparse
-import boto.ec2.autoscale
 from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
+
+EC2_TIMEOUT = 5
 
 
 g_general_log = logging.getLogger('phantomweb.general')
@@ -434,7 +438,28 @@ def phantom_sites_load(request_params, userobj):
     sites = userobj.get_clouds()
     all_sites = userobj.get_possible_sites()
 
+    threads = []
+
     out_info = {}
+
+    def add_keypairs(connection, info_dict, site):
+        ci_dict = info_dict.get(site, {})
+        timer = statsd.Timer('phantomweb')
+        timer.start()
+        try:
+            keypairs = connection.get_all_key_pairs()
+            timer.stop('get_all_key_pairs.timing')
+            keyname_list = [k.name for k in keypairs]
+            ci_dict['keyname_list'] = keyname_list
+            ci_dict['status_msg'] = ""
+        except Exception:
+            timer.stop('get_all_key_pairs.timing')
+            ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
+            ci_dict['status'] = 1
+
+        if not info_dict.get(site) is ci_dict:
+            info_dict[site] = ci_dict
+
     for site_name in sites:
         ci = sites[site_name]
         ci_dict = {
@@ -445,26 +470,27 @@ def phantom_sites_load(request_params, userobj):
             'status': 0,
             'status_msg': ""
         }
+        out_info[site_name] = ci_dict
 
         ec2conn = ci.get_iaas_compute_con()
-        try:
-            timer = statsd.Timer('phantomweb')
-            timer_cloud = statsd.Timer('phantomweb')
-            timer.start()
-            timer_cloud.start()
-            keypairs = ec2conn.get_all_key_pairs()
-            timer.stop('get_all_key_pairs.timing')
-            timer_cloud.stop('get_all_key_pairs.%s.timing' % site_name)
-            keyname_list = [k.name for k in keypairs]
-            ci_dict['keyname_list'] = keyname_list
-            ci_dict['status_msg'] = ""
-        except Exception, boto_ex:
-            g_general_log.error("Error connecting to the service %s" % (str(boto_ex)))
-            ci_dict['keyname_list'] = []
+        thread = threading.Thread(name=site_name, target=add_keypairs, args=(ec2conn, out_info, site_name))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+
+        site_name = thread.name
+        ci_dict = out_info[site_name]
+
+        timer_cloud = statsd.Timer('phantomweb')
+        timer_cloud.start()
+        thread.join(EC2_TIMEOUT)
+        if thread.isAlive():
+            g_general_log.error("thread %s still alive!" % thread.name)
             ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
             ci_dict['status'] = 1
 
-        out_info[site_name] = ci_dict
+        timer_cloud.stop('get_all_key_pairs.%s.timing' % site_name)
 
     response_dict = {
         'sites': out_info,
