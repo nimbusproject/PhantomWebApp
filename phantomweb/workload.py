@@ -2,7 +2,7 @@ import json
 import statsd
 import logging
 import urlparse
-import threading
+#import threading
 import boto
 import boto.ec2.autoscale
 
@@ -13,9 +13,9 @@ from boto.regioninfo import RegionInfo
 from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
+from phantomweb.tevent import Pool, TimeoutError
 
-EC2_TIMEOUT = 5
-
+EC2_TIMEOUT = 2
 
 g_general_log = logging.getLogger('phantomweb.general')
 
@@ -438,11 +438,7 @@ def phantom_sites_load(request_params, userobj):
     sites = userobj.get_clouds()
     all_sites = userobj.get_possible_sites()
 
-    threads = []
-
-    out_info = {}
-
-    def add_keypairs(connection, info_dict, site):
+    def get_keypairs(connection, info_dict, site):
         ci_dict = info_dict.get(site, {})
         timer = statsd.Timer('phantomweb')
         timer.start()
@@ -451,6 +447,7 @@ def phantom_sites_load(request_params, userobj):
             timer.stop('get_all_key_pairs.timing')
             keyname_list = [k.name for k in keypairs]
             ci_dict['keyname_list'] = keyname_list
+            ci_dict['status'] = 0
             ci_dict['status_msg'] = ""
         except Exception:
             timer.stop('get_all_key_pairs.timing')
@@ -459,6 +456,10 @@ def phantom_sites_load(request_params, userobj):
 
         if not info_dict.get(site) is ci_dict:
             info_dict[site] = ci_dict
+
+    out_info = {}
+    pool = Pool()
+    results = {}
 
     for site_name in sites:
         ci = sites[site_name]
@@ -471,26 +472,30 @@ def phantom_sites_load(request_params, userobj):
             'status_msg': ""
         }
         out_info[site_name] = ci_dict
+        g_general_log.info("Loading site %s" % site_name)
 
         ec2conn = ci.get_iaas_compute_con()
-        thread = threading.Thread(name=site_name, target=add_keypairs, args=(ec2conn, out_info, site_name))
-        threads.append(thread)
-        thread.start()
+        result = pool.apply_async(get_keypairs, (ec2conn, out_info, site_name))
+        results[site_name] = result
 
-    for thread in threads:
+    pool.close()
 
-        site_name = thread.name
+    for site_name, result in results.iteritems():
+
         ci_dict = out_info[site_name]
 
         timer_cloud = statsd.Timer('phantomweb')
         timer_cloud.start()
-        thread.join(EC2_TIMEOUT)
-        if thread.isAlive():
-            g_general_log.error("thread %s still alive!" % thread.name)
+        try:
+            result.get(EC2_TIMEOUT)
+        except TimeoutError:
+            g_general_log.error("Took more than %ss to get key from %s" % (EC2_TIMEOUT, site_name))
             ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
             ci_dict['status'] = 1
 
         timer_cloud.stop('get_all_key_pairs.%s.timing' % site_name)
+
+    pool.terminate()
 
     response_dict = {
         'sites': out_info,
@@ -521,50 +526,72 @@ def _parse_param_name(needle, haystack, request_params, lc_dict):
 @LogEntryDecorator
 def phantom_lc_load(request_params, userobj):
     global g_instance_types
-
     clouds_d = userobj.get_clouds()
-
     phantom_con = _get_phantom_con(userobj)
-
     all_lc_dict = _get_all_launch_configurations(phantom_con, userobj._user_dbobject.access_key)
-    iaas_info = {}
-    for cloud_name in clouds_d:
-        try:
-            cloud_info = {}
-            cloud = clouds_d[cloud_name]
-            ec2conn = cloud.get_iaas_compute_con()
-            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+
+    def get_cloud_images(connection, cloud_info, cloud, cloud_name):
+        g_general_log.debug("PDA: Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+        timer = statsd.Timer('phantomweb')
+        timer_cloud = statsd.Timer('phantomweb')
+        timer.start()
+        timer_cloud.start()
+        l = connection.get_all_images(owners=['self'])
+        timer.stop('get_all_images.timing')
+        timer_cloud.stop('get_all_images.%s.timing' % cloud_name)
+        user_images = [u.id for u in l if not u.is_public]
+
+        # We don't fetch EC2 public images because there are thousands
+        public_images = []
+        if cloud.site_desc["type"] != "ec2":
+            g_general_log.debug("Looking up public images on %s" % cloud_name)
             timer = statsd.Timer('phantomweb')
             timer_cloud = statsd.Timer('phantomweb')
             timer.start()
             timer_cloud.start()
-            l = ec2conn.get_all_images(owners=['self'])
+            l = connection.get_all_images()
             timer.stop('get_all_images.timing')
             timer_cloud.stop('get_all_images.%s.timing' % cloud_name)
-            user_images = [u.id for u in l if not u.is_public]
+            public_images = [u.id for u in l if u.is_public]
 
-            # We don't fetch EC2 public images because there are thousands
-            public_images = []
-            if cloud.site_desc["type"] != "ec2":
-                g_general_log.debug("Looking up public images on %s" % cloud_name)
-                timer = statsd.Timer('phantomweb')
-                timer_cloud = statsd.Timer('phantomweb')
-                timer.start()
-                timer_cloud.start()
-                l = ec2conn.get_all_images()
-                timer.stop('get_all_images.timing')
-                timer_cloud.stop('get_all_images.%s.timing' % cloud_name)
-                public_images = [u.id for u in l if u.is_public]
+        cloud_info['personal_images'] = user_images
+        cloud_info['public_images'] = public_images
+        cloud_info['instances'] = g_instance_types
+        cloud_info['status'] = 0
 
-            cloud_info['personal_images'] = user_images
-            cloud_info['public_images'] = public_images
-            cloud_info['instances'] = g_instance_types
-            cloud_info['status'] = 0
+    pool = Pool()
+    results = {}
+    iaas_info = {}
+    for cloud_name in clouds_d:
+        try:
+            cloud_info = {}
+            iaas_info[cloud_name] = cloud_info
+
+            cloud = clouds_d[cloud_name]
+            ec2conn = cloud.get_iaas_compute_con()
+            result = pool.apply_async(get_cloud_images, (ec2conn, cloud_info, cloud, cloud_name))
+            results[cloud_name] = result
+
         except Exception, ex:
-            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            g_general_log.exception("Error communicating with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
             cloud_info = {'error': str(ex)}
             cloud_info['status'] = 1
-        iaas_info[cloud_name] = cloud_info
+
+    pool.close()
+
+    for cloud_name, result in results.iteritems():
+
+        cloud_info = iaas_info[cloud_name]
+
+        try:
+            g_general_log.info("PDA: waiting for %s" % cloud_name)
+            result.get(5)
+        except TimeoutError as ex:
+            g_general_log.exception("Error communicating with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            cloud_info = {'error': str(ex)}
+            cloud_info['status'] = 1
+
+    pool.terminate()
 
     response_dict = {
         'cloud_info': iaas_info,
