@@ -1,14 +1,15 @@
-import boto
-from boto.ec2.autoscale import Tag
-from boto.exception import EC2ResponseError
-from boto.regioninfo import RegionInfo
-import statsd
-
 import json
 import logging
 import urlparse
+
+from boto.ec2.autoscale import Tag
+from boto.exception import EC2ResponseError
+from boto.regioninfo import RegionInfo
+import boto
 import boto.ec2.autoscale
-from phantomweb.models import LaunchConfigurationDB, HostMaxPairDB
+import statsd
+
+from phantomweb.models import LaunchConfiguration, LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
 
@@ -89,6 +90,29 @@ def _get_launch_configuration(phantom_con, lc_db_object):
         site_dict[site_name] = site_entry
 
     return site_dict
+
+
+########
+
+# New implementation for the Phantom API
+
+def get_all_launch_configurations(username):
+    return LaunchConfiguration.objects.filter(username=username)
+
+
+def get_launch_configuration(id):
+    try:
+        lc = LaunchConfiguration.objects.get(id=id)
+    except LaunchConfiguration.DoesNotExist:
+        lc = None
+    return lc
+
+
+def delete_launch_configuration(lc):
+    try:
+        
+
+########
 
 
 def _get_all_launch_configurations(phantom_con, username):

@@ -148,6 +148,9 @@ class UserObjectMySQL(UserObject):
             domains.append(domain_description)
         return domains
 
+    def get_dt(self, dt_name):
+        return self.dtrs.describe_dt(self.access_key, dt_name)
+
     def get_all_lcs(self):
         dt_names = self.dtrs.list_dts(self.access_key)
         dts = []

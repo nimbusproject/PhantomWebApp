@@ -1,5 +1,16 @@
 from django.db import models
 
+from phantomweb.random_primary import RandomPrimaryIdModel
+
+
+class LaunchConfiguration(RandomPrimaryIdModel):
+    name = models.CharField(max_length=128)
+    username = models.CharField(max_length=128)
+
+    class Meta(object):
+        unique_together = ("name", "username")
+
+
 class LaunchConfigurationDB(models.Model):
     name = models.CharField(max_length=128)
     username = models.CharField(max_length=128)
@@ -11,7 +22,7 @@ class LaunchConfigurationDB(models.Model):
 class HostMaxPairDB(models.Model):
     cloud_name = models.CharField(max_length=128)
     max_vms = models.IntegerField()
-    launch_config = models.ForeignKey(LaunchConfigurationDB)
+    launch_config = models.ForeignKey(LaunchConfiguration)
     rank = models.IntegerField()
     common_image = models.BooleanField()
 
