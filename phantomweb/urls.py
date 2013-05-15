@@ -52,4 +52,6 @@ urlpatterns = patterns('',
     url(r'^api/%s/sites/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
     url(r'^api/%s/credentials$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials_resource'),
+    url(r'^api/%s/launchconfigurations$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
+    url(r'^api/%s/launchconfigurations/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.launchconfiguration_resource'),
 )
