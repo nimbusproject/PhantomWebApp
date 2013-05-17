@@ -11,7 +11,7 @@ import statsd
 
 from phantomweb.models import LaunchConfiguration, LaunchConfigurationDB, HostMaxPairDB
 from phantomweb.phantom_web_exceptions import PhantomWebException
-from phantomweb.util import PhantomWebDecorator, LogEntryDecorator
+from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_object
 
 
 g_general_log = logging.getLogger('phantomweb.general')
@@ -96,6 +96,11 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 
 # New implementation for the Phantom API
 
+def create_launch_configuration(username, name):
+    lc = LaunchConfiguration.objects.create(name=name, username=username)
+    return lc
+
+
 def get_all_launch_configurations(username):
     return LaunchConfiguration.objects.filter(username=username)
 
@@ -107,10 +112,50 @@ def get_launch_configuration(id):
         lc = None
     return lc
 
+def get_launch_configuration_by_name(username, name):
+    lcs = LaunchConfiguration.objects.filter(name=name, username=username)
+    if len(lcs) == 0:
+        return None
+    else:
+        return lcs[0]
 
-def delete_launch_configuration(lc):
-    try:
-        
+
+def get_host_max_pair(launch_config, cloud_name):
+    hmp = HostMaxPairDB.objects.filter(cloud_name=cloud_name, launch_config=launch_config)
+    if len(hmp) == 0:
+        return None
+    else:
+        return hmp[0]
+
+def set_host_max_pair(launch_config, cloud_name, max_vms=-1, rank=0, common_image=False):
+    host_max_pairs = HostMaxPairDB.objects.filter(cloud_name=cloud_name, launch_config=launch_config)
+    if len(host_max_pairs) == 0:
+        host_max_pair = HostMaxPairDB.objects.create(cloud_name=cloud_name,
+            launch_config=launch_config, max_vms=max_vms, rank=rank, common_image=common_image)
+    else:
+        host_max_pair = host_max_pairs[0]
+        host_max_pair.update(cloud_name=cloud_name,
+            launch_config=launch_config, max_vms=max_vms, rank=rank, common_image=common_image)
+
+    host_max_pair.save()
+    return host_max_pair
+
+def get_all_domains(username):
+    user_obj = get_user_object(username)
+    domains = user_obj.get_all_domains(username)
+
+    return_domains = []
+    for d in domains:
+        ent = user_obj.get_domain(username, d)
+        return_domains.append(ent)
+
+    return return_domains
+
+def create_domain(username, name, parameters):
+    user_obj = get_user_object(username)
+    user_obj.add_domain(username, name, parameters)
+    
+
 
 ########
 
