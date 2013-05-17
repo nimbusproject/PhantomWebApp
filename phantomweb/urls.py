@@ -1,6 +1,7 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
-from django.contrib.auth.views import password_reset, password_change, password_change_done, password_reset_confirm, password_reset_done, password_reset_complete
+from django.contrib.auth.views import password_reset, password_change, password_change_done, \
+    password_reset_confirm, password_reset_done, password_reset_complete
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -14,7 +15,7 @@ urlpatterns = patterns('',
     url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/img/favicon.ico'}),
     url(r'^accounts/ajax_change_password/$', 'phantomweb.views.django_change_password'),
     url(r'^accounts/change_password/$', password_change, {
-        'post_change_redirect' : '/accounts/change_password/done/'})                                                                            ,
+        'post_change_redirect': '/accounts/change_password/done/'}),
     url(r'^accounts/change_password/done/$', password_change_done),
     url(r'^accounts/reset_password/$', password_reset),
     url(r'^accounts/reset_password/done$', password_reset_done),
@@ -53,5 +54,8 @@ urlpatterns = patterns('',
     url(r'^api/%s/credentials$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials_resource'),
     url(r'^api/%s/launchconfigurations$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
-    url(r'^api/%s/launchconfigurations/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.launchconfiguration_resource'),
+    url(r'^api/%s/launchconfigurations/([0-9A-Za-z]+)$' % DEV_VERSION,
+        'phantomweb.api.dev.launchconfiguration_resource'),
+    url(r'^api/%s/domains$' % DEV_VERSION, 'phantomweb.api.dev.domains'),
+    url(r'^api/%s/domains/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.domain_resource'),
 )
