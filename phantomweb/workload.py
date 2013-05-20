@@ -112,6 +112,7 @@ def get_launch_configuration(id):
         lc = None
     return lc
 
+
 def get_launch_configuration_by_name(username, name):
     lcs = LaunchConfiguration.objects.filter(name=name, username=username)
     if len(lcs) == 0:
@@ -127,6 +128,7 @@ def get_host_max_pair(launch_config, cloud_name):
     else:
         return hmp[0]
 
+
 def set_host_max_pair(launch_config, cloud_name, max_vms=-1, rank=0, common_image=False):
     host_max_pairs = HostMaxPairDB.objects.filter(cloud_name=cloud_name, launch_config=launch_config)
     if len(host_max_pairs) == 0:
@@ -140,6 +142,7 @@ def set_host_max_pair(launch_config, cloud_name, max_vms=-1, rank=0, common_imag
     host_max_pair.save()
     return host_max_pair
 
+
 def get_all_domains(username):
     user_obj = get_user_object(username)
     domains = user_obj.get_all_domains(username)
@@ -151,10 +154,84 @@ def get_all_domains(username):
 
     return return_domains
 
+
+def get_domain(username, id):
+    user_obj = get_user_object(username)
+    return user_obj.get_domain(username, id)
+
+
+def get_domain_instances(username, id):
+    user_obj = get_user_object(username)
+    return user_obj.get_domain_instances(username, id)
+
+
+def get_domain_instance(username, id, instance_id):
+    user_obj = get_user_object(username)
+    instances = user_obj.get_domain_instances(username, id)
+    wanted_instance = None
+    for instance in instances:
+        if instance.get('id') == instance_id:
+            wanted_instance = instance
+            break
+    return wanted_instance
+
+
+def get_domain_by_name(username, name):
+    domains = get_all_domains(username)
+    for domain in domains:
+        if domain.get('name') == name:
+            return domain
+    return None
+
+
+def terminate_domain_instance(username, domain_id, instance_id):
+    user_obj = get_user_object(username)
+    instance_to_terminate = get_domain_instance(username, domain_id, instance_id)
+    if instance_to_terminate is None:
+        raise PhantomWebException("No instance %s available to terminate" % instance_id)
+
+    instance_iaas_id = instance_to_terminate.get('iaas_instance_id')
+    if instance_iaas_id is None:
+        raise PhantomWebException("Instance %s has no iaas ID" % instance_id)
+
+    cloud_name = instance_to_terminate.get('cloud')
+    cloud_name = cloud_name.split("/")[-1]
+
+    iaas_cloud = user_obj.get_cloud(cloud_name)
+    iaas_connection = iaas_cloud.get_iaas_compute_con()
+
+    g_general_log.debug("User %s terminating the instance %s on %s" % (username, instance_iaas_id, cloud_name))
+
+    timer = statsd.Timer('phantomweb')
+    timer.start()
+
+    timer_cloud = statsd.Timer('phantomweb')
+    timer_cloud.start()
+
+    try:
+        iaas_connection.terminate_instances(instance_ids=[instance_iaas_id, ])
+    except Exception:
+        g_general_log.exception("Couldn't terminate %s" % instance_iaas_id)
+        raise PhantomWebException("Problem terminating instance %s" % instance_iaas_id)
+    timer.stop('terminate_instances.timing')
+    timer_cloud.stop('terminate_instances.%s.timing' % cloud_name)
+
+    return
+
+
+def remove_domain(username, id):
+    user_obj = get_user_object(username)
+    return user_obj.remove_domain(username, id)
+
+
 def create_domain(username, name, parameters):
     user_obj = get_user_object(username)
-    user_obj.add_domain(username, name, parameters)
-    
+    return user_obj.add_domain(username, name, parameters)
+
+
+def modify_domain(username, id, parameters):
+    user_obj = get_user_object(username)
+    return user_obj.reconfigure_domain(username, id, parameters)
 
 
 ########

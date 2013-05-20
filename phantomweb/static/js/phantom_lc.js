@@ -221,7 +221,7 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
     }
     var cloud_data = g_cloud_map[cloud_name];
 
-    if (cloud_data.status != 0) {
+    if (!cloud_data || cloud_data.status != 0) {
         return;
     }
 
@@ -252,7 +252,7 @@ function phantom_lc_load_cloud_names() {
 
     for(var site in g_cloud_map) {
         var cloud_data = g_cloud_map[site];
-        if (cloud_data.status != 0) {
+        if (!cloud_data || cloud_data.status != 0) {
             phantom_alert("There was an error communicating with ".concat(site).concat(". You may still use the remaining clouds. Refresh later when the cloud is available."))        }
         else {
             var new_opt = $('<option>', {'name': site, value: site, text: site});
