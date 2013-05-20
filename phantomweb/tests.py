@@ -3,7 +3,8 @@ import json
 from django.contrib.auth.models import User
 from django.test.client import Client
 from django.utils import unittest
-from mock import patch
+from mock import patch, Mock
+from dashi.exceptions import DashiError
 
 from phantomweb.models import HostMaxPairDB, LaunchConfiguration, PhantomUser, RabbitInfoDB
 
@@ -633,7 +634,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 class DomainTestCase(unittest.TestCase):
     def test_get_domains(self):
         def list_domains(self, caller):
-            print caller
             if caller == "freds_access_key_id":
                 return ["domain1", "domain2"]
             else:
@@ -642,9 +642,10 @@ class DomainTestCase(unittest.TestCase):
         def describe_domain(self, domain, caller=None):
             if caller == "freds_access_key_id" and domain == "domain1":
                 return {
-                    'name': 'domain1',
+                    'name': 'this-is-a-uuid',
                     'config': {
                         'engine_conf': {
+                            'phantom_name': 'domain1',
                             'phantom_de_name': 'multicloud',
                             'minimum_vms': 1,
                             'dtname': 'mylc'
@@ -653,9 +654,10 @@ class DomainTestCase(unittest.TestCase):
                 }
             if caller == "freds_access_key_id" and domain == "domain2":
                 return {
-                    'name': 'domain2',
+                    'name': 'this-is-a-uuid-number-two',
                     'config': {
                         'engine_conf': {
+                            'phantom_name': 'domain2',
                             'phantom_de_name': 'sensor',
                             'minimum_vms': 1,
                             'maximum_vms': 2,
@@ -711,37 +713,682 @@ class DomainTestCase(unittest.TestCase):
             self.assertEqual(domain2['sensor_scale_up_vms'], 1)
 
     def test_post_domains(self):
-        c = Client()
-        c.login(username='fred', password='secret')
+        def add_domain(obj, name, definition, conf, caller=None):
+            if caller == "freds_access_key_id":
+                return {}
+            else:
+                self.fail("Unknown arguments received")
 
-        post_content = {
-            "name": "myseconddomain",
-            "de_name": "sensor",
-            "lc_name": "mysecondlc",
-            "monitor_sensors": "proc.loadavg.1min,df.inodes.free",
-            "sensor_minimum_vms": 1,
-            "sensor_maximum_vms": 10,
-            "sensor_metric": "proc.loadavg.1min",
-            "sensor_scale_down_threshold": "0.5",
-            "sensor_scale_down_vms": 1,
-            "sensor_scale_up_threshold": 1,
-            "sensor_scale_up_vms": 1,
-            "sensor_cooldown": 60
-        }
-        response = c.post('/api/dev/domains',
-            json.dumps(post_content), content_type='application/json')
-        self.assertEqual(response.status_code, 201)
+        def list_domains(self, caller):
+            if caller == "freds_access_key_id":
+                return ["this-is-a-uuid", "this-is-a-uuid-number-two"]
+            else:
+                self.fail("Unknown arguments received")
 
-        domain = json.loads(response.content)
-        self.assertEqual(domain["name"], "myseconddomain")
-        self.assertEqual(domain["owner"], "fred")
-        assert domain["id"]
-        assert domain["uri"].startswith("/api/dev/domains/")
+        def describe_domain(self, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+                return {
+                    'name': 'this-is-a-uuid-number-two',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain2',
+                            'phantom_de_name': 'sensor',
+                            'minimum_vms': 1,
+                            'maximum_vms': 2,
+                            'metric': 'df.1kblocks.used',
+                            'monitor_sensors': ['df.1kblocks.used', 'df.1kblocks.total'],
+                            'monitor_domain_sensors': ['testy', ],
+                            'sample_function': 'Average',
+                            'scale_down_n_vms': 1,
+                            'scale_down_threshold': 0.1,
+                            'scale_up_n_vms': 1,
+                            'scale_up_threshold': 0.5,
+                            'cooldown_period': 10,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received")
 
-        #cloud_param = lc["cloud_params"][lc["cloud_params"].keys()[0]]
-        #self.assertEqual(cloud_param["max_vms"], -1)
-        #self.assertEqual(cloud_param["common"], True)
-        #self.assertEqual(cloud_param["rank"], 1)
-        #self.assertEqual(cloud_param["image_id"], "hello-cloud")
-        #self.assertEqual(cloud_param["instance_type"], "m1.large")
-        #self.assertEqual(cloud_param["user_data"], "Hello World")
+        with patch.multiple('ceiclient.client.EPUMClient', add_domain=add_domain,
+                list_domains=list_domains, describe_domain=describe_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            post_content = {
+                "name": "myseconddomain",
+                "de_name": "sensor",
+                "lc_name": "mysecondlc",
+                "monitor_sensors": "proc.loadavg.1min,df.inodes.free",
+                "sensor_minimum_vms": 1,
+                "sensor_maximum_vms": 10,
+                "sensor_metric": "proc.loadavg.1min",
+                "sensor_scale_down_threshold": 0.5,
+                "sensor_scale_down_vms": 1,
+                "sensor_scale_up_threshold": 1,
+                "sensor_scale_up_vms": 1,
+                "sensor_cooldown": 60
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 201)
+
+            domain = json.loads(response.content)
+            self.assertEqual(domain["name"], "myseconddomain")
+            self.assertEqual(domain["de_name"], "sensor")
+            self.assertEqual(domain["lc_name"], "mysecondlc")
+            self.assertEqual(domain["monitor_sensors"], "proc.loadavg.1min,df.inodes.free")
+            self.assertEqual(domain["sensor_minimum_vms"], 1)
+            self.assertEqual(domain["sensor_maximum_vms"], 10)
+            self.assertEqual(domain["sensor_metric"], "proc.loadavg.1min")
+            self.assertEqual(domain["sensor_scale_down_threshold"], 0.5)
+            self.assertEqual(domain["sensor_scale_down_vms"], 1)
+            self.assertEqual(domain["sensor_scale_up_threshold"], 1)
+            self.assertEqual(domain["sensor_scale_up_vms"], 1)
+            self.assertEqual(domain["sensor_cooldown"], 60)
+            self.assertEqual(domain["owner"], "fred")
+            assert domain["id"]
+            domain_id = domain["id"]
+            self.assertEqual(domain["uri"], "/api/dev/domains/%s" % domain_id)
+
+            broken_post_content = {
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'fake_de'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'sensor'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'multicloud'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            duplicate_domain_content = {
+                'name': 'domain1',
+                'de_name': 'multicloud'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(duplicate_domain_content), content_type='application/json')
+            self.assertEqual(response.status_code, 302)
+            assert response['Location'].endswith("/api/dev/domains/this-is-a-uuid")
+
+    def test_get_domain_resource(self):
+        def list_domains(self, caller):
+            if caller == "freds_access_key_id":
+                return ["domain1", "domain2"]
+            else:
+                self.fail("Unknown arguments received")
+
+        def describe_domain(self, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            elif caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+                return {
+                    'name': 'this-is-a-uuid-number-two',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain2',
+                            'phantom_de_name': 'sensor',
+                            'minimum_vms': 1,
+                            'maximum_vms': 2,
+                            'metric': 'df.1kblocks.used',
+                            'monitor_sensors': ['df.1kblocks.used', 'df.1kblocks.total'],
+                            'monitor_domain_sensors': ['testy', ],
+                            'sample_function': 'Average',
+                            'scale_down_n_vms': 1,
+                            'scale_down_threshold': 0.1,
+                            'scale_up_n_vms': 1,
+                            'scale_up_threshold': 0.5,
+                            'cooldown_period': 10,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+                raise DashiError("This domain don't exist")
+            else:
+                self.fail("Unknown arguments received")
+
+        with patch.multiple('ceiclient.client.EPUMClient', list_domains=list_domains,
+                describe_domain=describe_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            response = c.get('/api/dev/domains/this-is-a-uuid-number-two')
+            self.assertEqual(response.status_code, 200)
+
+            domain = json.loads(response.content)
+
+            self.assertEqual(domain['de_name'], 'sensor')
+            self.assertEqual(domain['name'], 'domain2')
+            self.assertEqual(domain['monitor_sensors'], 'df.1kblocks.used,df.1kblocks.total')
+            self.assertEqual(domain['sensor_minimum_vms'], 1)
+            self.assertEqual(domain['sensor_maximum_vms'], 2)
+            self.assertEqual(domain['sensor_metric'], 'df.1kblocks.used')
+            self.assertEqual(domain['sensor_scale_down_threshold'], 0.1)
+            self.assertEqual(domain['sensor_scale_down_vms'], 1)
+            self.assertEqual(domain['sensor_scale_up_threshold'], 0.5)
+            self.assertEqual(domain['sensor_scale_up_vms'], 1)
+
+            response = c.get('/api/dev/domains/this-is-a-bad-url')
+            self.assertEqual(response.status_code, 404)
+
+    def test_delete_domain_resource(self):
+
+        def describe_domain(self, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+                raise DashiError("This domain don't exist")
+            else:
+                self.fail("Unknown arguments received")
+
+        def remove_domain(self, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return None
+            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+                raise DashiError("This domain don't exist")
+            else:
+                self.fail("Unknown arguments received")
+
+        with patch.multiple('ceiclient.client.EPUMClient',
+                describe_domain=describe_domain, remove_domain=remove_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            response = c.get('/api/dev/domains/this-is-a-bad-url')
+            self.assertEqual(response.status_code, 404)
+
+            response = c.delete('/api/dev/domains/this-is-a-uuid')
+            self.assertEqual(response.status_code, 204)
+
+    def test_put_domain_resource(self):
+        def add_domain(obj, name, definition, conf, caller=None):
+            if caller == "freds_access_key_id":
+                return {}
+            else:
+                self.fail("Unknown arguments received")
+
+        def list_domains(obj, caller):
+            if caller == "freds_access_key_id":
+                return ["this-is-a-uuid", "this-is-a-uuid-number-two"]
+            else:
+                self.fail("Unknown arguments received")
+
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return None
+            else:
+                self.fail("Unknown arguments received")
+
+        def reconfigure_domain(obj, domain, conf, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return None
+            else:
+                self.fail("Unknown arguments received")
+
+        def describe_domain(obj, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            elif caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+                return {
+                    'name': 'this-is-a-uuid-number-two',
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain2',
+                            'phantom_de_name': 'sensor',
+                            'minimum_vms': 1,
+                            'maximum_vms': 2,
+                            'metric': 'df.1kblocks.used',
+                            'monitor_sensors': ['df.1kblocks.used', 'df.1kblocks.total'],
+                            'monitor_domain_sensors': ['testy', ],
+                            'sample_function': 'Average',
+                            'scale_down_n_vms': 1,
+                            'scale_down_threshold': 0.1,
+                            'scale_up_n_vms': 1,
+                            'scale_up_threshold': 0.5,
+                            'cooldown_period': 10,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            elif caller == "freds_access_key_id" and domain == "this-is-a-nonexistent-uuid":
+                raise DashiError("domain doesn't exist")
+            else:
+                self.fail("Unknown arguments received")
+
+        with patch.multiple('ceiclient.client.EPUMClient', add_domain=add_domain,
+                list_domains=list_domains, describe_domain=describe_domain,
+                reconfigure_domain=reconfigure_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            put_content = {
+                "name": "domain1",
+                "de_name": "sensor",
+                "lc_name": "mysecondlc",
+                "monitor_sensors": "proc.loadavg.1min,df.inodes.free",
+                "sensor_minimum_vms": 1,
+                "sensor_maximum_vms": 10,
+                "sensor_metric": "proc.loadavg.1min",
+                "sensor_scale_down_threshold": 0.5,
+                "sensor_scale_down_vms": 1,
+                "sensor_scale_up_threshold": 1,
+                "sensor_scale_up_vms": 1,
+                "sensor_cooldown": 60
+            }
+
+            response = c.put('/api/dev/domains/this-is-a-nonexistent-uuid',
+                json.dumps(put_content), content_type='application/json')
+            self.assertEqual(response.status_code, 404)
+
+            response = c.put('/api/dev/domains/this-is-a-uuid',
+                json.dumps(put_content), content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+
+            domain = json.loads(response.content)
+            self.assertEqual(domain["name"], "domain1")
+            self.assertEqual(domain["de_name"], "sensor")
+            self.assertEqual(domain["lc_name"], "mysecondlc")
+            self.assertEqual(domain["monitor_sensors"], "proc.loadavg.1min,df.inodes.free")
+            self.assertEqual(domain["sensor_minimum_vms"], 1)
+            self.assertEqual(domain["sensor_maximum_vms"], 10)
+            self.assertEqual(domain["sensor_metric"], "proc.loadavg.1min")
+            self.assertEqual(domain["sensor_scale_down_threshold"], 0.5)
+            self.assertEqual(domain["sensor_scale_down_vms"], 1)
+            self.assertEqual(domain["sensor_scale_up_threshold"], 1)
+            self.assertEqual(domain["sensor_scale_up_vms"], 1)
+            self.assertEqual(domain["sensor_cooldown"], 60)
+            self.assertEqual(domain["owner"], "fred")
+            assert domain["id"]
+            domain_id = domain["id"]
+            self.assertEqual(domain["uri"], "/api/dev/domains/%s" % domain_id)
+
+            broken_post_content = {
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'fake_de'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'sensor'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            broken_post_content = {
+                'name': 'stillbroken',
+                'de_name': 'multicloud'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(broken_post_content), content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+            duplicate_domain_content = {
+                'name': 'domain1',
+                'de_name': 'multicloud'
+            }
+            response = c.post('/api/dev/domains',
+                json.dumps(duplicate_domain_content), content_type='application/json')
+            self.assertEqual(response.status_code, 302)
+            assert response['Location'].endswith("/api/dev/domains/this-is-a-uuid")
+
+
+class InstancesTestCase(unittest.TestCase):
+    def test_get_instances(self):
+
+        def describe_domain(obj, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    "instances": [
+                        {
+                            "creator": "guJCD13gODRwXOeHxk3JX",
+                            "site": "hotel",
+                            "iaas_sshkeyname": "phantomkey",
+                            "state_changes": [
+                                [
+                                    "200-REQUESTED",
+                                    1369072098.508631
+                                ],
+                                [
+                                    "400-PENDING",
+                                    1369072099.406982
+                                ],
+                                [
+                                    "600-RUNNING",
+                                    1369072143.839346
+                                ]
+                            ],
+                            "private_ip": "192.168.0.111",
+                            "errors": None,
+                            "iaas_allocation": "m1.small",
+                            "deployable_type": "x",
+                            "hostname": "vm-148-135.uc.futuregrid.org",
+                            "error_time": None,
+                            "state": "600-RUNNING",
+                            "health": "UNKNOWN",
+                            "pending_timestamp": 1369072099.406986,
+                            "launch_id": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "client_token": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "allocation": None,
+                            "extravars": None,
+                            "update_counter": 2,
+                            "public_ip": "149.165.148.135",
+                            "state_time": 1369072143.854667,
+                            "state_desc": None,
+                            "instance_id": "80bc3e1d-ffbe-4be1-b392-902fb6df10cb",
+                            "iaas_id": "i-14a3d7df",
+                            "iaas_image": "hello-phantom.gz"
+                        }
+                    ],
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received")
+
+        with patch.multiple('ceiclient.client.EPUMClient', describe_domain=describe_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            response = c.get('/api/dev/domains/this-is-a-uuid/instances')
+            self.assertEqual(response.status_code, 200)
+
+            instances = json.loads(response.content)
+            self.assertEqual(len(instances), 1)
+            instance_0 = instances[0]
+            self.assertEqual(instance_0['id'], "80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
+            self.assertEqual(instance_0['iaas_instance_id'], "i-14a3d7df")
+            self.assertEqual(instance_0['lifecycle_state'], "600-RUNNING")
+            self.assertEqual(instance_0['hostname'], "vm-148-135.uc.futuregrid.org")
+            self.assertEqual(instance_0['cloud'], "/api/dev/sites/hotel")
+            self.assertEqual(instance_0['image_id'], "hello-phantom.gz")
+            self.assertEqual(instance_0['instance_type'], "m1.small")
+            self.assertEqual(instance_0['keyname'], "phantomkey")
+            self.assertEqual(instance_0['uri'],
+                "/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
+
+
+class InstancesResourcesTestCase(unittest.TestCase):
+    def test_get_instance(self):
+
+        def describe_domain(obj, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    "instances": [
+                        {
+                            "creator": "guJCD13gODRwXOeHxk3JX",
+                            "site": "hotel",
+                            "iaas_sshkeyname": "phantomkey",
+                            "state_changes": [
+                                [
+                                    "200-REQUESTED",
+                                    1369072098.508631
+                                ],
+                                [
+                                    "400-PENDING",
+                                    1369072099.406982
+                                ],
+                                [
+                                    "600-RUNNING",
+                                    1369072143.839346
+                                ]
+                            ],
+                            "private_ip": "192.168.0.111",
+                            "errors": None,
+                            "iaas_allocation": "m1.small",
+                            "deployable_type": "x",
+                            "hostname": "vm-148-135.uc.futuregrid.org",
+                            "error_time": None,
+                            "state": "600-RUNNING",
+                            "health": "UNKNOWN",
+                            "pending_timestamp": 1369072099.406986,
+                            "launch_id": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "client_token": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "allocation": None,
+                            "extravars": None,
+                            "update_counter": 2,
+                            "public_ip": "149.165.148.135",
+                            "state_time": 1369072143.854667,
+                            "state_desc": None,
+                            "instance_id": "80bc3e1d-ffbe-4be1-b392-902fb6df10cb",
+                            "iaas_id": "i-14a3d7df",
+                            "iaas_image": "hello-phantom.gz"
+                        }
+                    ],
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received")
+
+        with patch.multiple('ceiclient.client.EPUMClient', describe_domain=describe_domain):
+            c = Client()
+            c.login(username='fred', password='secret')
+
+            response = c.get('/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb')
+            self.assertEqual(response.status_code, 200)
+
+            instance = json.loads(response.content)
+            self.assertEqual(instance['id'], "80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
+            self.assertEqual(instance['iaas_instance_id'], "i-14a3d7df")
+            self.assertEqual(instance['lifecycle_state'], "600-RUNNING")
+            self.assertEqual(instance['hostname'], "vm-148-135.uc.futuregrid.org")
+            self.assertEqual(instance['cloud'], "/api/dev/sites/hotel")
+            self.assertEqual(instance['image_id'], "hello-phantom.gz")
+            self.assertEqual(instance['instance_type'], "m1.small")
+            self.assertEqual(instance['keyname'], "phantomkey")
+            self.assertEqual(instance['uri'],
+                "/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
+
+            response = c.get('/api/dev/domains/this-is-a-uuid/instances/not-real')
+            self.assertEqual(response.status_code, 404)
+
+    def test_delete_instance(self):
+
+        def describe_domain(obj, domain, caller=None):
+            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+                return {
+                    'name': 'this-is-a-uuid',
+                    "instances": [
+                        {
+                            "creator": "guJCD13gODRwXOeHxk3JX",
+                            "site": "hotel",
+                            "iaas_sshkeyname": "phantomkey",
+                            "state_changes": [
+                                [
+                                    "200-REQUESTED",
+                                    1369072098.508631
+                                ],
+                                [
+                                    "400-PENDING",
+                                    1369072099.406982
+                                ],
+                                [
+                                    "600-RUNNING",
+                                    1369072143.839346
+                                ]
+                            ],
+                            "private_ip": "192.168.0.111",
+                            "errors": None,
+                            "iaas_allocation": "m1.small",
+                            "deployable_type": "x",
+                            "hostname": "vm-148-135.uc.futuregrid.org",
+                            "error_time": None,
+                            "state": "600-RUNNING",
+                            "health": "UNKNOWN",
+                            "pending_timestamp": 1369072099.406986,
+                            "launch_id": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "client_token": "88c41340-5497-4f6c-a62d-8d2309317f41",
+                            "allocation": None,
+                            "extravars": None,
+                            "update_counter": 2,
+                            "public_ip": "149.165.148.135",
+                            "state_time": 1369072143.854667,
+                            "state_desc": None,
+                            "instance_id": "80bc3e1d-ffbe-4be1-b392-902fb6df10cb",
+                            "iaas_id": "i-14a3d7df",
+                            "iaas_image": "hello-phantom.gz"
+                        }
+                    ],
+                    'config': {
+                        'engine_conf': {
+                            'phantom_name': 'domain1',
+                            'phantom_de_name': 'multicloud',
+                            'minimum_vms': 1,
+                            'dtname': 'mylc'
+                        }
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received")
+
+        def list_credentials(obj, caller):
+            print "called by %ss" % (caller)
+            if caller == "freds_access_key_id":
+                return ["hotel", "site2"]
+
+        def describe_credentials(obj, caller, site_name):
+            print "called by %s for %s" % (caller, site_name)
+            if caller == "freds_access_key_id" and site_name == "hotel":
+                return {
+                    "access_key": "site1_access_key_id",
+                    "secret_key": "site1_secret_access_key",
+                    "key_name": "site1_phantom_ssh_key"
+                }
+            elif caller == "freds_access_key_id" and site_name == "site2":
+                return {
+                    "access_key": "site2_access_key_id",
+                    "secret_key": "site2_secret_access_key",
+                    "key_name": "site2_phantom_ssh_key"
+                }
+            else:
+                self.fail("Unknown arguments received")
+
+        def describe_site(self, caller, site):
+            if caller == "freds_access_key_id":
+                return {}
+            else:
+                self.fail("Unknown arguments received")
+
+        def get_iaas_compute_con(obj):
+            return Mock()
+
+        with patch.multiple('ceiclient.client.EPUMClient', describe_domain=describe_domain):
+            with patch.multiple('ceiclient.client.DTRSClient',
+                    list_credentials=list_credentials, describe_credentials=describe_credentials,
+                    describe_site=describe_site):
+                with patch.multiple('phantomweb.util.UserCloudInfo',
+                        get_iaas_compute_con=get_iaas_compute_con):
+
+                    c = Client()
+                    c.login(username='fred', password='secret')
+
+                    response = c.delete('/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb')
+                    self.assertEqual(response.status_code, 204)
+
+                    response = c.delete('/api/dev/domains/this-is-a-uuid/instances/not-real')
+                    self.assertEqual(response.status_code, 404)
+
+class SensorsTestCase(unittest.TestCase):
+    def test_get_sensors(self):
+        pass
+

@@ -9,6 +9,7 @@ from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
 from django.http import HttpResponse
 from django.template import Context, loader
+from dashi.exceptions import DashiError
 
 from phantomweb.models import RabbitInfoDB, PhantomUser
 from phantomweb.phantom_web_exceptions import PhantomWebException
@@ -146,71 +147,109 @@ class UserObjectMySQL(UserObject):
         self.dtrs = DTRSClient(self._dashi_conn)
 
     def describe_domain(self, username, domain):
-        # TODO: this should eventually be part of the REST API
-        describe = self.epum.describe_domain(domain, caller=username)
+        describe = self.epum.describe_domain(domain, caller=self.access_key)
         return describe
 
-    def add_domain(self, username, name, conf):
+    def remove_domain(self, username, domain):
+        removed = self.epum.remove_domain(domain, caller=self.access_key)
+        return removed
 
+    def _api_parameters_to_domain_opts(self, parameters):
         domain_opts = {}
-        domain_opts['name'] = name
-        de_name = conf.get('de_name')
+        de_name = parameters.get('de_name')
         domain_opts['phantom_de_name'] = de_name
-        phantom_id = str(uuid4())
-        domain_opts['phantom_id'] = phantom_id
 
         if de_name == 'sensor':
-            domain_opts['dtname'] = conf['lc_name']
-            domain_opts['cooldown_period'] = conf['sensor_cooldown']
-            domain_opts['maximum_vms'] = conf['sensor_maximum_vms']
-            domain_opts['minimum_vms'] = conf['sensor_minimum_vms']
-            domain_opts['metric'] = conf['sensor_metric']
-            domain_opts['monitor_domain_sensors'] = conf['monitor_domain_sensors'].split(',')
-            domain_opts['monitor_sensors'] = conf['monitor_sensors'].split(',')
-            domain_opts['scale_down_n_vms'] = conf['sensor_scale_down_vms']
-            domain_opts['scale_down_threshold'] = conf['sensor_scale_down_threshold']
-            domain_opts['scale_up_n_vms'] = conf['sensor_scale_up_vms']
-            domain_opts['scale_up_threshold'] = conf['sensor_scale_up_threshold']
-            domain_opts['sample_function'] = 'Average' # TODO: make configurable
-            domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
-            domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
-            domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
-            domain_opts['clouds'] = [] # TODO set clouds
+            try:
+                domain_opts['dtname'] = parameters['lc_name']
+                domain_opts['cooldown_period'] = parameters['sensor_cooldown']
+                domain_opts['maximum_vms'] = parameters['sensor_maximum_vms']
+                domain_opts['minimum_vms'] = parameters['sensor_minimum_vms']
+                domain_opts['metric'] = parameters['sensor_metric']
+                domain_opts['monitor_domain_sensors'] = parameters.get('monitor_domain_sensors', '').split(',')
+                domain_opts['monitor_sensors'] = parameters.get('monitor_sensors','').split(',')
+                domain_opts['scale_down_n_vms'] = parameters['sensor_scale_down_vms']
+                domain_opts['scale_down_threshold'] = parameters['sensor_scale_down_threshold']
+                domain_opts['scale_up_n_vms'] = parameters['sensor_scale_up_vms']
+                domain_opts['scale_up_threshold'] = parameters['sensor_scale_up_threshold']
+                domain_opts['sample_function'] = 'Average' # TODO: make configurable
+                domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
+                domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
+                domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
+                domain_opts['clouds'] = [] # TODO set clouds
+            except KeyError as k:
+                raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
 
         elif de_name == 'multicloud':
-            domain_opts['dtname'] = conf['lc_name']
-            domain_opts['maximum_vms'] = conf['vm_count']
-            domain_opts['minimum_vms'] = conf['vm_count']
-            domain_opts['monitor_domain_sensors'] = conf['monitor_domain_sensors'].split(',')
-            domain_opts['monitor_sensors'] = conf['monitor_sensors'].split(',')
+            try:
+                domain_opts['dtname'] = parameters['lc_name']
+                domain_opts['maximum_vms'] = parameters['vm_count']
+                domain_opts['minimum_vms'] = parameters['vm_count']
+                domain_opts['monitor_domain_sensors'] = parameters.get('monitor_domain_sensors', '').split(',')
+                domain_opts['monitor_sensors'] = parameters.get('monitor_sensors', '').split(',')
 
-            domain_opts['sample_function'] = 'Average' # TODO: make configurable
-            domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
-            domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
-            domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
+                domain_opts['sample_function'] = 'Average' # TODO: make configurable
+                domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
+                domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
+                domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
+            except KeyError as k:
+                raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
+        else:
+            raise PhantomWebException("de_name '%s' is not supported" % de_name)
+
+        return domain_opts
+
+
+    def add_domain(self, username, name, parameters):
+
+        domain_opts = self._api_parameters_to_domain_opts(parameters)
+        id = str(uuid4())
+        parameters['id'] = id
+        domain_opts['name'] = id
+        domain_opts['phantom_name'] = name
 
         conf = {'engine_conf': domain_opts}
 
         try:
-            self.epum.add_domain(phantom_id, PHANTOM_DOMAIN_DEFINITION, conf, caller=username)
-        except DashiError, de:
-            if de.exc_type == u'WriteConflictError':
-                raise Exception("domain %s already exists" % name)
+            self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
+            return parameters
+        except Exception, de:
             log.exception("Problem creating domain: %s" % name)
             raise
+
+    def reconfigure_domain(self, username, id, parameters):
+
+        name = parameters.get('name')
+        domain_opts = self._api_parameters_to_domain_opts(parameters)
+        parameters['id'] = id
+        domain_opts['name'] = id
+        domain_opts['phantom_name'] = name
+
+        conf = {'engine_conf': domain_opts}
+
+        try:
+            self.epum.reconfigure_domain(id, conf, caller=self.access_key)
+            return parameters
+        except Exception, de:
+            log.exception("Problem modifying domain: %s" % name)
+            raise
+
 
     def get_all_domains(self, username):
         domain_names = self.epum.list_domains(caller=self.access_key)
         return domain_names
 
     def get_domain(self, username, id):
-        domain_description = self.epum.describe_domain(id, caller=self.access_key)
+        try:
+            domain_description = self.epum.describe_domain(id, caller=self.access_key)
+        except DashiError:
+            return None
         engine_conf = domain_description.get('config', {}).get('engine_conf', {})
 
         ent = {}
-        ent['name'] = domain_description['name']
+        ent['id'] = domain_description['name']
         ent['de_name'] = engine_conf.get('phantom_de_name')
-        ent['id'] = engine_conf.get('phantom_id')
+        ent['name'] = engine_conf.get('phantom_name')
 
         if ent['de_name'] == 'multicloud':
             ent['vm_count'] = engine_conf.get('minimum_vms')
@@ -228,6 +267,29 @@ class UserObjectMySQL(UserObject):
             ent['sensor_scale_up_vms'] = engine_conf.get('scale_up_n_vms')
             ent['sensor_cooldown'] = engine_conf.get('cooldown_period')
         return ent
+
+    def get_domain_instances(self, username, id):
+        try:
+            domain_description = self.epum.describe_domain(id, caller=self.access_key)
+        except DashiError:
+            return None
+        instances = domain_description.get('instances', [])
+        parsed_instances = []
+
+        for i in instances:
+            instance = {
+                'id': i.get('instance_id', ''),
+                'iaas_instance_id': i.get('iaas_id', ''),
+                'lifecycle_state': i.get('state', ''),
+                'hostname': i.get('hostname', ''),
+                'cloud': i.get('site', ''),
+                'image_id': i.get('iaas_image', ''),
+                'instance_type': i.get('iaas_allocation', ''),
+                'keyname': i.get('iaas_sshkeyname', ''),
+            }
+            parsed_instances.append(instance)
+
+        return parsed_instances
 
     def get_all_groups(self):
         domain_names = self.epum.list_domains(caller=self.access_key)

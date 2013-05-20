@@ -50,12 +50,14 @@ urlpatterns = patterns('',
 
     # API dev version
     url(r'^api/%s/sites$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
-    url(r'^api/%s/sites/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
+    url(r'^api/%s/sites/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
     url(r'^api/%s/credentials$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
-    url(r'^api/%s/credentials/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials_resource'),
+    url(r'^api/%s/credentials/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials_resource'),
     url(r'^api/%s/launchconfigurations$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
-    url(r'^api/%s/launchconfigurations/([0-9A-Za-z]+)$' % DEV_VERSION,
+    url(r'^api/%s/launchconfigurations/([-0-9A-Za-z]+)$' % DEV_VERSION,
         'phantomweb.api.dev.launchconfiguration_resource'),
     url(r'^api/%s/domains$' % DEV_VERSION, 'phantomweb.api.dev.domains'),
-    url(r'^api/%s/domains/([0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.domain_resource'),
+    url(r'^api/%s/domains/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.domain_resource'),
+    url(r'^api/%s/domains/([-0-9A-Za-z]+)/instances$' % DEV_VERSION, 'phantomweb.api.dev.instances'),
+    url(r'^api/%s/domains/([-0-9A-Za-z]+)/instances/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.instance_resource'),
 )

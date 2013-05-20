@@ -8,13 +8,17 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
 from django.views.decorators.http import require_http_methods
 
 from phantomweb.util import get_user_object
+from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.workload import phantom_get_sites, get_all_launch_configurations, \
     get_launch_configuration, get_launch_configuration_by_name, create_launch_configuration, \
-    set_host_max_pair, get_all_domains
+    set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
+    remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
+    terminate_domain_instance
 
 log = logging.getLogger('phantomweb.api.dev')
 
 DOC_URI = "http://www.nimbusproject.org/doc/phantom/latest/api.html"
+API_VERSION = 'dev'
 
 
 def basic_http_auth(f):
@@ -70,8 +74,8 @@ def sites(request):
         site_name = str(site)
         site_dict = {
             "id": site_name,
-            "credentials": "/api/dev/credentials/%s" % site_name,
-            "uri": "/api/dev/sites/%s" % site_name
+            "credentials": "/api/%s/credentials/%s" % (API_VERSION, site_name),
+            "uri": "/api/%s/sites/%s" % (API_VERSION, site_name)
         }
         response_list.append(site_dict)
     h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
@@ -86,8 +90,8 @@ def site_resource(request, site):
     if site in all_sites:
         response_dict = {
             "id": site,
-            "credentials": "/api/dev/credentials/%s" % site,
-            "uri": "/api/dev/sites/%s" % site
+            "credentials": "/api/%s/credentials/%s" % (API_VERSION, site),
+            "uri": "/api/%s/sites/%s" % (API_VERSION, site)
         }
         h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
     else:
@@ -110,7 +114,7 @@ def credentials(request):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "uri": "/api/dev/credentials/%s" % credentials_name
+                "uri": "/api/%s/credentials/%s" % (API_VERSION, credentials_name)
             }
             response_list.append(credentials_dict)
         h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
@@ -140,7 +144,7 @@ def credentials(request):
             "access_key": access_key,
             "secret_key": secret_key,
             "key_name": key_name,
-            "uri": "/api/dev/credentials/%s" % site
+            "uri": "/api/%s/credentials/%s" % (API_VERSION, site)
         }
 
         # Add credentials to DTRS
@@ -170,7 +174,7 @@ def credentials_resource(request, site):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "uri": "/api/dev/credentials/%s" % cloud.cloudname
+                "uri": "/api/%s/credentials/%s" % (API_VERSION, cloud.cloudname)
             }
             h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
         else:
@@ -206,7 +210,7 @@ def credentials_resource(request, site):
             "access_key": access_key,
             "secret_key": secret_key,
             "key_name": key_name,
-            "uri": "/api/dev/credentials/%s" % site
+            "uri": "/api/%s/credentials/%s" % (API_VERSION, site)
         }
 
         # Add credentials to DTRS
@@ -245,7 +249,7 @@ def launchconfigurations(request):
                 "id": lc.id,
                 "name": lc.name,
                 "owner": lc.username,
-                "uri": "/api/dev/launchconfigurations/%s" % lc.id,
+                "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
                 "cloud_params": {}
             }
 
@@ -285,7 +289,7 @@ def launchconfigurations(request):
         lc = get_launch_configuration_by_name(username, name)
         if lc is not None:
             # LC already exists, redirect to existing one
-            return HttpResponseRedirect("/api/dev/launchconfigurations/%s" % lc.id)
+            return HttpResponseRedirect("/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id))
 
         lc = create_launch_configuration(username, name)
         lc.save()
@@ -296,7 +300,6 @@ def launchconfigurations(request):
         for cloud_name, cloud in cloud_params.iteritems():
 
             if cloud_name not in configured_clouds.keys():
-                print configured_clouds.keys()
                 msg = "%s is not configured. Check your profile" % cloud_name
                 return HttpResponseBadRequest(msg)
 
@@ -310,7 +313,7 @@ def launchconfigurations(request):
             "name": name,
             "owner": username,
             "cloud_params": cloud_params,
-            "uri": "/api/dev/launchconfigurations/%s" % lc.id,
+            "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
         }
 
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
@@ -327,7 +330,7 @@ def launchconfiguration_resource(request, id):
                 "id": lc.id,
                 "name": lc.name,
                 "owner": lc.username,
-                "uri": "/api/dev/launchconfigurations/%s" % lc.id,
+                "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
                 "cloud_params": {}
             }
 
@@ -394,7 +397,7 @@ def launchconfiguration_resource(request, id):
             "name": name,
             "owner": username,
             "cloud_params": cloud_params,
-            "uri": "/api/dev/launchconfigurations/%s" % lc.id,
+            "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
         }
 
         h = HttpResponse(json.dumps(response_dict), status=200, mimetype='application/javascript')
@@ -428,9 +431,29 @@ def domains(request):
         h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
         return h
     elif request.method == "POST":
-        username = request.user.username
 
-        response = {}
+        try:
+            content = json.loads(request.body)
+        except:
+            return HttpResponseBadRequest()
+        username = request.user.username
+        name = content.get('name')
+        if name is None:
+            return HttpResponseBadRequest("You must provide a name for your domain")
+
+        domain = get_domain_by_name(username, name)
+        if domain is not None:
+            # Domain already exists, redirect to existing one
+            return HttpResponseRedirect("/api/%s/domains/%s" % (API_VERSION, domain['id']))
+
+        try:
+            response = create_domain(username, name, content)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        response['owner'] = username
+        response['uri'] = "/api/%s/domains/%s" % (API_VERSION, response['id'])
+
         h = HttpResponse(json.dumps(response), status=201, mimetype='application/javascript')
         return h
 
@@ -439,8 +462,104 @@ def domains(request):
 @require_http_methods(["GET", "PUT", "DELETE"])
 def domain_resource(request, id):
     if request.method == "GET":
-        pass
+        username = request.user.username
+
+        response = get_domain(username, id)
+        if response is None:
+            return HttpResponseNotFound('Domain %s not found' % id, mimetype='application/javascript')
+
+        response['owner'] = username
+        response['uri'] = "/api/%s/domains/%s" % (API_VERSION, id)
+        return HttpResponse(json.dumps(response), mimetype='application/javascript')
     elif request.method == "PUT":
-        pass
+        username = request.user.username
+
+        response = get_domain(username, id)
+        if response is None:
+            return HttpResponseNotFound('Domain %s not found' % id, mimetype='application/javascript')
+
+        try:
+            content = json.loads(request.body)
+        except:
+            return HttpResponseBadRequest()
+
+        try:
+            response = modify_domain(username, id, content)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        response['owner'] = username
+        response['uri'] = "/api/%s/domains/%s" % (API_VERSION, response['id'])
+
+        h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
+        return h
+
     elif request.method == "DELETE":
-        pass
+        username = request.user.username
+        response = get_domain(username, id)
+        if response is None:
+            return HttpResponseNotFound('Domain %s not found' % id, mimetype='application/javascript')
+        response = remove_domain(username, id)
+
+        h = HttpResponse(status=204)
+        return h
+
+
+@basic_http_auth
+@require_http_methods(["GET"])
+def instances(request, domain_id):
+    if request.method == "GET":
+        username = request.user.username
+        response = get_domain_instances(username, domain_id)
+        if response is None:
+            return HttpResponseNotFound('domain %s not found' % domain_id, mimetype='application/javascript')
+
+        for instance in response:
+            instance['owner'] = username
+            instance['cloud'] = "/api/%s/sites/%s" % (API_VERSION, instance.get('cloud'))
+            instance['uri'] = "/api/%s/domains/%s/instances/%s" % (
+                API_VERSION, domain_id, instance.get('id'))
+
+        return HttpResponse(json.dumps(response), mimetype='application/javascript')
+
+
+@basic_http_auth
+@require_http_methods(["GET", "DELETE"])
+def instance_resource(request, domain_id, instance_id):
+    if request.method == "GET":
+        username = request.user.username
+        response = get_domain_instances(username, domain_id)
+        if response is None:
+            return HttpResponseNotFound('domain %s not found' % domain_id, mimetype='application/javascript')
+
+        wanted_instance = None
+        for instance in response:
+            if instance.get('id') == instance_id:
+                wanted_instance = instance
+                break
+
+        if wanted_instance is None:
+            return HttpResponseNotFound('instance %s not found' % instance_id, mimetype='application/javascript')
+
+        wanted_instance['owner'] = username
+        wanted_instance['cloud'] = "/api/%s/sites/%s" % (API_VERSION, wanted_instance.get('cloud'))
+        wanted_instance['uri'] = "/api/%s/domains/%s/instances/%s" % (
+            API_VERSION, domain_id, wanted_instance.get('id'))
+
+        return HttpResponse(json.dumps(wanted_instance), mimetype='application/javascript')
+
+    elif request.method == "DELETE":
+        username = request.user.username
+        instance = get_domain_instance(username, domain_id, instance_id)
+        if instance is None:
+            print "instance not found"
+            return HttpResponseNotFound('instance %s not found' % domain_id, mimetype='application/javascript')
+
+        try:
+            terminate_domain_instance(username, domain_id, instance_id)
+        except PhantomWebException as p:
+            print "problem deleting: %s" % p.message
+            return HttpResponseServerError("Couldn't remove instance %s" % instance_id)
+
+        h = HttpResponse(status=204)
+        return h
