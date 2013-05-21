@@ -11,7 +11,7 @@ from django.http import HttpResponse
 from django.template import Context, loader
 from dashi.exceptions import DashiError
 
-from phantomweb.models import RabbitInfoDB, PhantomUser, PhantomInfoDB
+from phantomweb.models import RabbitInfoDB, PhantomUser
 from phantomweb.phantom_web_exceptions import PhantomWebException
 
 log = logging.getLogger('phantomweb.general')
