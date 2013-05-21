@@ -13,7 +13,7 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     get_launch_configuration, get_launch_configuration_by_name, create_launch_configuration, \
     set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
-    terminate_domain_instance, OPENTSDB_METRICS
+    terminate_domain_instance
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -563,9 +563,3 @@ def instance_resource(request, domain_id, instance_id):
 
         h = HttpResponse(status=204)
         return h
-
-
-@basic_http_auth
-@require_http_methods(["GET"])
-def sensors(request, domain_id):
-    pass
