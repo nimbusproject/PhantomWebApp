@@ -5,23 +5,23 @@ import simplejson
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from phantomweb.phantom_web_exceptions import PhantomWebException, PhantomRedirectException
-from phantomweb.util import PhantomWebDecorator, get_user_object, LogEntryDecorator
-from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add, phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save, phantom_domain_load, phantom_domain_terminate, phantom_domain_resize, phantom_domain_start, phantom_domain_details, phantom_instance_terminate, phantom_sensors_load
+from phantomweb.phantom_web_exceptions import PhantomRedirectException
+from phantomweb.util import get_user_object, LogEntryDecorator
+from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add,\
+    phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save,\
+    phantom_domain_load, phantom_domain_terminate, phantom_domain_resize,\
+    phantom_domain_start, phantom_domain_details, phantom_instance_terminate, phantom_sensors_load
 from django.contrib import admin
-
 
 
 @LogEntryDecorator
 @login_required
 def django_terminate_iaas_instance(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = terminate_iaas_instance(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = terminate_iaas_instance(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
@@ -37,59 +37,49 @@ def django_domain_html(request):
         return HttpResponseRedirect(ex.redir)
     return HttpResponse(t.render(c))
 
+
 @LogEntryDecorator
 @login_required
 def django_sensors_load(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_sensors_load(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_sensors_load(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_domain_load(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_load(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_domain_load(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_domain_start(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_start(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_domain_start(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_domain_resize(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_resize(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_domain_resize(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_domain_details(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_details(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_domain_details(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
 
@@ -97,23 +87,19 @@ def django_domain_details(request):
 @login_required
 def django_domain_terminate(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_domain_terminate(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_domain_terminate(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_instance_terminate(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_instance_terminate(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_instance_terminate(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
@@ -130,12 +116,13 @@ def django_phantom_html(request):
         return HttpResponseRedirect(ex.redir)
     return HttpResponse(t.render(c))
 
-#
-#  launch configuration options
-#
+
 @LogEntryDecorator
 @login_required
 def django_lc_html(request):
+    """
+    launch configuration options
+    """
     try:
         # no need to talk to the workload app here
         response_dict = {}
@@ -146,15 +133,13 @@ def django_lc_html(request):
         return HttpResponseRedirect(ex.redir)
     return HttpResponse(t.render(c))
 
+
 @LogEntryDecorator
 @login_required
 def django_lc_load(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_lc_load(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_lc_load(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
 
@@ -162,22 +147,17 @@ def django_lc_load(request):
 @login_required
 def django_lc_delete(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_lc_delete(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_lc_delete(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_lc_save(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_lc_save(request.POST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_lc_save(request.POST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
 
 
@@ -196,38 +176,33 @@ def django_profile_html(request):
 
     return HttpResponse(t.render(c))
 
+
 @LogEntryDecorator
 @login_required
 def django_sites_load(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_sites_load(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_sites_load(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_sites_delete(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_sites_delete(request.GET, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_sites_delete(request.GET, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
 def django_sites_add(request):
     user_obj = get_user_object(request.user.username)
-    try:
-        response_dict = phantom_sites_add(request.REQUEST, user_obj)
-        h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    finally:
-        user_obj.close()
+    response_dict = phantom_sites_add(request.REQUEST, user_obj)
+    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
 
 @LogEntryDecorator
 @login_required
@@ -250,7 +225,7 @@ def django_change_password(request):
 
         if new_password != new_password_confirmation:
             return HttpResponse("PASSWORDS_DO_NOT_MATCH", status=500)
-            
+
         if not new_password:
             return HttpResponse("NEW_PASSWORD_IS_BLANK", status=500)
 
@@ -262,7 +237,6 @@ def django_change_password(request):
         return HttpResponse("{}", status=200)
     else:
         return HttpResponse(status=400)
-
 
 
 class MyModelAdmin(admin.ModelAdmin):
