@@ -413,7 +413,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             response = c.get('/api/dev/launchconfigurations/%s' % lc_id)
             self.assertEqual(response.status_code, 200)
             lc = json.loads(response.content)
-            #print lc
             self.assertEqual(lc["name"], "testlc")
             self.assertEqual(lc["owner"], "fred")
             self.assertEqual(lc["uri"], "/api/dev/launchconfigurations/%s" % lc_id)
@@ -1342,12 +1341,10 @@ class InstancesResourcesTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def list_credentials(obj, caller):
-            print "called by %ss" % (caller)
             if caller == "freds_access_key_id":
                 return ["hotel", "site2"]
 
         def describe_credentials(obj, caller, site_name):
-            print "called by %s for %s" % (caller, site_name)
             if caller == "freds_access_key_id" and site_name == "hotel":
                 return {
                     "access_key": "site1_access_key_id",
@@ -1382,13 +1379,37 @@ class InstancesResourcesTestCase(unittest.TestCase):
                     c = Client()
                     c.login(username='fred', password='secret')
 
-                    response = c.delete('/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb')
+                    response = c.delete(
+                        '/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb')
                     self.assertEqual(response.status_code, 204)
 
                     response = c.delete('/api/dev/domains/this-is-a-uuid/instances/not-real')
                     self.assertEqual(response.status_code, 404)
 
+
 class SensorsTestCase(unittest.TestCase):
     def test_get_sensors(self):
-        pass
+        c = Client()
+        c.login(username='fred', password='secret')
 
+        response = c.get('/api/dev/sensors')
+        self.assertEqual(response.status_code, 200)
+
+        sensors = json.loads(response.content)
+
+        self.assertIn({"id": "df.1kblocks.free", "uri": "/api/dev/sensors/df.1kblocks.free"},
+            sensors)
+
+
+class SensorsResourcesTestCase(unittest.TestCase):
+    def test_get_sensor(self):
+        c = Client()
+        c.login(username='fred', password='secret')
+
+        response = c.get('/api/dev/sensors/df.1kblocks.free')
+        self.assertEqual(response.status_code, 200)
+
+        sensor = json.loads(response.content)
+
+        self.assertEqual({"id": "df.1kblocks.free", "uri": "/api/dev/sensors/df.1kblocks.free"},
+            sensor)
