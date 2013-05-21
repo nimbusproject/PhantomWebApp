@@ -60,5 +60,4 @@ urlpatterns = patterns('',
     url(r'^api/%s/domains/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.domain_resource'),
     url(r'^api/%s/domains/([-0-9A-Za-z]+)/instances$' % DEV_VERSION, 'phantomweb.api.dev.instances'),
     url(r'^api/%s/domains/([-0-9A-Za-z]+)/instances/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.instance_resource'),
-    url(r'^api/%s/sensors$' % DEV_VERSION, 'phantomweb.api.dev.sensors'),
 )

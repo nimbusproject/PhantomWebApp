@@ -133,13 +133,6 @@ class UserObjectMySQL(UserObject):
             raise PhantomWebException(msg)
         self.access_key = phantom_user.access_key_id
 
-        # Keep this around while we transition to new API
-        # TODO: remove this
-        phantom_info_objects = PhantomInfoDB.objects.all()
-        if not phantom_info_objects:
-            raise PhantomWebException('The service is mis-configured. Please contact your sysadmin')
-        self.phantom_info = phantom_info_objects[0]
-
         rabbit_info_objects = RabbitInfoDB.objects.all()
         if not rabbit_info_objects:
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
