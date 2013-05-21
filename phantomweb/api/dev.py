@@ -13,7 +13,7 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     get_launch_configuration, get_launch_configuration_by_name, create_launch_configuration, \
     set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
-    terminate_domain_instance
+    terminate_domain_instance, get_sensors
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -552,7 +552,6 @@ def instance_resource(request, domain_id, instance_id):
         username = request.user.username
         instance = get_domain_instance(username, domain_id, instance_id)
         if instance is None:
-            print "instance not found"
             return HttpResponseNotFound('instance %s not found' % domain_id, mimetype='application/javascript')
 
         try:
@@ -563,3 +562,39 @@ def instance_resource(request, domain_id, instance_id):
 
         h = HttpResponse(status=204)
         return h
+
+
+@basic_http_auth
+@require_http_methods(["GET"])
+def sensors(request):
+    if request.method == "GET":
+        username = request.user.username
+        sensors_list = get_sensors(username)
+        sensors = []
+
+        for sensor in sensors_list:
+            s = {
+                'id': sensor,
+                'uri': '/api/%s/sensors/%s' % (API_VERSION, sensor)
+            }
+            sensors.append(s)
+
+        return HttpResponse(json.dumps(sensors), mimetype='application/javascript')
+
+
+@basic_http_auth
+@require_http_methods(["GET"])
+def sensor_resource(request, sensor_id):
+    if request.method == "GET":
+        username = request.user.username
+        sensors_list = get_sensors(username)
+
+        if sensor_id not in sensors_list:
+            return HttpResponseNotFound("Sensor '%s' does not exist" % sensor_id)
+
+        sensor = {
+            'id': sensor_id,
+            'uri': '/api/%s/sensors/%s' % (API_VERSION, sensor_id)
+        }
+
+        return HttpResponse(json.dumps(sensor), mimetype='application/javascript')

@@ -234,6 +234,9 @@ def modify_domain(username, id, parameters):
     return user_obj.reconfigure_domain(username, id, parameters)
 
 
+def get_sensors(username):
+    return OPENTSDB_METRICS
+
 ########
 
 
