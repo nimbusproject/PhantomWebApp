@@ -13,7 +13,8 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     get_launch_configuration, get_launch_configuration_by_name, create_launch_configuration, \
     set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
-    terminate_domain_instance, get_sensors
+    terminate_domain_instance, get_sensors, remove_launch_configuration, \
+    get_launch_configuration_object
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -244,30 +245,9 @@ def launchconfigurations(request):
     if request.method == "GET":
         all_launch_configurations = get_all_launch_configurations(request.user.username)
         response_list = []
-        for lc in all_launch_configurations:
-            lc_dict = {
-                "id": lc.id,
-                "name": lc.name,
-                "owner": lc.username,
-                "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
-                "cloud_params": {}
-            }
-
-            user_obj = get_user_object(lc.username)
-            dt = user_obj.get_dt(lc.name)
-
-            host_max_pairs = lc.hostmaxpairdb_set.all()
-            for hmp in host_max_pairs:
-                cloud = hmp.cloud_name
-                mapping = dt["mappings"][cloud]
-                lc_dict["cloud_params"][cloud] = {
-                    "max_vms": hmp.max_vms,
-                    "common": hmp.common_image,
-                    "rank": hmp.rank,
-                    "image_id": mapping["iaas_image"],
-                    "instance_type": mapping["iaas_allocation"],
-                    "user_data": dt["contextualization"].get("userdata")
-                }
+        for lc_id in all_launch_configurations:
+            lc_dict = get_launch_configuration(lc_id)
+            lc_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc_dict.get('id'))
             response_list.append(lc_dict)
 
         h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
@@ -306,8 +286,6 @@ def launchconfigurations(request):
             set_host_max_pair(cloud_name=cloud_name, max_vms=cloud['max_vms'],
                 launch_config=lc, rank=int(cloud['rank']), common_image=cloud["common"])
 
-        host_max_pairs = lc.hostmaxpairdb_set.all()
-
         response_dict = {
             "id": lc.id,
             "name": name,
@@ -324,38 +302,18 @@ def launchconfigurations(request):
 @require_http_methods(["GET", "PUT", "DELETE"])
 def launchconfiguration_resource(request, id):
     if request.method == "GET":
-        lc = get_launch_configuration(id)
-        if lc is not None and lc.username == request.user.username:
-            response_dict = {
-                "id": lc.id,
-                "name": lc.name,
-                "owner": lc.username,
-                "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
-                "cloud_params": {}
-            }
+        lc_dict = get_launch_configuration(id)
+        if lc_dict is not None and lc_dict.get('owner') == request.user.username:
 
-            user_obj = get_user_object(lc.username)
-            dt = user_obj.get_dt(lc.name)
+            lc_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc_dict.get('id'))
 
-            host_max_pairs = lc.hostmaxpairdb_set.all()
-            for hmp in host_max_pairs:
-                cloud = hmp.cloud_name
-                mapping = dt["mappings"][cloud]
-                response_dict["cloud_params"][cloud] = {
-                    "max_vms": hmp.max_vms,
-                    "common": hmp.common_image,
-                    "rank": hmp.rank,
-                    "image_id": mapping["iaas_image"],
-                    "instance_type": mapping["iaas_allocation"],
-                    "user_data": dt["contextualization"].get("userdata")
-                }
-            h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
+            h = HttpResponse(json.dumps(lc_dict), mimetype='application/javascript')
         else:
             h = HttpResponseNotFound('Launch configuration %s not found' % id, mimetype='application/javascript')
         return h
     elif request.method == "PUT":
 
-        lc = get_launch_configuration(id)
+        lc = get_launch_configuration_object(id)
         if lc is None:
             msg = "Launch configuration %s not found" % id
             return HttpResponseNotFound(msg, mimetype='application/javascript')
@@ -405,15 +363,8 @@ def launchconfiguration_resource(request, id):
 
     elif request.method == "DELETE":
         lc = get_launch_configuration(id)
-        if lc is not None and lc.username == request.user.username:
-            user_obj = get_user_object(lc.username)
-            user_obj.remove_dt(lc.name)
-
-            host_max_pairs = lc.hostmaxpairdb_set.all()
-            for hmp in host_max_pairs:
-                hmp.delete()
-
-            lc.delete()
+        if lc is not None and lc.get('owner') == request.user.username:
+            remove_launch_configuration(request.user.username, id)
 
             h = HttpResponse(status=204)
         else:
@@ -557,7 +508,6 @@ def instance_resource(request, domain_id, instance_id):
         try:
             terminate_domain_instance(username, domain_id, instance_id)
         except PhantomWebException as p:
-            print "problem deleting: %s" % p.message
             return HttpResponseServerError("Couldn't remove instance %s" % instance_id)
 
         h = HttpResponse(status=204)

@@ -102,14 +102,50 @@ def create_launch_configuration(username, name):
 
 
 def get_all_launch_configurations(username):
-    return LaunchConfiguration.objects.filter(username=username)
+    lcs = LaunchConfiguration.objects.filter(username=username)
+    lc_list = []
+    for lc in lcs:
+        lc_list.append(lc.id)
+    return lc_list
 
 
 def get_launch_configuration(id):
     try:
         lc = LaunchConfiguration.objects.get(id=id)
     except LaunchConfiguration.DoesNotExist:
-        lc = None
+        return None
+
+    lc_dict = {
+        "id": lc.id,
+        "name": lc.name,
+        "owner": lc.username,
+        "cloud_params": {}
+    }
+
+    user_obj = get_user_object(lc.username)
+    dt = user_obj.get_dt(lc.name)
+
+    host_max_pairs = lc.hostmaxpairdb_set.all()
+    for hmp in host_max_pairs:
+        cloud = hmp.cloud_name
+        mapping = dt.get("mappings", {}).get(cloud, {})
+        lc_dict["cloud_params"][cloud] = {
+            "max_vms": hmp.max_vms,
+            "common": hmp.common_image,
+            "rank": hmp.rank,
+            "image_id": mapping.get("iaas_image"),
+            "instance_type": mapping.get("iaas_allocation"),
+            "user_data": dt.get("contextualization", {}).get("userdata")
+        }
+
+    return lc_dict
+
+
+def get_launch_configuration_object(id):
+    try:
+        lc = LaunchConfiguration.objects.get(id=id)
+    except LaunchConfiguration.DoesNotExist:
+        return None
     return lc
 
 
@@ -119,6 +155,22 @@ def get_launch_configuration_by_name(username, name):
         return None
     else:
         return lcs[0]
+
+
+def remove_launch_configuration(username, lc_id):
+    try:
+        lc = LaunchConfiguration.objects.get(id=lc_id)
+    except LaunchConfiguration.DoesNotExist:
+        raise PhantomWebException("Could not delete launch configuration %s. Doesn't exist." % lc_id)
+
+    user_obj = get_user_object(lc.username)
+    user_obj.remove_dt(lc.name)
+
+    host_max_pairs = lc.hostmaxpairdb_set.all()
+    for hmp in host_max_pairs:
+        hmp.delete()
+
+    lc.delete()
 
 
 def get_host_max_pair(launch_config, cloud_name):
@@ -226,6 +278,21 @@ def remove_domain(username, id):
 
 def create_domain(username, name, parameters):
     user_obj = get_user_object(username)
+    lc_name = parameters.get('lc_name')
+    lc = get_launch_configuration_by_name(username, lc_name)
+    if lc is None:
+        raise PhantomWebException("No launch configuration named %s. Can't make domain" % lc_name)
+    lc_dict = get_launch_configuration(lc.id)
+    clouds = []
+    for cloud_name, cloud in lc_dict.get('cloud_params', {}).iteritems():
+        cloud = {
+            'site_name': cloud_name,
+            'rank': cloud.get('rank'),
+            'size': cloud.get('max_vms'),
+        }
+        clouds.append(cloud)
+
+    parameters['clouds'] = clouds
     return user_obj.add_domain(username, name, parameters)
 
 

@@ -156,6 +156,7 @@ class UserObjectMySQL(UserObject):
         domain_opts = {}
         de_name = parameters.get('de_name')
         domain_opts['phantom_de_name'] = de_name
+        domain_opts['clouds'] = parameters.get('clouds', [])
 
         if de_name == 'sensor':
             try:
@@ -174,7 +175,6 @@ class UserObjectMySQL(UserObject):
                 domain_opts['sensor_type'] = 'opentsdb'  # TODO: make configurable
                 domain_opts['opentsdb_port'] = 4242  # TODO: make configurable
                 domain_opts['opentsdb_host'] = 'localhost'  # TODO: make configurable
-                domain_opts['clouds'] = []  # TODO set clouds
             except KeyError as k:
                 raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
 
@@ -195,6 +195,7 @@ class UserObjectMySQL(UserObject):
         else:
             raise PhantomWebException("de_name '%s' is not supported" % de_name)
 
+        print domain_opts
         return domain_opts
 
     def add_domain(self, username, name, parameters):
