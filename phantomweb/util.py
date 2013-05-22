@@ -7,8 +7,6 @@ from boto.ec2.connection import EC2Connection
 from boto.exception import BotoServerError
 from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
-from django.http import HttpResponse
-from django.template import Context, loader
 from dashi.exceptions import DashiError
 
 from phantomweb.models import RabbitInfoDB, PhantomUser
@@ -167,16 +165,16 @@ class UserObjectMySQL(UserObject):
                 domain_opts['minimum_vms'] = parameters['sensor_minimum_vms']
                 domain_opts['metric'] = parameters['sensor_metric']
                 domain_opts['monitor_domain_sensors'] = parameters.get('monitor_domain_sensors', '').split(',')
-                domain_opts['monitor_sensors'] = parameters.get('monitor_sensors','').split(',')
+                domain_opts['monitor_sensors'] = parameters.get('monitor_sensors', '').split(',')
                 domain_opts['scale_down_n_vms'] = parameters['sensor_scale_down_vms']
                 domain_opts['scale_down_threshold'] = parameters['sensor_scale_down_threshold']
                 domain_opts['scale_up_n_vms'] = parameters['sensor_scale_up_vms']
                 domain_opts['scale_up_threshold'] = parameters['sensor_scale_up_threshold']
-                domain_opts['sample_function'] = 'Average' # TODO: make configurable
-                domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
-                domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
-                domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
-                domain_opts['clouds'] = [] # TODO set clouds
+                domain_opts['sample_function'] = 'Average'  # TODO: make configurable
+                domain_opts['sensor_type'] = 'opentsdb'  # TODO: make configurable
+                domain_opts['opentsdb_port'] = 4242  # TODO: make configurable
+                domain_opts['opentsdb_host'] = 'localhost'  # TODO: make configurable
+                domain_opts['clouds'] = []  # TODO set clouds
             except KeyError as k:
                 raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
 
@@ -199,7 +197,6 @@ class UserObjectMySQL(UserObject):
 
         return domain_opts
 
-
     def add_domain(self, username, name, parameters):
 
         domain_opts = self._api_parameters_to_domain_opts(parameters)
@@ -213,7 +210,7 @@ class UserObjectMySQL(UserObject):
         try:
             self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
             return parameters
-        except Exception, de:
+        except Exception as de:
             log.exception("Problem creating domain: %s" % name)
             raise
 
@@ -234,10 +231,21 @@ class UserObjectMySQL(UserObject):
             log.exception("Problem modifying domain: %s" % name)
             raise
 
-
     def get_all_domains(self, username):
         domain_names = self.epum.list_domains(caller=self.access_key)
         return domain_names
+
+    def _sanitize_sensor_data(self, sensor_data):
+        cleaned_sensor_data = {}
+        for key, item in sensor_data.iteritems():
+            key = key.lower()
+            cleaned_item = {}
+            for k, v in item.iteritems():
+                k = k.lower()
+                cleaned_item[k] = v
+            cleaned_sensor_data[key] = cleaned_item
+
+        return cleaned_sensor_data
 
     def get_domain(self, username, id):
         try:
@@ -250,6 +258,7 @@ class UserObjectMySQL(UserObject):
         ent['id'] = domain_description['name']
         ent['de_name'] = engine_conf.get('phantom_de_name')
         ent['name'] = engine_conf.get('phantom_name')
+        ent['sensor_data'] = self._sanitize_sensor_data(domain_description.get('sensor_data', {}))
 
         if ent['de_name'] == 'multicloud':
             ent['vm_count'] = engine_conf.get('minimum_vms')
@@ -285,6 +294,7 @@ class UserObjectMySQL(UserObject):
                 'cloud': i.get('site', ''),
                 'image_id': i.get('iaas_image', ''),
                 'instance_type': i.get('iaas_allocation', ''),
+                'sensor_data': self._sanitize_sensor_data(i.get('sensor_data', {})),
                 'keyname': i.get('iaas_sshkeyname', ''),
             }
             parsed_instances.append(instance)

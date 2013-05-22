@@ -642,6 +642,12 @@ class DomainTestCase(unittest.TestCase):
             if caller == "freds_access_key_id" and domain == "domain1":
                 return {
                     'name': 'this-is-a-uuid',
+                    'sensor_data': {
+                        'my.domain.metric': {
+                            'Series': [0.0],
+                            'Average': 0.0
+                        }
+                    },
                     'config': {
                         'engine_conf': {
                             'phantom_name': 'domain1',
@@ -654,6 +660,12 @@ class DomainTestCase(unittest.TestCase):
             if caller == "freds_access_key_id" and domain == "domain2":
                 return {
                     'name': 'this-is-a-uuid-number-two',
+                    'sensor_data': {
+                        'my.domain.metric': {
+                            'Series': [0.0],
+                            'Average': 0.0
+                        }
+                    },
                     'config': {
                         'engine_conf': {
                             'phantom_name': 'domain2',
@@ -662,7 +674,7 @@ class DomainTestCase(unittest.TestCase):
                             'maximum_vms': 2,
                             'metric': 'df.1kblocks.used',
                             'monitor_sensors': ['df.1kblocks.used', 'df.1kblocks.total'],
-                            'monitor_domain_sensors': ['testy', ],
+                            'monitor_domain_sensors': ['my.domain.metric', ],
                             'sample_function': 'Average',
                             'scale_down_n_vms': 1,
                             'scale_down_threshold': 0.1,
@@ -699,6 +711,8 @@ class DomainTestCase(unittest.TestCase):
             self.assertEqual(domain1['name'], 'domain1')
             self.assertEqual(domain1['vm_count'], 1)
             self.assertEqual(domain1['lc_name'], 'mylc')
+            self.assertEqual(domain1['sensor_data'],
+                    {"my.domain.metric": {"series": [0.0], "average": 0.0}})
 
             self.assertEqual(domain2['de_name'], 'sensor')
             self.assertEqual(domain2['name'], 'domain2')
@@ -860,6 +874,7 @@ class DomainTestCase(unittest.TestCase):
             if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
+                    'sensor_data': {"my.domain.metric": {"Series": [0.0], "Average": 0.0}},
                     'config': {
                         'engine_conf': {
                             'phantom_name': 'domain1',
@@ -872,6 +887,7 @@ class DomainTestCase(unittest.TestCase):
             elif caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
                 return {
                     'name': 'this-is-a-uuid-number-two',
+                    'sensor_data': {"my.domain.metric": {"Series": [0.0], "Average": 0.0}},
                     'config': {
                         'engine_conf': {
                             'phantom_name': 'domain2',
@@ -916,6 +932,8 @@ class DomainTestCase(unittest.TestCase):
             self.assertEqual(domain['sensor_scale_down_vms'], 1)
             self.assertEqual(domain['sensor_scale_up_threshold'], 0.5)
             self.assertEqual(domain['sensor_scale_up_vms'], 1)
+            self.assertEqual(domain['sensor_data'],
+                    {"my.domain.metric": {"series": [0.0], "average": 0.0}})
 
             response = c.get('/api/dev/domains/this-is-a-bad-url')
             self.assertEqual(response.status_code, 404)
@@ -1160,6 +1178,14 @@ class InstancesTestCase(unittest.TestCase):
                             "public_ip": "149.165.148.135",
                             "state_time": 1369072143.854667,
                             "state_desc": None,
+                            "sensor_data": {
+                                "proc.loadavg.1min": {
+                                    "Series": [
+                                        0.0
+                                    ],
+                                    "Average": 0.0
+                                }
+                            },
                             "instance_id": "80bc3e1d-ffbe-4be1-b392-902fb6df10cb",
                             "iaas_id": "i-14a3d7df",
                             "iaas_image": "hello-phantom.gz"
@@ -1195,6 +1221,8 @@ class InstancesTestCase(unittest.TestCase):
             self.assertEqual(instance_0['image_id'], "hello-phantom.gz")
             self.assertEqual(instance_0['instance_type'], "m1.small")
             self.assertEqual(instance_0['keyname'], "phantomkey")
+            self.assertEqual(instance_0['sensor_data'],
+                {"proc.loadavg.1min": {"series": [0.0], "average": 0.0}}),
             self.assertEqual(instance_0['uri'],
                 "/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
 
@@ -1225,6 +1253,14 @@ class InstancesResourcesTestCase(unittest.TestCase):
                                     1369072143.839346
                                 ]
                             ],
+                            "sensor_data": {
+                                "proc.loadavg.1min": {
+                                    "Series": [
+                                        0.0
+                                    ],
+                                    "Average": 0.0
+                                }
+                            },
                             "private_ip": "192.168.0.111",
                             "errors": None,
                             "iaas_allocation": "m1.small",
@@ -1275,6 +1311,8 @@ class InstancesResourcesTestCase(unittest.TestCase):
             self.assertEqual(instance['image_id'], "hello-phantom.gz")
             self.assertEqual(instance['instance_type'], "m1.small")
             self.assertEqual(instance['keyname'], "phantomkey")
+            self.assertEqual(instance['sensor_data'],
+                {"proc.loadavg.1min": {"series": [0.0], "average": 0.0}}),
             self.assertEqual(instance['uri'],
                 "/api/dev/domains/this-is-a-uuid/instances/80bc3e1d-ffbe-4be1-b392-902fb6df10cb")
 
