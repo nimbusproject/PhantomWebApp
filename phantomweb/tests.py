@@ -347,7 +347,7 @@ class CredentialsTestCase(unittest.TestCase):
 
 class LaunchConfigurationTestCase(unittest.TestCase):
     def test_get_launchconfigurations(self):
-        def describe_dt(caller, dt_name):
+        def describe_dt(obj, caller, dt_name):
             if caller == "freds_access_key_id" and dt_name == "testlc":
                 return {
                     "mappings": {
@@ -362,9 +362,9 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                     }
                 }
             else:
-                self.fail("Unknown arguments received")
+                self.fail("Unknown arguments received: %s, %s" % (caller, dt_name))
 
-        with patch('ceiclient.client.DTRSClient.describe_dt', side_effect=describe_dt):
+        with patch.multiple('ceiclient.client.DTRSClient', describe_dt=describe_dt):
             c = Client()
             c.login(username='fred', password='secret')
 
@@ -512,7 +512,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             assert response['Location'].endswith("/api/dev/launchconfigurations/%s" % lc["id"])
 
     def test_put_launchconfiguration_resource(self):
-        def describe_dt(caller, dt_name):
+        def describe_dt(obj, caller, dt_name):
             if caller == "freds_access_key_id" and dt_name == "testlc":
                 return {
                     "mappings": {
@@ -776,92 +776,110 @@ class DomainTestCase(unittest.TestCase):
             else:
                 self.fail("Unknown arguments received")
 
-        with patch.multiple('ceiclient.client.EPUMClient', add_domain=add_domain,
-                list_domains=list_domains, describe_domain=describe_domain):
-            c = Client()
-            c.login(username='fred', password='secret')
+        def describe_dt(obj, caller, dt_name):
+            if caller == "freds_access_key_id" and dt_name == "testlc":
+                return {
+                    "mappings": {
+                        "site1": {
+                            "iaas_image": "hello-phantom.gz",
+                            "iaas_allocation": "m1.small"
+                        }
+                    },
+                    "contextualization": {
+                        "method": "userdata",
+                        "userdata": "Hello Cloud!"
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received: %s, %s" % (caller, dt_name))
 
-            post_content = {
-                "name": "myseconddomain",
-                "de_name": "sensor",
-                "lc_name": "mysecondlc",
-                "monitor_sensors": "proc.loadavg.1min,df.inodes.free",
-                "sensor_minimum_vms": 1,
-                "sensor_maximum_vms": 10,
-                "sensor_metric": "proc.loadavg.1min",
-                "sensor_scale_down_threshold": 0.5,
-                "sensor_scale_down_vms": 1,
-                "sensor_scale_up_threshold": 1,
-                "sensor_scale_up_vms": 1,
-                "sensor_cooldown": 60
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 201)
+        with patch.multiple('ceiclient.client.DTRSClient', describe_dt=describe_dt):
+            with patch.multiple('ceiclient.client.EPUMClient', add_domain=add_domain,
+                    list_domains=list_domains, describe_domain=describe_domain):
+                c = Client()
+                c.login(username='fred', password='secret')
 
-            domain = json.loads(response.content)
-            self.assertEqual(domain["name"], "myseconddomain")
-            self.assertEqual(domain["de_name"], "sensor")
-            self.assertEqual(domain["lc_name"], "mysecondlc")
-            self.assertEqual(domain["monitor_sensors"], "proc.loadavg.1min,df.inodes.free")
-            self.assertEqual(domain["sensor_minimum_vms"], 1)
-            self.assertEqual(domain["sensor_maximum_vms"], 10)
-            self.assertEqual(domain["sensor_metric"], "proc.loadavg.1min")
-            self.assertEqual(domain["sensor_scale_down_threshold"], 0.5)
-            self.assertEqual(domain["sensor_scale_down_vms"], 1)
-            self.assertEqual(domain["sensor_scale_up_threshold"], 1)
-            self.assertEqual(domain["sensor_scale_up_vms"], 1)
-            self.assertEqual(domain["sensor_cooldown"], 60)
-            self.assertEqual(domain["owner"], "fred")
-            assert domain["id"]
-            domain_id = domain["id"]
-            self.assertEqual(domain["uri"], "/api/dev/domains/%s" % domain_id)
+                post_content = {
+                    "name": "myseconddomain",
+                    "de_name": "sensor",
+                    "lc_name": "testlc",
+                    "monitor_sensors": "proc.loadavg.1min,df.inodes.free",
+                    "sensor_minimum_vms": 1,
+                    "sensor_maximum_vms": 10,
+                    "sensor_metric": "proc.loadavg.1min",
+                    "sensor_scale_down_threshold": 0.5,
+                    "sensor_scale_down_vms": 1,
+                    "sensor_scale_up_threshold": 1,
+                    "sensor_scale_up_vms": 1,
+                    "sensor_cooldown": 60
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 201)
 
-            broken_post_content = {
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(broken_post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 400)
+                domain = json.loads(response.content)
+                self.assertEqual(domain["name"], "myseconddomain")
+                self.assertEqual(domain["de_name"], "sensor")
+                self.assertEqual(domain["lc_name"], "testlc")
+                self.assertEqual(domain["monitor_sensors"], "proc.loadavg.1min,df.inodes.free")
+                self.assertEqual(domain["sensor_minimum_vms"], 1)
+                self.assertEqual(domain["sensor_maximum_vms"], 10)
+                self.assertEqual(domain["sensor_metric"], "proc.loadavg.1min")
+                self.assertEqual(domain["sensor_scale_down_threshold"], 0.5)
+                self.assertEqual(domain["sensor_scale_down_vms"], 1)
+                self.assertEqual(domain["sensor_scale_up_threshold"], 1)
+                self.assertEqual(domain["sensor_scale_up_vms"], 1)
+                self.assertEqual(domain["sensor_cooldown"], 60)
+                self.assertEqual(domain["owner"], "fred")
+                assert domain["id"]
+                domain_id = domain["id"]
+                self.assertEqual(domain["uri"], "/api/dev/domains/%s" % domain_id)
 
-            broken_post_content = {
-                'name': 'stillbroken'
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(broken_post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 400)
+                broken_post_content = {
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(broken_post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 400)
 
-            broken_post_content = {
-                'name': 'stillbroken',
-                'de_name': 'fake_de'
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(broken_post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 400)
+                broken_post_content = {
+                    'name': 'stillbroken'
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(broken_post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 400)
 
-            broken_post_content = {
-                'name': 'stillbroken',
-                'de_name': 'sensor'
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(broken_post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 400)
+                broken_post_content = {
+                    'name': 'stillbroken',
+                    'de_name': 'fake_de'
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(broken_post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 400)
 
-            broken_post_content = {
-                'name': 'stillbroken',
-                'de_name': 'multicloud'
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(broken_post_content), content_type='application/json')
-            self.assertEqual(response.status_code, 400)
+                broken_post_content = {
+                    'name': 'stillbroken',
+                    'de_name': 'sensor'
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(broken_post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 400)
 
-            duplicate_domain_content = {
-                'name': 'domain1',
-                'de_name': 'multicloud'
-            }
-            response = c.post('/api/dev/domains',
-                json.dumps(duplicate_domain_content), content_type='application/json')
-            self.assertEqual(response.status_code, 302)
-            assert response['Location'].endswith("/api/dev/domains/this-is-a-uuid")
+                broken_post_content = {
+                    'name': 'stillbroken',
+                    'de_name': 'multicloud'
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(broken_post_content), content_type='application/json')
+                self.assertEqual(response.status_code, 400)
+
+                duplicate_domain_content = {
+                    'name': 'domain1',
+                    'de_name': 'multicloud'
+                }
+                response = c.post('/api/dev/domains',
+                    json.dumps(duplicate_domain_content), content_type='application/json')
+                self.assertEqual(response.status_code, 302)
+                assert response['Location'].endswith("/api/dev/domains/this-is-a-uuid")
 
     def test_get_domain_resource(self):
         def list_domains(self, caller):
@@ -912,31 +930,49 @@ class DomainTestCase(unittest.TestCase):
             else:
                 self.fail("Unknown arguments received")
 
-        with patch.multiple('ceiclient.client.EPUMClient', list_domains=list_domains,
-                describe_domain=describe_domain):
-            c = Client()
-            c.login(username='fred', password='secret')
+        def describe_dt(obj, caller, dt_name):
+            if caller == "freds_access_key_id" and dt_name == "testlc":
+                return {
+                    "mappings": {
+                        "site1": {
+                            "iaas_image": "hello-phantom.gz",
+                            "iaas_allocation": "m1.small"
+                        }
+                    },
+                    "contextualization": {
+                        "method": "userdata",
+                        "userdata": "Hello Cloud!"
+                    }
+                }
+            else:
+                self.fail("Unknown arguments received: %s, %s" % (caller, dt_name))
 
-            response = c.get('/api/dev/domains/this-is-a-uuid-number-two')
-            self.assertEqual(response.status_code, 200)
+        with patch.multiple('ceiclient.client.DTRSClient', describe_dt=describe_dt):
+            with patch.multiple('ceiclient.client.EPUMClient', list_domains=list_domains,
+                    describe_domain=describe_domain):
+                c = Client()
+                c.login(username='fred', password='secret')
 
-            domain = json.loads(response.content)
+                response = c.get('/api/dev/domains/this-is-a-uuid-number-two')
+                self.assertEqual(response.status_code, 200)
 
-            self.assertEqual(domain['de_name'], 'sensor')
-            self.assertEqual(domain['name'], 'domain2')
-            self.assertEqual(domain['monitor_sensors'], 'df.1kblocks.used,df.1kblocks.total')
-            self.assertEqual(domain['sensor_minimum_vms'], 1)
-            self.assertEqual(domain['sensor_maximum_vms'], 2)
-            self.assertEqual(domain['sensor_metric'], 'df.1kblocks.used')
-            self.assertEqual(domain['sensor_scale_down_threshold'], 0.1)
-            self.assertEqual(domain['sensor_scale_down_vms'], 1)
-            self.assertEqual(domain['sensor_scale_up_threshold'], 0.5)
-            self.assertEqual(domain['sensor_scale_up_vms'], 1)
-            self.assertEqual(domain['sensor_data'],
-                    {"my.domain.metric": {"series": [0.0], "average": 0.0}})
+                domain = json.loads(response.content)
 
-            response = c.get('/api/dev/domains/this-is-a-bad-url')
-            self.assertEqual(response.status_code, 404)
+                self.assertEqual(domain['de_name'], 'sensor')
+                self.assertEqual(domain['name'], 'domain2')
+                self.assertEqual(domain['monitor_sensors'], 'df.1kblocks.used,df.1kblocks.total')
+                self.assertEqual(domain['sensor_minimum_vms'], 1)
+                self.assertEqual(domain['sensor_maximum_vms'], 2)
+                self.assertEqual(domain['sensor_metric'], 'df.1kblocks.used')
+                self.assertEqual(domain['sensor_scale_down_threshold'], 0.1)
+                self.assertEqual(domain['sensor_scale_down_vms'], 1)
+                self.assertEqual(domain['sensor_scale_up_threshold'], 0.5)
+                self.assertEqual(domain['sensor_scale_up_vms'], 1)
+                self.assertEqual(domain['sensor_data'],
+                        {"my.domain.metric": {"series": [0.0], "average": 0.0}})
+
+                response = c.get('/api/dev/domains/this-is-a-bad-url')
+                self.assertEqual(response.status_code, 404)
 
     def test_delete_domain_resource(self):
 
