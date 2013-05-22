@@ -195,7 +195,6 @@ class UserObjectMySQL(UserObject):
         else:
             raise PhantomWebException("de_name '%s' is not supported" % de_name)
 
-        print domain_opts
         return domain_opts
 
     def add_domain(self, username, name, parameters):
