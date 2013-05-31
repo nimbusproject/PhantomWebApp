@@ -59,7 +59,7 @@ function make_url(p) {
 
     var first_slash = base_url.indexOf("/", 8);
     base_url = base_url.substring(0, first_slash);
-    return base_url.concat('/phantom/').concat(p);
+    return base_url.concat('/api/dev/').concat(p);
 }
 
 function std_error_handler(url, error_msg) {
@@ -85,6 +85,7 @@ function ajaxCallREST(url, func, error_func) {
         type : "GET",
         url : url,
         dataType : "json",
+        headers: {'X-CSRFToken': csrf_token},
         cache: false,
         success: function(data) {
             try {
@@ -114,9 +115,33 @@ function ajaxCallREST(url, func, error_func) {
     return xhr;
 }
 
+function ajaxCallDELETE(url, func, error_func) {
+    $.ajaxSetup({ cache: false });
+    var xhr = $.ajax({
+        type : "DELETE",
+        url : url,
+        headers: {'X-CSRFToken': csrf_token},
+        cache: false,
+        complete: function(xhr, status) {
+            if (status === "success") {
+                func()
+            }
+            else {
+                try {
+                    var error_msg = "Error communicating with the service (code " + status + "): ".concat(request.statusText);
+                    error_func(url, error_msg);
+                }
+                catch(err) {
+                    alert(err);
+                }
+            }
+        }
+    });
+    return xhr;
+}
+
 function phantomAjaxPost(url, data_vals, func, error_func) {
 
-    data_vals['csrfmiddlewaretoken'] = csrf_token;
     var success_func = function (success_data){
         try {
             var obj = success_data;
@@ -150,7 +175,8 @@ function phantomAjaxPost(url, data_vals, func, error_func) {
         type : "POST",
         url : url,
         dataType : "json",
-        data: data_vals,
+        headers: {'X-CSRFToken': csrf_token},
+        data: JSON.stringify(data_vals),
         success: success_func,
         error: l_error_func
     });

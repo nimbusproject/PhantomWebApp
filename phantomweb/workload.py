@@ -5,6 +5,7 @@ import urlparse
 from boto.ec2.autoscale import Tag
 from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
+from phantomweb.tevent import Pool, TimeoutError
 import boto
 import boto.ec2.autoscale
 import statsd
@@ -14,6 +15,7 @@ from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_object
 
 
+IAAS_TIMEOUT = 5
 g_general_log = logging.getLogger('phantomweb.general')
 
 # at some point this should come from some sort of DB
@@ -95,6 +97,32 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 ########
 
 # New implementation for the Phantom API
+
+def get_all_keys(clouds):
+    """get all ssh keys from a dictionary of UserCloudInfo objects
+    """
+    pool = Pool(processes=10)
+    key_dict = {}
+
+    results = {}
+    for cloud_name, cloud in clouds.iteritems():
+        result = pool.apply_async(cloud.get_keys)
+        results[cloud_name] = result
+
+    pool.close()
+
+    for cloud_name, result in results.iteritems():
+        try:
+            key_dict[cloud_name] = result.get(IAAS_TIMEOUT)
+        except TimeoutError:
+            g_general_log.exception("Timed out getting keys from %s" % cloud_name)
+            key_dict[cloud_name] = []
+        except Exception:
+            g_general_log.exception("Unexpected error getting keys from %s" % cloud_name)
+            key_dict[cloud_name] = []
+
+    return key_dict
+
 
 def create_launch_configuration(username, name):
     lc = LaunchConfiguration.objects.create(name=name, username=username)

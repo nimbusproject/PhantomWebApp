@@ -177,9 +177,9 @@ function phantom_cloud_edit_add_click() {
         phantom_cloud_edit_enable(true);
     }
 
-    var url = make_url('api/sites/add');
+    var url = make_url('credentials');
     phantom_cloud_edit_enable(false);
-    phantomAjaxPost(url, {'cloud': nameCtl, 'access': accessCtl, 'secret': secretCtl, 'keyname': keyCtl}, success_func, error_func);
+    phantomAjaxPost(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
 }
 
 
@@ -222,14 +222,15 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
             var new_choice = $('<option>',  {'name': key, value: key, text: key});
             $("#phantom_cloud_edit_keyname_list").append(new_choice);
         }
-        if(val.keyname == undefined || val.keyname == "") {
+        if(val.key_name == undefined || val.key_name == "") {
             var msg = "Please set an ssh key and save.";
+            $("#phantom_cloud_edit_keyname_list").parent().children(".help-inline").remove();
             $("#phantom_cloud_edit_keyname_list")
                 .after('<span class="help-inline">' + msg + '</span>')
                 .parent().parent().addClass("error");
         }
         else {
-            $("#phantom_cloud_edit_keyname_list").val(val.keyname);
+            $("#phantom_cloud_edit_keyname_list").val(val.key_name);
         }
 
     }
@@ -273,36 +274,61 @@ function make_cloud_table_row(site, status) {
 }
 
 function phantom_cloud_edit_load_sites() {
-    var url = make_url('api/sites/load');
 
-    var success_func = function(obj){
+    var credentials_loaded = function(credentials){
 
         $("#cloud-credentials .help-inline").remove();
         $("#cloud_table_body").empty();
         var selected_cloud_name = $("#phantom_cloud_edit_name").val();
 
-        g_cloud_map = obj.sites;
+        console.log(credentials);
+        var credentials_map = {};
 
-        for(var site_name in obj.all_sites) {
-            site = obj.all_sites[site_name];
+        for (var i = 0; i < credentials.length; i++) {
+            var credential = credentials[i];
+            if (credential.hasOwnProperty("id")) {
 
-            var status = null;
-            if (site in obj.sites) {
-                if (!obj.sites[site]["keyname"]) {
-                    status = "Incomplete";
-                }
-                else {
-                    status = "Enabled";
-                }
+                g_cloud_map[credential.id]["key_name"] = credential["key_name"];
+                g_cloud_map[credential.id]["access_key"] = credential["access_key"];
+                g_cloud_map[credential.id]["secret_key"] = credential["secret_key"];
+                g_cloud_map[credential.id]["keyname_list"] = credential["available_keys"];
             }
-            else {
+
+        }
+
+        for(var site_name in g_cloud_map) {
+            var status = null;
+            var credentials = g_cloud_map[site_name];
+
+            if (!credentials["key_name"] && !credentials["access_key"] && !credentials["secret_key"]) {
                 status = "Disabled";
             }
-            $("#cloud_table_body").append(make_cloud_table_row(site, status));
+            else if (!credentials["key_name"]) {
+                status = "Incomplete";
+            }
+            else {
+                status = "Enabled";
+            }
+            $("#cloud_table_body").append(make_cloud_table_row(site_name, status));
         }
         phantom_cloud_edit_change_cloud_internal();
         phantom_cloud_edit_enable(true);
     };
+
+    var sites_loaded = function(sites) {
+
+        g_cloud_map = {};
+
+        for (var i = 0; i < sites.length; i++) {
+            var site = sites[i];
+            if (site.hasOwnProperty("id")) {
+                g_cloud_map[site.id] = {}
+            }
+        }
+
+        var credentials_url = make_url('credentials');
+        ajaxCallREST(credentials_url, credentials_loaded, error_func);
+    }
 
     var error_func = function(obj, error_msg) {
         alert(error_msg);
@@ -310,7 +336,8 @@ function phantom_cloud_edit_load_sites() {
     };
 
     phantom_cloud_edit_enable(false);
-    ajaxCallREST(url, success_func, error_func);
+    var sites_url = make_url('sites');
+    ajaxCallREST(sites_url, sites_loaded, error_func);
 }
 
 function phantom_cloud_edit_load_page() {
@@ -332,8 +359,7 @@ function phantom_cloud_edit_remove_click() {
         return;
     }
 
-    var url = make_url("api/sites/delete");
-    url = url.concat("?cloud=").concat(cloud_name);
+    var url = make_url("credentials/" + cloud_name);
 
     var success_func = function (obj) {
         $("#phantom_cloud_edit_name").empty();
@@ -345,10 +371,10 @@ function phantom_cloud_edit_remove_click() {
     }
 
     var error_func = function(obj, message) {
-        alert(error_msg);
+        alert(message);
         phantom_cloud_edit_enable(true);
     }
 
     phantom_cloud_edit_enable(false);
-    ajaxCallREST(url, success_func, error_func);
+    ajaxCallDELETE(url, success_func, error_func);
 }

@@ -14,7 +14,7 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
     terminate_domain_instance, get_sensors, remove_launch_configuration, \
-    get_launch_configuration_object
+    get_launch_configuration_object, get_all_keys
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -107,6 +107,8 @@ def credentials(request):
 
     if request.method == "GET":
         all_clouds = user_obj.get_clouds()
+        keys = get_all_keys(all_clouds)
+
         response_list = []
         for cloud in all_clouds.values():
             credentials_name = cloud.cloudname
@@ -115,6 +117,7 @@ def credentials(request):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
+                "available_keys": keys.get(credentials_name, []),
                 "uri": "/api/%s/credentials/%s" % (API_VERSION, credentials_name)
             }
             response_list.append(credentials_dict)
@@ -123,12 +126,12 @@ def credentials(request):
         try:
             content = json.loads(request.body)
         except:
-            msg = "Bad request. No JSON. See API docs: %s" % DOC_URI
+            msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
             return HttpResponseBadRequest(msg)
 
         required_params = ["id", "access_key", "secret_key", "key_name"]
         if not has_all_required_params(required_params, content):
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
 
         site = content["id"]
         access_key = content["access_key"]
@@ -168,6 +171,7 @@ def credentials_resource(request, site):
     if request.method == "GET":
         all_clouds = user_obj.get_clouds()
         cloud = all_clouds.get(site)
+        keys = get_all_keys([cloud])
 
         if cloud is not None:
             response_dict = {
@@ -175,6 +179,7 @@ def credentials_resource(request, site):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
+                "available_keys": keys[cloud.cloudname],
                 "uri": "/api/%s/credentials/%s" % (API_VERSION, cloud.cloudname)
             }
             h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
@@ -224,15 +229,18 @@ def credentials_resource(request, site):
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
     elif request.method == "DELETE":
         # Check that credentials exist
-        if site not in user_obj.get_clouds():
-            return HttpResponseBadRequest()
+        clouds = user_obj.get_clouds()
+        print "Want to delete %s" % site
+        if site not in clouds:
+            return HttpResponseBadRequest("Site %s not available. Choose from %s" % (site, clouds.keys()))
 
         # Remove credentials from DTRS
         try:
             user_obj.delete_site(site)
         except:
-            log.exception("Failed to remove credentials for site %s" % site)
-            return HttpResponseServerError()
+            msg = "Failed to remove credentials for site %s" % site
+            log.exception(msg)
+            return HttpResponseServerError(msg)
 
         h = HttpResponse(status=204)
 
@@ -507,7 +515,7 @@ def instance_resource(request, domain_id, instance_id):
 
         try:
             terminate_domain_instance(username, domain_id, instance_id)
-        except PhantomWebException as p:
+        except PhantomWebException:
             return HttpResponseServerError("Couldn't remove instance %s" % instance_id)
 
         h = HttpResponse(status=204)

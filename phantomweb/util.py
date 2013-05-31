@@ -1,6 +1,7 @@
 import logging
 import urlparse
 import boto.ec2
+import statsd
 
 from uuid import uuid4
 from boto.ec2.connection import EC2Connection
@@ -62,7 +63,6 @@ class UserCloudInfo(object):
         self.site_desc = site_desc.copy()
 
     def get_iaas_compute_con(self):
-        site_url = "INVALID"
         if self.site_desc['type'] == "nimbus":
             return self._connect_nimbus()
         elif self.site_desc['type'] == "ec2":
@@ -71,6 +71,23 @@ class UserCloudInfo(object):
             return self._connect_euca()
 
         raise PhantomWebException("Unknown site type")
+
+    def get_keys(self):
+        connection = self.get_iaas_compute_con()
+        keyname_list = []
+        try:
+            timer = statsd.Timer('phantomweb')
+            timer_cloud = statsd.Timer('phantomweb')
+            timer.start()
+            timer_cloud.start()
+            keypairs = connection.get_all_key_pairs()
+            timer.stop('get_all_key_pairs.timing')
+            timer_cloud.stop('get_all_key_pairs.%s.timing' % self.cloudname)
+            keyname_list = [k.name for k in keypairs]
+        except Exception, boto_ex:
+            log.error("Error connecting to the service %s" % (str(boto_ex)))
+
+        return keyname_list
 
     def _connect_nimbus(self):
         if 'host' and 'port' not in self.site_desc:
@@ -186,10 +203,10 @@ class UserObjectMySQL(UserObject):
                 domain_opts['monitor_domain_sensors'] = parameters.get('monitor_domain_sensors', '').split(',')
                 domain_opts['monitor_sensors'] = parameters.get('monitor_sensors', '').split(',')
 
-                domain_opts['sample_function'] = 'Average' # TODO: make configurable
-                domain_opts['sensor_type'] = 'opentsdb' # TODO: make configurable
-                domain_opts['opentsdb_port'] = 4242 # TODO: make configurable
-                domain_opts['opentsdb_host'] = 'localhost' # TODO: make configurable
+                domain_opts['sample_function'] = 'Average'  # TODO: make configurable
+                domain_opts['sensor_type'] = 'opentsdb'  # TODO: make configurable
+                domain_opts['opentsdb_port'] = 4242  # TODO: make configurable
+                domain_opts['opentsdb_host'] = 'localhost'  # TODO: make configurable
             except KeyError as k:
                 raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
         else:
@@ -210,7 +227,7 @@ class UserObjectMySQL(UserObject):
         try:
             self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
             return parameters
-        except Exception as de:
+        except Exception:
             log.exception("Problem creating domain: %s" % name)
             raise
 
@@ -227,7 +244,7 @@ class UserObjectMySQL(UserObject):
         try:
             self.epum.reconfigure_domain(id, conf, caller=self.access_key)
             return parameters
-        except Exception, de:
+        except Exception:
             log.exception("Problem modifying domain: %s" % name)
             raise
 
@@ -331,7 +348,8 @@ class UserObjectMySQL(UserObject):
             try:
                 site_desc = dtrs_client.describe_site(self.access_key, site_name)
                 desc = dtrs_client.describe_credentials(self.access_key, site_name)
-                uci = UserCloudInfo(site_name, self.username, desc['access_key'], desc['secret_key'], desc['key_name'], site_desc)
+                uci = UserCloudInfo(site_name, self.username, desc['access_key'],
+                    desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
             except Exception, ex:
                 log.error("Failed trying to add the site %s to the user %s | %s" % (site_name, self.username, str(ex)))
