@@ -124,8 +124,27 @@ def get_all_keys(clouds):
     return key_dict
 
 
-def create_launch_configuration(username, name):
+def create_launch_configuration(username, name, cloud_params):
     lc = LaunchConfiguration.objects.create(name=name, username=username)
+
+    user_obj = get_user_object(username)
+    user_obj.create_dt(name, cloud_params)
+
+    lc.save()
+
+    return lc
+
+
+def update_launch_configuration(id, cloud_params):
+    lc = get_launch_configuration(id)
+    if lc is None:
+        raise PhantomWebException("Trying to update lc %s that doesn't exist?" % id)
+
+    username = lc.get('owner')
+    name = lc.get('name')
+    user_obj = get_user_object(username)
+    user_obj.create_dt(name, cloud_params)
+
     return lc
 
 
@@ -138,6 +157,7 @@ def get_all_launch_configurations(username):
 
 
 def get_launch_configuration(id):
+
     try:
         lc = LaunchConfiguration.objects.get(id=id)
     except LaunchConfiguration.DoesNotExist:
@@ -153,14 +173,12 @@ def get_launch_configuration(id):
     user_obj = get_user_object(lc.username)
     dt = user_obj.get_dt(lc.name)
 
-    host_max_pairs = lc.hostmaxpairdb_set.all()
-    for hmp in host_max_pairs:
-        cloud = hmp.cloud_name
-        mapping = dt.get("mappings", {}).get(cloud, {})
+    for cloud, mapping in dt.get('mappings', {}).iteritems():
+
         lc_dict["cloud_params"][cloud] = {
-            "max_vms": hmp.max_vms,
-            "common": hmp.common_image,
-            "rank": hmp.rank,
+            "max_vms": mapping.get('max_vms'),
+            "common": mapping.get('common'),
+            "rank": mapping.get('rank'),
             "image_id": mapping.get("iaas_image"),
             "instance_type": mapping.get("iaas_allocation"),
             "user_data": dt.get("contextualization", {}).get("userdata")
@@ -192,7 +210,10 @@ def remove_launch_configuration(username, lc_id):
         raise PhantomWebException("Could not delete launch configuration %s. Doesn't exist." % lc_id)
 
     user_obj = get_user_object(lc.username)
-    user_obj.remove_dt(lc.name)
+    try:
+        user_obj.remove_dt(lc.name)
+    except Exception:
+        g_general_log.exception("Couldn't delete dt %s" % lc.name)
 
     host_max_pairs = lc.hostmaxpairdb_set.all()
     for hmp in host_max_pairs:
@@ -674,8 +695,8 @@ def phantom_sites_add(request_params, userobj):
 
 @PhantomWebDecorator
 @LogEntryDecorator
-def phantom_get_sites(request_params, userobj):
-    return userobj.get_possible_sites()
+def phantom_get_sites(request_params, userobj, details=False):
+    return userobj.get_possible_sites(details=details)
 
 
 @PhantomWebDecorator

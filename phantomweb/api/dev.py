@@ -7,11 +7,11 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
     HttpResponseNotFound, HttpResponseServerError, HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 
-from phantomweb.util import get_user_object
+from phantomweb.util import get_user_object, str_to_bool
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.workload import phantom_get_sites, get_all_launch_configurations, \
     get_launch_configuration, get_launch_configuration_by_name, create_launch_configuration, \
-    set_host_max_pair, get_all_domains, create_domain, get_domain_by_name, get_domain, \
+    update_launch_configuration, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
     terminate_domain_instance, get_sensors, remove_launch_configuration, \
     get_launch_configuration_object, get_all_keys
@@ -68,16 +68,17 @@ def has_all_required_params(params, content):
 @require_http_methods(["GET"])
 def sites(request):
     user_obj = get_user_object(request.user.username)
-
-    all_sites = phantom_get_sites(request.GET, user_obj)
+    details = str_to_bool(request.GET.get('details', 'false'))
+    all_sites = phantom_get_sites(request.GET, user_obj, details=details)
     response_list = []
-    for site in all_sites:
-        site_name = str(site)
-        site_dict = {
-            "id": site_name,
-            "credentials": "/api/%s/credentials/%s" % (API_VERSION, site_name),
-            "uri": "/api/%s/sites/%s" % (API_VERSION, site_name)
-        }
+    for site_name, site_dict in all_sites.iteritems():
+        site_dict["credentials"] = "/api/%s/credentials/%s" % (API_VERSION, site_name)
+        site_dict["uri"] = "/api/%s/sites/%s" % (API_VERSION, site_name)
+        if details:
+            if site_dict.get('user_images') is None:
+                site_dict['user_images'] = []
+            if site_dict.get('public_images') is None:
+                site_dict['public_images'] = []
         response_list.append(site_dict)
     h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
     return h
@@ -87,7 +88,8 @@ def sites(request):
 @require_http_methods(["GET"])
 def site_resource(request, site):
     user_obj = get_user_object(request.user.username)
-    all_sites = phantom_get_sites(request.GET, user_obj)
+    details = str_to_bool(request.GET.get('details', 'false'))
+    all_sites = phantom_get_sites(request.GET, user_obj, details=details)
     if site in all_sites:
         response_dict = {
             "id": site,
@@ -107,7 +109,9 @@ def credentials(request):
 
     if request.method == "GET":
         all_clouds = user_obj.get_clouds()
-        keys = get_all_keys(all_clouds)
+        details = str_to_bool(request.GET.get('details', 'false'))
+        if details is True:
+            keys = get_all_keys(all_clouds)
 
         response_list = []
         for cloud in all_clouds.values():
@@ -117,9 +121,10 @@ def credentials(request):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "available_keys": keys.get(credentials_name, []),
                 "uri": "/api/%s/credentials/%s" % (API_VERSION, credentials_name)
             }
+            if details is True:
+                credentials_dict["available_keys"] = keys[cloud.cloudname]
             response_list.append(credentials_dict)
         h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
     elif request.method == "POST":
@@ -171,7 +176,9 @@ def credentials_resource(request, site):
     if request.method == "GET":
         all_clouds = user_obj.get_clouds()
         cloud = all_clouds.get(site)
-        keys = get_all_keys([cloud])
+        details = str_to_bool(request.GET.get('details', 'false'))
+        if details is True:
+            keys = get_all_keys([cloud])
 
         if cloud is not None:
             response_dict = {
@@ -179,9 +186,10 @@ def credentials_resource(request, site):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "available_keys": keys[cloud.cloudname],
                 "uri": "/api/%s/credentials/%s" % (API_VERSION, cloud.cloudname)
             }
+            if details is True:
+                response_dict["available_keys"] = keys[cloud.cloudname]
             h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
         else:
             h = HttpResponseNotFound('Credentials for site %s not found' % site, mimetype='application/javascript')
@@ -230,7 +238,6 @@ def credentials_resource(request, site):
     elif request.method == "DELETE":
         # Check that credentials exist
         clouds = user_obj.get_clouds()
-        print "Want to delete %s" % site
         if site not in clouds:
             return HttpResponseBadRequest("Site %s not available. Choose from %s" % (site, clouds.keys()))
 
@@ -272,27 +279,13 @@ def launchconfigurations(request):
         name = content['name']
         cloud_params = content['cloud_params']
         username = request.user.username
-        user_obj = get_user_object(username)
 
         lc = get_launch_configuration_by_name(username, name)
         if lc is not None:
             # LC already exists, redirect to existing one
             return HttpResponseRedirect("/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id))
 
-        lc = create_launch_configuration(username, name)
-        lc.save()
-        configured_clouds = user_obj.get_clouds()
-
-        # TODO: validate these values
-
-        for cloud_name, cloud in cloud_params.iteritems():
-
-            if cloud_name not in configured_clouds.keys():
-                msg = "%s is not configured. Check your profile" % cloud_name
-                return HttpResponseBadRequest(msg)
-
-            set_host_max_pair(cloud_name=cloud_name, max_vms=cloud['max_vms'],
-                launch_config=lc, rank=int(cloud['rank']), common_image=cloud["common"])
+        lc = create_launch_configuration(username, name, cloud_params)
 
         response_dict = {
             "id": lc.id,
@@ -335,36 +328,17 @@ def launchconfiguration_resource(request, id):
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest()
 
-        name = content['name']
         cloud_params = content['cloud_params']
-        username = request.user.username
-        user_obj = get_user_object(username)
 
-        required_cloud_params = ['image_id', 'instance_type', 'max_vms', 'common', 'rank', 'user_data']
-        configured_clouds = user_obj.get_clouds()
+        required_cloud_params = ['image_id', 'instance_type', 'max_vms', 'common', 'rank']
+        for cloud_name, cloud_p in cloud_params.iteritems():
+            if not has_all_required_params(required_cloud_params, cloud_p):
+                missing = list(set(required_params) - set(cloud_p))
+                return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
+                    cloud_name, ", ".join(missing)))
 
-        # TODO: validate these values
-
-        for cloud_name, cloud in cloud_params.iteritems():
-
-            if cloud_name not in configured_clouds.keys():
-                msg = "%s is not configured. Check your profile" % cloud_name
-                return HttpResponseBadRequest(msg)
-
-            if not has_all_required_params(required_cloud_params, cloud):
-                msg = "%s does not have all of the required parameters" % cloud_name
-                return HttpResponseBadRequest(msg)
-
-            set_host_max_pair(cloud_name=cloud_name, max_vms=cloud['max_vms'],
-                launch_config=lc, rank=int(cloud['rank']), common_image=cloud["common"])
-
-        response_dict = {
-            "id": lc.id,
-            "name": name,
-            "owner": username,
-            "cloud_params": cloud_params,
-            "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
-        }
+        response_dict = update_launch_configuration(lc.id, cloud_params)
+        response_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id)
 
         h = HttpResponse(json.dumps(response_dict), status=200, mimetype='application/javascript')
         return h

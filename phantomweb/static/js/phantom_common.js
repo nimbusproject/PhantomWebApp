@@ -79,7 +79,7 @@ function load_error_handler(url, error_msg) {
 }
 
 
-function ajaxCallREST(url, func, error_func) {
+function phantomGET(url, func, error_func) {
     $.ajaxSetup({ cache: false });
     var xhr = $.ajax({
         type : "GET",
@@ -115,7 +115,7 @@ function ajaxCallREST(url, func, error_func) {
     return xhr;
 }
 
-function ajaxCallDELETE(url, func, error_func) {
+function phantomDELETE(url, func, error_func) {
     $.ajaxSetup({ cache: false });
     var xhr = $.ajax({
         type : "DELETE",
@@ -140,7 +140,50 @@ function ajaxCallDELETE(url, func, error_func) {
     return xhr;
 }
 
-function phantomAjaxPost(url, data_vals, func, error_func) {
+function phantomPUT(url, data_vals, func, error_func) {
+
+    var success_func = function (success_data){
+        try {
+            var obj = success_data;
+            if(obj.error_message != undefined) {
+                var error_msg = obj.error_message;
+                error_func(url, error_msg);
+            }
+            else {
+                func(obj);
+            }
+        }
+        catch(err) {
+            alert(err);
+        }
+    };
+
+    var l_error_func = function(request, status, error)  {
+
+        if (request.responseText) {
+            var error_msg = request.responseText;
+        }
+        else {
+            var error_msg = "Error communicating with the service ".concat(request.statusText);
+        }
+        error_func(url, error_msg);
+    };
+
+    $.ajaxSetup({ cache: false });
+    var xhr = $.ajax({
+        cache: false,
+        type : "PUT",
+        url : url,
+        dataType : "json",
+        headers: {'X-CSRFToken': csrf_token},
+        data: JSON.stringify(data_vals),
+        success: success_func,
+        error: l_error_func
+    });
+    return xhr;
+}
+
+function phantomPOST(url, data_vals, func, error_func) {
 
     var success_func = function (success_data){
         try {
