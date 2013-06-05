@@ -171,7 +171,7 @@ function get_available_sensors(query, callback) {
     }
 
     var url = make_url('api/sensors/load')
-    ajaxCallREST(url, success, failure);
+    phantomGET(url, success, failure);
 }
 
 
@@ -308,7 +308,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
 
     var url = make_url('api/domain/load')
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, {}, success_func, error_func);
+    phantomPOST(url, {}, success_func, error_func);
 }
 
 function phantom_domain_load() {
@@ -344,7 +344,7 @@ function phantom_domain_start_click_internal() {
     }
 
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, domain, success_func, error_func);
+    phantomPOST(url, domain, success_func, error_func);
 }
 
 function phantom_domain_start_click() {
@@ -478,7 +478,7 @@ function phantom_domain_resize_click_internal() {
     }
 
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, domain, success_func, error_func);
+    phantomPOST(url, domain, success_func, error_func);
 }
 
 function phantom_domain_resize_click() {
@@ -524,7 +524,7 @@ function phantom_domain_terminate_click_internal() {
     };
 
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    phantomPOST(url, data, success_func, error_func);
 }
 
 function phantom_domain_terminate_click() {
@@ -893,7 +893,7 @@ function phantom_domain_details_internal() {
         phantom_domain_details_buttons(true);
     }
 
-    g_current_details_request =  phantomAjaxPost(url, data, success_func, error_func);
+    g_current_details_request =  phantomPOST(url, data, success_func, error_func);
 }
 
 function phantom_start_details_timer() {
@@ -980,7 +980,7 @@ function phantom_domain_instance_terminate_click(instanceid, cloudname) {
 
     var data = {'instance': instanceid, "adjust": true};
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    phantomPOST(url, data, success_func, error_func);
 }
 
 function phantom_domain_instance_replace_click(instanceid, cloudname) {
@@ -1006,7 +1006,7 @@ function phantom_domain_instance_replace_click(instanceid, cloudname) {
 
     var data = {'instance': instanceid, "adjust": false};
     phantom_domain_buttons(false);
-    phantomAjaxPost(url, data, success_func, error_func);
+    phantomPOST(url, data, success_func, error_func);
 }
 
 function phantom_domain_noncontext_mouse_down() {

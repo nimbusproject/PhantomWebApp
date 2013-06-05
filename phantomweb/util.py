@@ -10,12 +10,15 @@ from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
 from dashi.exceptions import DashiError
 
+from phantomweb.tevent import Pool, TimeoutError
 from phantomweb.models import RabbitInfoDB, PhantomUser
 from phantomweb.phantom_web_exceptions import PhantomWebException
 
 log = logging.getLogger('phantomweb.general')
 
 PHANTOM_DOMAIN_DEFINITION = "error_overflow_n_preserving"
+IAAS_TIMEOUT = 10
+INSTANCE_TYPES = ["m1.small", "m1.large", "m1.xlarge"]
 
 
 def LogEntryDecorator(func):
@@ -71,6 +74,27 @@ class UserCloudInfo(object):
             return self._connect_euca()
 
         raise PhantomWebException("Unknown site type")
+
+    def get_user_images(self):
+        connection = self.get_iaas_compute_con()
+        timer = statsd.Timer('phantomweb')
+        timer.start()
+        l = connection.get_all_images(owners=['self'])
+        timer.stop('get_all_images.timing')
+        user_images = [u.id for u in l if not u.is_public]
+        return user_images
+
+    def get_public_images(self):
+        connection = self.get_iaas_compute_con()
+        timer = statsd.Timer('phantomweb')
+        timer_cloud = statsd.Timer('phantomweb')
+        timer.start()
+        timer_cloud.start()
+        l = connection.get_all_images()
+        timer.stop('get_all_images.timing')
+        timer_cloud.stop('get_all_images.%s.timing' % self.cloudname)
+        public_images = [u.id for u in l if u.is_public]
+        return public_images
 
     def get_keys(self):
         connection = self.get_iaas_compute_con()
@@ -326,6 +350,50 @@ class UserObjectMySQL(UserObject):
             domains.append(domain_description)
         return domains
 
+    def create_dt(self, dt_name, cloud_params):
+        dt = self.get_dt(dt_name)
+        if dt is None:
+            dt = {}
+            dt['mappings'] = {}
+            create = True
+        else:
+            create = False
+
+        cloud_credentials = self.get_clouds()
+
+        for cloud_name, parameters in cloud_params.iteritems():
+            mapping = dt['mappings'].get(cloud_name)
+            if mapping is None:
+                mapping = dt['mappings'][cloud_name] = {}
+            credentials = cloud_credentials.get(cloud_name, None)
+
+            # Required by EPUM
+            mapping['iaas_allocation'] = parameters.get('instance_type')
+            mapping['iaas_image'] = parameters.get('image_id')
+            if credentials is not None:
+                mapping['key_name'] = credentials.keyname
+            else:
+                # TODO: raise error?
+                mapping['key_name'] = ''
+
+            # Phantom stuff
+            mapping['common'] = parameters.get('common')
+            mapping['rank'] = parameters.get('rank')
+            mapping['max_vms'] = parameters.get('max_vms')
+
+            # Contextualization
+            if parameters.get('user_data'):
+                contextualization = dt.get('contextualization')
+                if contextualization is None:
+                    contextualization = dt['contextualization'] = {}
+                contextualization['method'] = 'userdata'
+                contextualization['userdata'] = parameters['user_data']
+
+        if create:
+            return self.dtrs.add_dt(self.access_key, dt_name, dt)
+        else:
+            return self.dtrs.update_dt(self.access_key, dt_name, dt)
+
     def get_dt(self, dt_name):
         return self.dtrs.describe_dt(self.access_key, dt_name)
 
@@ -341,13 +409,12 @@ class UserObjectMySQL(UserObject):
         return dts
 
     def _load_clouds(self):
-        dtrs_client = DTRSClient(self._dashi_conn)
-        sites = dtrs_client.list_credentials(self.access_key)
+        sites = self.dtrs.list_credentials(self.access_key)
         self.iaasclouds = {}
         for site_name in sites:
             try:
-                site_desc = dtrs_client.describe_site(self.access_key, site_name)
-                desc = dtrs_client.describe_credentials(self.access_key, site_name)
+                site_desc = self.dtrs.describe_site(self.access_key, site_name)
+                desc = self.dtrs.describe_credentials(self.access_key, site_name)
                 uci = UserCloudInfo(site_name, self.username, desc['access_key'],
                     desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
@@ -364,10 +431,50 @@ class UserObjectMySQL(UserObject):
         self._load_clouds()
         return self.iaasclouds
 
-    def get_possible_sites(self):
+    def get_possible_sites(self, details=False):
         site_client = DTRSClient(self._dashi_conn)
-        l = site_client.list_sites(self.access_key)
-        return l
+        site_names = site_client.list_sites(self.access_key)
+        all_sites = {}
+        for site in site_names:
+            all_sites[site] = {'id': site, 'instance_types': INSTANCE_TYPES}
+
+        if details is True:
+            pool = Pool()
+
+            public_results = {}
+            user_results = {}
+            clouds = self.get_clouds()
+            for cloud_name, cloud in clouds.iteritems():
+                result = pool.apply_async(cloud.get_user_images)
+                user_results[cloud_name] = result
+
+                if cloud.site_desc["type"] != "ec2":
+                    result = pool.apply_async(cloud.get_public_images)
+                    public_results[cloud_name] = result
+
+            pool.close()
+
+            for cloud_name, result in user_results.iteritems():
+                try:
+                    all_sites[cloud_name]['user_images'] = result.get(IAAS_TIMEOUT)
+                except TimeoutError:
+                    log.exception("Timed out getting images from %s" % cloud_name)
+                    all_sites[cloud_name]['user_images'] = []
+                except Exception:
+                    log.exception("Unexpected error getting images from %s" % cloud_name)
+                    all_sites[cloud_name]['user_images'] = []
+
+            for cloud_name, result in public_results.iteritems():
+                try:
+                    all_sites[cloud_name]['public_images'] = result.get(IAAS_TIMEOUT)
+                except TimeoutError:
+                    log.exception("Timed out getting images from %s" % cloud_name)
+                    all_sites[cloud_name]['public_images'] = []
+                except Exception:
+                    log.exception("Unexpected error getting images from %s" % cloud_name)
+                    all_sites[cloud_name]['public_images'] = []
+
+        return all_sites
 
     def add_site(self, site_name, access_key, secret_key, key_name):
         cred_client = DTRSClient(self._dashi_conn)
@@ -387,6 +494,13 @@ class UserObjectMySQL(UserObject):
         cred_client = DTRSClient(self._dashi_conn)
         cred_client.remove_credentials(self.access_key, site_name)
         self._load_clouds()
+
+
+def str_to_bool(st):
+    if st.lower() == 'true':
+        return True
+    else:
+        return False
 
 
 def get_user_object(username):

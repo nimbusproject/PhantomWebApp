@@ -50,6 +50,44 @@ class SitesTestCase(unittest.TestCase):
             self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
                 'uri': '/api/dev/sites/site2'}, content)
 
+    def test_get_sites_with_details(self):
+        def list_sites(obj, key):
+            return ['site1', 'site2']
+
+        def list_credentials(obj, key):
+            return ['site1', 'site2']
+
+        def describe_site(obj, key, site):
+            if site == 'site1':
+                return {'type': 'nimbus'}
+            else:
+                return {}
+
+        def describe_credentials(obj, key, site):
+            if site == 'site1':
+                return {'access_key': 'blah', 'secret_key': 'blorp', 'key_name': 'blap'}
+            else:
+                return {}
+        def get_user_images(obj):
+            return ['image1']
+
+        with patch.multiple('ceiclient.client.DTRSClient', list_sites=list_sites,
+                list_credentials=list_credentials, describe_site=describe_site,
+                describe_credentials=describe_credentials):
+            with patch.multiple('phantomweb.util.UserCloudInfo',
+                    get_user_images=get_user_images):
+                c = Client()
+                c.login(username='fred', password='secret')
+
+                response = c.get('/api/dev/sites?details=true')
+                self.assertEqual(response.status_code, 200)
+                content = json.loads(response.content)
+                self.assertEqual(len(content), 2)
+                self.assertIn({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
+                    'uri': '/api/dev/sites/site1', 'user_images': ['image1'], 'public_images': []}, content)
+                self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
+                    'uri': '/api/dev/sites/site2', 'user_images': [], 'public_images': []}, content)
+
     def test_not_get_sites(self):
         c = Client()
         c.login(username='fred', password='secret')

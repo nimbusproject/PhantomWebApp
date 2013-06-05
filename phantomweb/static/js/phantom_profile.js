@@ -128,7 +128,7 @@ function change_password_click() {
 
     $("#change_password_button").attr("disabled", true);
     var url = '/accounts/ajax_change_password/';
-    phantomAjaxPost(url, params, success_func, error_func);
+    phantomPOST(url, params, success_func, error_func);
 }
 
 function phantom_cloud_edit_add_click() {
@@ -179,7 +179,7 @@ function phantom_cloud_edit_add_click() {
 
     var url = make_url('credentials');
     phantom_cloud_edit_enable(false);
-    phantomAjaxPost(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
+    phantomPOST(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
 }
 
 
@@ -327,7 +327,7 @@ function phantom_cloud_edit_load_sites() {
         }
 
         var credentials_url = make_url('credentials');
-        ajaxCallREST(credentials_url, credentials_loaded, error_func);
+        phantomGET(credentials_url, credentials_loaded, error_func);
     }
 
     var error_func = function(obj, error_msg) {
@@ -337,7 +337,7 @@ function phantom_cloud_edit_load_sites() {
 
     phantom_cloud_edit_enable(false);
     var sites_url = make_url('sites');
-    ajaxCallREST(sites_url, sites_loaded, error_func);
+    phantomGET(sites_url, sites_loaded, error_func);
 }
 
 function phantom_cloud_edit_load_page() {
@@ -376,5 +376,5 @@ function phantom_cloud_edit_remove_click() {
     }
 
     phantom_cloud_edit_enable(false);
-    ajaxCallDELETE(url, success_func, error_func);
+    phantomDELETE(url, success_func, error_func);
 }
