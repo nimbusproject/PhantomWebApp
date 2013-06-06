@@ -128,7 +128,7 @@ function phantomDELETE(url, func, error_func) {
             }
             else {
                 try {
-                    var error_msg = "Error communicating with the service (code " + status + "): ".concat(request.statusText);
+                    var error_msg = "Error communicating with the service (code " + status + "): ".concat(xhr.statusText);
                     error_func(url, error_msg);
                 }
                 catch(err) {

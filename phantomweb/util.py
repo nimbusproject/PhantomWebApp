@@ -300,14 +300,14 @@ class UserObjectMySQL(UserObject):
         ent['de_name'] = engine_conf.get('phantom_de_name')
         ent['name'] = engine_conf.get('phantom_name')
         ent['sensor_data'] = self._sanitize_sensor_data(domain_description.get('sensor_data', {}))
+        ent['monitor_sensors'] = ",".join(engine_conf.get('monitor_sensors', []))
+        ent['monitor_domain_sensors'] = ",".join(engine_conf.get('monitor_domain_sensors', []))
 
         if ent['de_name'] == 'multicloud':
             ent['vm_count'] = engine_conf.get('minimum_vms')
             ent['lc_name'] = engine_conf.get('dtname')
         elif ent['de_name'] == 'sensor':
             ent['lc_name'] = engine_conf.get('dtname')
-            ent['monitor_sensors'] = ",".join(engine_conf.get('monitor_sensors'))
-            ent['monitor_domain_sensors'] = ",".join(engine_conf.get('monitor_domain_sensors'))
             ent['sensor_minimum_vms'] = engine_conf.get('minimum_vms')
             ent['sensor_maximum_vms'] = engine_conf.get('maximum_vms')
             ent['sensor_metric'] = engine_conf.get('metric')
