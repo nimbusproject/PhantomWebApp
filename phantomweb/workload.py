@@ -16,7 +16,7 @@ from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_obj
 
 
 IAAS_TIMEOUT = 5
-g_general_log = logging.getLogger('phantomweb.general')
+log = logging.getLogger('phantomweb.general')
 
 # at some point this should come from some sort of DB
 g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
@@ -74,7 +74,7 @@ def _get_launch_configuration(phantom_con, lc_db_object):
                 shoe_horn_lc_name, str(ex)))
 
         if len(lcs) != 1:
-            g_general_log.error(
+            log.error(
                 "Received empty launch configuration list from Phantom REST.  %s might be misconfigured" % (
                 shoe_horn_lc_name, ))
             continue
@@ -115,10 +115,10 @@ def get_all_keys(clouds):
         try:
             key_dict[cloud_name] = result.get(IAAS_TIMEOUT)
         except TimeoutError:
-            g_general_log.exception("Timed out getting keys from %s" % cloud_name)
+            log.exception("Timed out getting keys from %s" % cloud_name)
             key_dict[cloud_name] = []
         except Exception:
-            g_general_log.exception("Unexpected error getting keys from %s" % cloud_name)
+            log.exception("Unexpected error getting keys from %s" % cloud_name)
             key_dict[cloud_name] = []
 
     return key_dict
@@ -213,7 +213,7 @@ def remove_launch_configuration(username, lc_id):
     try:
         user_obj.remove_dt(lc.name)
     except Exception:
-        g_general_log.exception("Couldn't delete dt %s" % lc.name)
+        log.exception("Couldn't delete dt %s" % lc.name)
 
     host_max_pairs = lc.hostmaxpairdb_set.all()
     for hmp in host_max_pairs:
@@ -301,7 +301,7 @@ def terminate_domain_instance(username, domain_id, instance_id):
     iaas_cloud = user_obj.get_cloud(cloud_name)
     iaas_connection = iaas_cloud.get_iaas_compute_con()
 
-    g_general_log.debug("User %s terminating the instance %s on %s" % (username, instance_iaas_id, cloud_name))
+    log.debug("User %s terminating the instance %s on %s" % (username, instance_iaas_id, cloud_name))
 
     timer = statsd.Timer('phantomweb')
     timer.start()
@@ -312,7 +312,7 @@ def terminate_domain_instance(username, domain_id, instance_id):
     try:
         iaas_connection.terminate_instances(instance_ids=[instance_iaas_id, ])
     except Exception:
-        g_general_log.exception("Couldn't terminate %s" % instance_iaas_id)
+        log.exception("Couldn't terminate %s" % instance_iaas_id)
         raise PhantomWebException("Problem terminating instance %s" % instance_iaas_id)
     timer.stop('terminate_instances.timing')
     timer_cloud.stop('terminate_instances.%s.timing' % cloud_name)
@@ -414,7 +414,7 @@ def _get_all_domains_dashi(userobj):
 @LogEntryDecorator
 def _get_phantom_con(userobj):
     url = userobj.phantom_info.phantom_url
-    g_general_log.debug("Getting phantom connection at %s" % (url))
+    log.debug("Getting phantom connection at %s" % (url))
     uparts = urlparse.urlparse(url)
     is_secure = uparts.scheme == 'https'
     region = RegionInfo(name=PHANTOM_REGION, endpoint=uparts.hostname)
@@ -607,10 +607,10 @@ def update_desired_size(request_params, userobj):
         asg_new_desired_size = int(request_params['new_desired_size'])
     except:
         e_msg = 'Please set the desired size to an integer, not %s' % (str(request_params['new_desired_size']))
-        g_general_log.error(e_msg)
+        log.error(e_msg)
         raise PhantomWebException(e_msg)
 
-    g_general_log.debug("updating %s to be size %d" % (asg_name, asg_new_desired_size))
+    log.debug("updating %s to be size %d" % (asg_name, asg_new_desired_size))
 
     asgs = con.get_all_groups(names=[asg_name,])
     if not asgs:
@@ -638,7 +638,7 @@ def terminate_iaas_instance(request_params, userobj):
     instance = request_params['instance']
 
     ec2conn = iaas_cloud.get_iaas_compute_con()
-    g_general_log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
+    log.debug("User %s terminating the instance %s on %s" % (userobj._user_dbobject.access_key, instance, cloud_name))
     timer = statsd.Timer('phantomweb')
     timer_cloud = statsd.Timer('phantomweb')
     timer.start()
@@ -730,7 +730,7 @@ def phantom_sites_load(request_params, userobj):
             ci_dict['keyname_list'] = keyname_list
             ci_dict['status_msg'] = ""
         except Exception, boto_ex:
-            g_general_log.error("Error connecting to the service %s" % (str(boto_ex)))
+            log.error("Error connecting to the service %s" % (str(boto_ex)))
             ci_dict['keyname_list'] = []
             ci_dict['status_msg'] = "Problem communicating with %s. Please check your access key and secret key." % (site_name)
             ci_dict['status'] = 1
@@ -778,7 +778,7 @@ def phantom_lc_load(request_params, userobj):
             cloud_info = {}
             cloud = clouds_d[cloud_name]
             ec2conn = cloud.get_iaas_compute_con()
-            g_general_log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
+            log.debug("Looking up images for user %s on %s" % (userobj._user_dbobject.access_key, cloud_name))
             timer = statsd.Timer('phantomweb')
             timer_cloud = statsd.Timer('phantomweb')
             timer.start()
@@ -791,7 +791,7 @@ def phantom_lc_load(request_params, userobj):
             # We don't fetch EC2 public images because there are thousands
             public_images = []
             if cloud.site_desc["type"] != "ec2":
-                g_general_log.debug("Looking up public images on %s" % cloud_name)
+                log.debug("Looking up public images on %s" % cloud_name)
                 timer = statsd.Timer('phantomweb')
                 timer_cloud = statsd.Timer('phantomweb')
                 timer.start()
@@ -806,7 +806,7 @@ def phantom_lc_load(request_params, userobj):
             cloud_info['instances'] = g_instance_types
             cloud_info['status'] = 0
         except Exception, ex:
-            g_general_log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
+            log.warn("Error communication with %s for user %s | %s" % (cloud_name, userobj._user_dbobject.access_key, str(ex)))
             cloud_info = {'error': str(ex)}
             cloud_info['status'] = 1
         iaas_info[cloud_name] = cloud_info
@@ -893,7 +893,7 @@ def phantom_lc_save(request_params, userobj):
                 host_max_db = HostMaxPairDB.objects.create(cloud_name=site_name, max_vms=entry['max_vm'], launch_config=lc_db_object, rank=int(entry['rank']), common_image=is_common)
                 host_max_db.save()
     except Exception, boto_ex:
-        g_general_log.exception("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
+        log.exception("Error adding the launch configuration %s | %s" % (lc_name, str(boto_ex)))
         raise PhantomWebException(str(boto_ex))
 
     response_dict = {}
@@ -923,7 +923,7 @@ def phantom_lc_delete(request_params, userobj):
     host_vm_db_a = HostMaxPairDB.objects.filter(launch_config=lc_db_object)
     if not host_vm_db_a:
         error_message = error_message + "No such launch configuration %s. Misconfigured service.  " % (lc_name)
-        g_general_log.warn(error_message)
+        log.warn(error_message)
 
     for lc in lcs:
         ndx = lc.name.find(lc_name)
@@ -932,14 +932,14 @@ def phantom_lc_delete(request_params, userobj):
                 lc.delete()
             except Exception, lc_del_ex:
                 error_message = error_message + "Error deleting the LC: %s.  " % (str(lc_del_ex))
-                g_general_log.warn(error_message)
+                log.warn(error_message)
 
     for host_vm_db in host_vm_db_a:
         try:
             host_vm_db.delete()
         except Exception, host_db_del:
             error_message = error_message + "Error deleting the host entry: %s" % (str(host_db_del))
-            g_general_log.warn(error_message)
+            log.warn(error_message)
     lc_db_object.delete()
 
     if error_message:
@@ -1005,13 +1005,13 @@ def phantom_domain_start(request_params, userobj):
     elif de_name == "multicloud":
         for p in multicloud_params:
             if p not in request_params:
-                g_general_log.debug("%s not in %s" % (p, request_params))
+                log.debug("%s not in %s" % (p, request_params))
                 raise PhantomWebException('Missing parameter %s' % (p))
 
         de_params["vm_count"] = request_params["vm_count"]
 
 
-    g_general_log.info("starting with params: %s" % de_params)
+    log.info("starting with params: %s" % de_params)
 
     lc_db_object = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_object or len(lc_db_object) < 1:
@@ -1072,7 +1072,7 @@ def phantom_domain_resize(request_params, userobj):
     elif de_name == "multicloud":
         for p in multicloud_params:
             if p not in request_params:
-                g_general_log.debug("%s not in %s" % (p, request_params))
+                log.debug("%s not in %s" % (p, request_params))
                 raise PhantomWebException('Missing parameter %s' % (p))
 
         de_params["minimum_vms"] = request_params["vm_count"]
@@ -1103,7 +1103,7 @@ def phantom_domain_resize(request_params, userobj):
     except PhantomWebException:
         raise
     except Exception, ex:
-        g_general_log.exception("Error in resize")
+        log.exception("Error in resize")
         raise PhantomWebException(str(ex))
     response_dict = {}
     return response_dict
@@ -1119,7 +1119,7 @@ def phantom_domain_terminate(request_params, userobj):
 
     domain_name = request_params["name"]
 
-    g_general_log.debug("deleting %s" % (domain_name))
+    log.debug("deleting %s" % (domain_name))
     phantom_con = _get_phantom_con(userobj)
     phantom_con.delete_auto_scaling_group(domain_name)
 
@@ -1138,7 +1138,7 @@ def phantom_instance_terminate(request_params, userobj):
     adjust = request_params["adjust"]
     adjust = adjust.lower() == "true"
 
-    g_general_log.debug("deleting %s" % (instance_id))
+    log.debug("deleting %s" % (instance_id))
     phantom_con = _get_phantom_con(userobj)
 
     phantom_con.terminate_instance(instance_id, decrement_capacity=adjust)
@@ -1163,7 +1163,7 @@ def phantom_domain_details(request_params, userobj):
 
     phantom_con = _get_phantom_con(userobj)
 
-    g_general_log.debug("Looking up domain name %s for user %s" % (str(domain_name), userobj._user_dbobject.access_key))
+    log.debug("Looking up domain name %s for user %s" % (str(domain_name), userobj._user_dbobject.access_key))
 
     try:
         asgs = phantom_con.get_all_groups(names=[domain_name,])
@@ -1180,7 +1180,7 @@ def phantom_domain_details(request_params, userobj):
     lc_db_objects_a = LaunchConfigurationDB.objects.filter(name=lc_name, username=userobj._user_dbobject.access_key)
     if not lc_db_objects_a:
         msg = "Could not find the launch configuration '%s' associated with the domain '%s'" % (lc_name, domain_name)
-        g_general_log.error(msg)
+        log.error(msg)
         raise PhantomWebException(msg)
 
     lc_db_object = lc_db_objects_a[0]
@@ -1206,7 +1206,7 @@ def phantom_domain_details(request_params, userobj):
         i_d['hostname'] = "unknown"
         if not instance.availability_zone or instance.availability_zone not in site_dict.keys():
             error_msg = "No availabilty zone for %s in domain %s" % (str(instance), domain_name)
-            g_general_log.error(error_msg)
+            log.error(error_msg)
             raise PhantomWebException(error_msg)
         cloud_name = instance.availability_zone
         i_d['cloud'] = cloud_name
@@ -1226,7 +1226,7 @@ def phantom_domain_details(request_params, userobj):
             iaas_cloud = userobj.get_cloud(cloud_name)
             if not iaas_cloud:
                 error_msg = "The user %s does not have a cloud configured %s.  They must have deleted it after starting the domain." % (userobj._user_dbobject.access_key, cloud_name)
-                g_general_log.error(error_msg)
+                log.error(error_msg)
                 raise PhantomWebException(error_msg)
 
             iaas_con = iaas_cloud.get_iaas_compute_con()

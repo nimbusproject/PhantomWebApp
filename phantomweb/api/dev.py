@@ -483,6 +483,7 @@ def instance_resource(request, domain_id, instance_id):
 
     elif request.method == "DELETE":
         username = request.user.username
+        adjust_policy = str_to_bool(request.GET.get('adjust_policy', 'false'))
         instance = get_domain_instance(username, domain_id, instance_id)
         if instance is None:
             return HttpResponseNotFound('instance %s not found' % domain_id, mimetype='application/javascript')
@@ -491,6 +492,22 @@ def instance_resource(request, domain_id, instance_id):
             terminate_domain_instance(username, domain_id, instance_id)
         except PhantomWebException:
             return HttpResponseServerError("Couldn't remove instance %s" % instance_id)
+
+        if adjust_policy:
+            domain = get_domain(username, domain_id)
+            adjusted_domain = None
+            if 'vm_count' in domain:
+                if int(domain['vm_count']) >= 1:
+                    domain['vm_count'] = int(domain['vm_count']) - 1
+                    adjusted_domain = domain
+            elif 'sensor_minimum_vms' in domain and 'sensor_maximum_vms' in domain:
+                if int(domain['sensor_minimum_vms']) >= 1:
+                    domain['sensor_minimum_vms'] = int(domain['sensor_minimum_vms']) - 1
+                domain['sensor_maximum_vms'] = domain['sensor_minimum_vms']
+                adjusted_domain = domain
+
+            if adjusted_domain:
+                response = modify_domain(username, domain_id, adjusted_domain)
 
         h = HttpResponse(status=204)
         return h

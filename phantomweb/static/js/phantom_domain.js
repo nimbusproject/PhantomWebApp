@@ -106,7 +106,12 @@ $(document).ready(function() {
           return;
         }
 
-        phantom_domain_context_menu(event, instance.instance_id, instance.cloud);
+        var domain = get_selected_domain();
+        if (domain === null) {
+          return;
+        }
+
+        phantom_domain_context_menu(event, domain.id, instance.id, instance.cloud);
         return false;
     });
 
@@ -116,7 +121,12 @@ $(document).ready(function() {
         if (instance === null) {
           return;
         }
-        phantom_domain_instance_replace_click(instance.instance_id, instance.cloud);
+
+        var domain = get_selected_domain();
+        if (domain === null) {
+          return;
+        }
+        phantom_domain_instance_replace_click(domain.id, instance.id, instance.cloud);
 
         return false;
     });
@@ -127,7 +137,12 @@ $(document).ready(function() {
         if (instance === null) {
           return;
         }
-        phantom_domain_instance_terminate_click(instance.instance_id, instance.cloud);
+
+        var domain = get_selected_domain();
+        if (!domain) {
+          return;
+        }
+        phantom_domain_instance_terminate_click(domain.id, instance.id, instance.cloud);
 
         return false;
     });
@@ -157,12 +172,11 @@ function phantom_domain_buttons(enabled) {
 }
 
 function get_available_sensors(query, callback) {
-    var success = function(response) {
-        try {
-            g_available_sensors = JSON.parse(response);
-        }
-        catch(e) {
-            console.log("problem parsing: " + e);
+    var success = function(sensors) {
+        g_available_sensors = [];
+        for(var i=0; i<sensors.length; i++) {
+            var sensor = sensors[i];
+            g_available_sensors.push(sensor.id);
         }
     }
 
@@ -170,7 +184,7 @@ function get_available_sensors(query, callback) {
         console.log("Failure getting sensors");
     }
 
-    var url = make_url('api/sensors/load')
+    var url = make_url('sensors')
     phantomGET(url, success, failure);
 }
 
@@ -283,9 +297,22 @@ function phantom_domain_load_internal(select_domain_on_success) {
 
     select_domain_on_success = typeof select_domain_on_success !== 'undefined' ? select_domain_on_success : null;
 
-    var success_func = function(obj) {
-        g_domain_data = obj.domains;
-        g_launch_config_names = obj.launchconfigs;
+    var load_lc_success_func = function(lcs) {
+        g_launch_config_names = [];
+        for(var i=0; i<lcs.length; i++) {
+            var lc = lcs[i];
+            g_launch_config_names.push(lc.name);
+        }
+        var url = make_url('domains')
+        phantomGET(url, domain_success_func, error_func);
+    }
+
+    var domain_success_func = function(domains) {
+        g_domain_data = {};
+        for(var i=0; i<domains.length; i++) {
+            var domain = domains[i];
+            g_domain_data[domain.name] = domain;
+        }
 
         phantom_domain_load_domain_names();
         phantom_domain_buttons(true);
@@ -306,9 +333,10 @@ function phantom_domain_load_internal(select_domain_on_success) {
         $('#loading').hide();
     }
 
-    var url = make_url('api/domain/load')
+    var lc_url = make_url('launchconfigurations')
     phantom_domain_buttons(false);
-    phantomPOST(url, {}, success_func, error_func);
+    phantomGET(lc_url, load_lc_success_func, error_func);
+
 }
 
 function phantom_domain_load() {
@@ -321,8 +349,6 @@ function phantom_domain_load() {
 }
 
 function phantom_domain_start_click_internal() {
-    var url = make_url('api/domain/start');
-
     var domain = gather_domain_params_from_ui();
     if (domain === null) {
         return;
@@ -344,6 +370,7 @@ function phantom_domain_start_click_internal() {
     }
 
     phantom_domain_buttons(false);
+    var url = make_url('domains');
     phantomPOST(url, domain, success_func, error_func);
 }
 
@@ -460,12 +487,12 @@ function gather_domain_params_from_ui() {
 }
 
 function phantom_domain_resize_click_internal() {
-    var url = make_url('api/domain/resize');
 
     var domain = gather_domain_params_from_ui();
     if (domain === null) {
         return;
     }
+    var domain_id = g_domain_data[domain.name]['id'];
 
     var success_func = function(obj) {
         phantom_domain_buttons(true);
@@ -478,7 +505,8 @@ function phantom_domain_resize_click_internal() {
     }
 
     phantom_domain_buttons(false);
-    phantomPOST(url, domain, success_func, error_func);
+    var url = make_url('domains/' + domain_id);
+    phantomPUT(url, domain, success_func, error_func);
 }
 
 function phantom_domain_resize_click() {
@@ -491,20 +519,13 @@ function phantom_domain_resize_click() {
 }
 
 function phantom_domain_terminate_click_internal() {
-    var url = make_url('api/domain/terminate');
     var domain_name = $("#phantom_domain_name_label").text();
+    var domain_id = g_domain_data[domain_name]['id'];
 
-    var error_msg = undefined;
-
-    if(domain_name == undefined || domain_name == "" || domain_name == null) {
-        error_msg = "You must specify a domain name";
-    }
-    if (error_msg != undefined) {
-        phantom_warning(error_msg);
+    if(!domain_name) {
+        phantom_warning("You must specify a domain name");
         return;
     }
-
-    var data = {'name': domain_name};
 
     var success_func = function(obj) {
         delete g_domain_data[domain_name];
@@ -524,7 +545,8 @@ function phantom_domain_terminate_click_internal() {
     };
 
     phantom_domain_buttons(false);
-    phantomPOST(url, data, success_func, error_func);
+    var url = make_url('domains/' + domain_id);
+    phantomDELETE(url, success_func, error_func);
 }
 
 function phantom_domain_terminate_click() {
@@ -590,7 +612,7 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
         }
  
         if (domain_data.de_name == "multicloud") {
-            $("#phantom_domain_size_input").val(domain_data.vm_size);
+            $("#phantom_domain_size_input").val(domain_data.vm_count);
         }
         else if (domain_data.de_name == "sensor") {
             //$("#phantom_domain_sensors_input").tagsManager('pushTag', domain_data.metric);
@@ -621,7 +643,6 @@ function phantom_domain_select_domain(domain, load_details) {
 }
 
 function phantom_domain_deselect_domain() {
-    console.log("deselecting domain");
     $("#phantom_domain_main_combined_pane_inner").show();
     $("#phantom_domain_instance_details").empty();
     $("#phantom_details_button_div").hide();
@@ -653,7 +674,7 @@ function phantom_domain_load_instances() {
 
     var table_body = $("#details_table_body").empty();
 
-    for(var i in g_domain_details.instances) {
+    for(var i=0; i<g_domain_details.instances.length; i++) {
         var instance = g_domain_details.instances[i];
 
         var filter = $("#phantom_domain_filter_list").val();
@@ -669,14 +690,12 @@ function phantom_domain_load_instances() {
         }
         
         var row = "<tr>" +
-        "<td class='instance_id'>" + instance.instance_id + "</td>" +
+        "<td class='instance_id'>" + instance.iaas_instance_id + "</td>" +
         "<td><span class='label " +
         label_class_from_lifecycle_state(instance.lifecycle_state)
         + "'>" + human_lifecycle_state(instance.lifecycle_state) + "</td>"
         "</tr>";
         table_body.append(row);
-
-        //TODO: bind this to terminate on right click
 
     }
 }
@@ -709,6 +728,11 @@ function human_lifecycle_state(state) {
     }
 }
 
+function get_selected_domain() {
+    var domain = g_domain_data[g_selected_domain];
+    return domain;
+}
+
 function get_selected_instance_id() {
     var instance_id = $("#details_table tr.info td.instance_id").text();
     return instance_id;
@@ -717,10 +741,10 @@ function get_selected_instance_id() {
 function get_instance(instance_id) {
 
     var instance = null;
-    for(var i in g_domain_details.instances) {
+    for(var i=0; i<g_domain_details.instances.length; i++) {
       
         var inst = g_domain_details.instances[i];
-        if (inst.instance_id === instance_id) {
+        if (inst.iaas_instance_id === instance_id) {
             instance = inst;
             break;
         }
@@ -828,10 +852,13 @@ function show_instance_details(instance_id) {
 
     g_selected_instance = instance_id;
 
-    var data = make_row("Instance ID", instance.instance_id) +
+    // API returns a url, rather than a cloud name
+    var instance_cloud = instance.cloud.split("/").pop();
+
+    var data = make_row("Instance ID", instance.iaas_instance_id) +
     make_row("Hostname", instance.hostname) +
     make_row("State", instance.lifecycle_state) +
-    make_row("Cloud", instance.cloud) +
+    make_row("Cloud", instance_cloud) +
     make_row("Image", instance.image_id) +
     make_row("Instance Type", instance.instance_type) +
     make_row("SSH Key", instance.keyname);
@@ -857,6 +884,7 @@ function phantom_domain_details_internal() {
     phantom_domain_details_buttons(false);
 
     var domain_name = $("#phantom_domain_name_label").text();
+    var domain_id = g_domain_data[domain_name]['id'];
 
     if (domain_name in g_domain_details_cache) {
         g_domain_details = g_domain_details_cache[domain_name];
@@ -865,19 +893,16 @@ function phantom_domain_details_internal() {
         show_domain_details(domain_name);
     }
 
-    var url = make_url("api/domain/details");
     var data = {'name': domain_name};
 
-    var success_func = function(obj) {
+    var success_func = function(instances) {
         g_current_details_request = null;
         $("#phantom_domain_instance_details").empty();
-        var lc_name = obj.lc_name;
-        var vm_count = obj.domain_size;
 
-        g_domain_details = obj;
-        g_domain_details_cache[domain_name] = obj;
-        $("#phantom_domain_size_input").val(vm_count);
-        $("#phantom_domain_lc_choice").val(lc_name);
+        g_domain_details = {
+            'instances': instances
+        }
+        g_domain_details_cache[domain_name] = g_domain_details;
 
         phantom_domain_load_instances();
         phantom_domain_buttons(true);
@@ -893,7 +918,8 @@ function phantom_domain_details_internal() {
         phantom_domain_details_buttons(true);
     }
 
-    g_current_details_request =  phantomPOST(url, data, success_func, error_func);
+    var url = make_url("domains/" + domain_id + "/instances");
+    g_current_details_request =  phantomGET(url, success_func, error_func);
 }
 
 function phantom_start_details_timer() {
@@ -918,7 +944,7 @@ function phantom_domain_details_abort() {
 }
 
 
-function phantom_domain_context_menu(e, instance_id, cloud) {
+function phantom_domain_context_menu(e, domain_id, instance_id, cloud) {
     var obj = $("#phantom_domain_instance_context_menu");
     var terminate = $("#context_terminate");
     var replace = $("#context_replace");
@@ -931,7 +957,7 @@ function phantom_domain_context_menu(e, instance_id, cloud) {
 
     function nestedterminateClick() {
         try{
-            phantom_domain_instance_terminate_click(instance_id, cloud);
+            phantom_domain_instance_terminate_click(domain_id, instance_id, cloud);
         }
         catch(err) {
             phantom_alert(err);
@@ -942,7 +968,7 @@ function phantom_domain_context_menu(e, instance_id, cloud) {
 
     function nestedReplaceClick() {
         try{
-            phantom_domain_instance_replace_click(instance_id, cloud);
+            phantom_domain_instance_replace_click(domain_id, instance_id, cloud);
         }
         catch(err) {
             phantom_alert(err);
@@ -957,9 +983,7 @@ function phantom_domain_context_menu(e, instance_id, cloud) {
     obj.css('zIndex', 2000);
 }
 
-function phantom_domain_instance_terminate_click(instanceid, cloudname) {
-    //phantom/
-    var url = make_url('api/instance/terminate');
+function phantom_domain_instance_terminate_click(domainid, instanceid, cloudname) {
 
     var obj = $("#phantom_domain_instance_context_menu");
     var msg = "Do you want to kill the VM instance ".concat(instanceid).concat("?");
@@ -978,14 +1002,12 @@ function phantom_domain_instance_terminate_click(instanceid, cloudname) {
         phantom_domain_buttons(true);
     }
 
-    var data = {'instance': instanceid, "adjust": true};
     phantom_domain_buttons(false);
-    phantomPOST(url, data, success_func, error_func);
+    var url = make_url("domains/" + domainid + "/instances/" + instanceid + "?adjust_policy=true");
+    phantomDELETE(url, success_func, error_func);
 }
 
-function phantom_domain_instance_replace_click(instanceid, cloudname) {
-    //phantom/
-    var url = make_url('api/instance/terminate');
+function phantom_domain_instance_replace_click(domainid, instanceid, cloudname) {
 
     var obj = $("#phantom_domain_instance_context_menu");
     var msg = "Do you want to kill and replace the VM instance ".concat(instanceid).concat("?");
@@ -1004,9 +1026,9 @@ function phantom_domain_instance_replace_click(instanceid, cloudname) {
         phantom_domain_buttons(true);
     }
 
-    var data = {'instance': instanceid, "adjust": false};
     phantom_domain_buttons(false);
-    phantomPOST(url, data, success_func, error_func);
+    var url = make_url("domains/" + domainid + "/instances/" + instanceid);
+    phantomDELETE(url, success_func, error_func);
 }
 
 function phantom_domain_noncontext_mouse_down() {
