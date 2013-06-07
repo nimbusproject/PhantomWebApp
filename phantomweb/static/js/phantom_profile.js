@@ -200,29 +200,29 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     $(jq("cloud-row-" + selected_cloud_name)).addClass("info");
 
-    var val = g_cloud_map[selected_cloud_name];
+    var credentials = g_cloud_map[selected_cloud_name];
 
     $("#phantom_cloud_edit_key_message").text("");
     $("#phantom_cloud_edit_keyname_list").empty();
-    if (val == undefined) {
+    if (!credentials['access_key'] || !credentials['secret_key']) {
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
         $("#phantom_cloud_edit_keyname_list").parent().parent().hide();
     }
     else {
         $("#phantom_cloud_edit_keyname_list").parent().parent().show();
-        $("#phantom_cloud_edit_access").val(val['access_key']);
-        $("#phantom_cloud_edit_secret").val(val['secret_key']);
-        if (val.status_msg) {
+        $("#phantom_cloud_edit_access").val(credentials['access_key']);
+        $("#phantom_cloud_edit_secret").val(credentials['secret_key']);
+        if (credentials.status_msg) {
             phantom_alert(val.status_msg);
         }
-        for (keyndx in val.keyname_list) {
+        for (keyndx in credentials.keyname_list) {
             $("#phantom_cloud_edit_key_message").val("");
-            key = val.keyname_list[keyndx]
+            key = credentials.keyname_list[keyndx]
             var new_choice = $('<option>',  {'name': key, value: key, text: key});
             $("#phantom_cloud_edit_keyname_list").append(new_choice);
         }
-        if(val.key_name == undefined || val.key_name == "") {
+        if(credentials.key_name == undefined || credentials.key_name == "") {
             var msg = "Please set an ssh key and save.";
             $("#phantom_cloud_edit_keyname_list").parent().children(".help-inline").remove();
             $("#phantom_cloud_edit_keyname_list")
@@ -230,7 +230,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
                 .parent().parent().addClass("error");
         }
         else {
-            $("#phantom_cloud_edit_keyname_list").val(val.key_name);
+            $("#phantom_cloud_edit_keyname_list").val(credentials.key_name);
         }
 
     }
@@ -281,7 +281,6 @@ function phantom_cloud_edit_load_sites() {
         $("#cloud_table_body").empty();
         var selected_cloud_name = $("#phantom_cloud_edit_name").val();
 
-        console.log(credentials);
         var credentials_map = {};
 
         for (var i = 0; i < credentials.length; i++) {
@@ -293,7 +292,6 @@ function phantom_cloud_edit_load_sites() {
                 g_cloud_map[credential.id]["secret_key"] = credential["secret_key"];
                 g_cloud_map[credential.id]["keyname_list"] = credential["available_keys"];
             }
-
         }
 
         for(var site_name in g_cloud_map) {
@@ -326,7 +324,7 @@ function phantom_cloud_edit_load_sites() {
             }
         }
 
-        var credentials_url = make_url('credentials');
+        var credentials_url = make_url('credentials?details=true');
         phantomGET(credentials_url, credentials_loaded, error_func);
     }
 
