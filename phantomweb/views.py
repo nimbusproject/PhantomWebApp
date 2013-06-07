@@ -109,7 +109,6 @@ def django_phantom_html(request):
         response_dict = {}
         response_dict.update(csrf(request))
         response_dict['user'] = request.user
-        print response_dict
         t = loader.get_template('../templates/phantom.html')
         c = Context(response_dict)
     except PhantomRedirectException, ex:
