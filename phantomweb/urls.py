@@ -49,7 +49,9 @@ urlpatterns = patterns('',
     url(r'^phantom/api/instance/terminate$', 'phantomweb.views.django_instance_terminate'),
 
     # API dev version
-    #url(r'^api/%s/sites$' % DEV_VERSION, 'phantomweb.api.dev.sites', {'details': False}),
+    url(r'^api/%s/token$' % DEV_VERSION, 'tokenapi.views.token_new', name='api_token_new'),
+    url(r'^api/%s/token/(?P<token>.{24})/(?P<user>\d+).json$' % DEV_VERSION, 'tokenapi.views.token', name='api_token'),
+
     url(r'^api/%s/sites$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
     url(r'^api/%s/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
     url(r'^api/%s/sites/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
