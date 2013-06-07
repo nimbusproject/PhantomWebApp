@@ -2,10 +2,13 @@ import base64
 import json
 import logging
 
+from functools import wraps
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponse, HttpResponseBadRequest, \
-    HttpResponseNotFound, HttpResponseServerError, HttpResponseRedirect
+    HttpResponseNotFound, HttpResponseServerError, HttpResponseRedirect, \
+    HttpResponseForbidden
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 
 from phantomweb.util import get_user_object, str_to_bool
 from phantomweb.phantom_web_exceptions import PhantomWebException
@@ -56,6 +59,43 @@ def basic_http_auth(f):
     return wrap
 
 
+# TODO: this should really be a part of django-tokenapi
+def token_or_logged_in_required(view_func):
+    """Decorator which ensures the user has provided a correct user and token pair."""
+
+    @csrf_exempt
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user:
+            if request.user.is_authenticated():
+                # Already logged in, just return the result of the view
+                return view_func(request, *args, **kwargs)
+
+        user = None
+        token = None
+        basic_auth = request.META.get('HTTP_AUTHORIZATION')
+
+        if basic_auth:
+            auth_method, auth_string = basic_auth.split(' ', 1)
+
+            if auth_method.lower() == 'basic':
+                auth_string = auth_string.strip().decode('base64')
+                user, token = auth_string.split(':', 1)
+
+        if not (user and token):
+            user = request.REQUEST.get('user')
+            token = request.REQUEST.get('token')
+
+        if user and token:
+            user = authenticate(pk=user, token=token)
+            if user:
+                login(request, user)
+                return view_func(request, *args, **kwargs)
+
+        return HttpResponseForbidden()
+    return _wrapped_view
+
+
 def has_all_required_params(params, content):
     for param in params:
         if param not in content:
@@ -64,7 +104,7 @@ def has_all_required_params(params, content):
     return True
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET"])
 def sites(request):
     user_obj = get_user_object(request.user.username)
@@ -84,7 +124,7 @@ def sites(request):
     return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET"])
 def site_resource(request, site):
     user_obj = get_user_object(request.user.username)
@@ -102,7 +142,7 @@ def site_resource(request, site):
     return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "POST"])
 def credentials(request):
     user_obj = get_user_object(request.user.username)
@@ -168,7 +208,7 @@ def credentials(request):
     return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def credentials_resource(request, site):
     user_obj = get_user_object(request.user.username)
@@ -254,7 +294,7 @@ def credentials_resource(request, site):
     return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "POST"])
 def launchconfigurations(request):
     if request.method == "GET":
@@ -299,7 +339,7 @@ def launchconfigurations(request):
     return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def launchconfiguration_resource(request, id):
     if request.method == "GET":
@@ -354,7 +394,7 @@ def launchconfiguration_resource(request, id):
         return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "POST"])
 def domains(request):
     if request.method == "GET":
@@ -391,7 +431,7 @@ def domains(request):
         return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def domain_resource(request, id):
     if request.method == "GET":
@@ -438,7 +478,7 @@ def domain_resource(request, id):
         return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET"])
 def instances(request, domain_id):
     if request.method == "GET":
@@ -456,7 +496,7 @@ def instances(request, domain_id):
         return HttpResponse(json.dumps(response), mimetype='application/javascript')
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET", "DELETE"])
 def instance_resource(request, domain_id, instance_id):
     if request.method == "GET":
@@ -513,7 +553,7 @@ def instance_resource(request, domain_id, instance_id):
         return h
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET"])
 def sensors(request):
     if request.method == "GET":
@@ -531,7 +571,7 @@ def sensors(request):
         return HttpResponse(json.dumps(sensors), mimetype='application/javascript')
 
 
-@basic_http_auth
+@token_or_logged_in_required
 @require_http_methods(["GET"])
 def sensor_resource(request, sensor_id):
     if request.method == "GET":

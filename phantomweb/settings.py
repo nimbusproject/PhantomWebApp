@@ -12,19 +12,19 @@ ADMINS = (
     ('John', 'bresnaha@mcs.anl.gov'),
 )
 
-EMAIL_HOST      = 'zimbra.anl.gov'
+EMAIL_HOST = 'zimbra.anl.gov'
 EMAIL_HOST_PASSWORD = ''
 EMAIL_HOST_USER = 'bresnaha-mcs'
-EMAIL_PORT      = 465
-EMAIL_USE_TLS   = True
-DEFAULT_FROM_EMAIL  = 'bresnaha@mcs.anl.gov '
-SERVER_EMAIL    = 'bresnaha@mcs.anl.gov' 
+EMAIL_PORT = 465
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'bresnaha@mcs.anl.gov'
+SERVER_EMAIL = 'bresnaha@mcs.anl.gov'
 
 MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': os.path.join(SITE_ROOT, 'djangotest.db'),                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
@@ -139,6 +139,12 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'django_statsd',
     'phantomweb',
+    'tokenapi',
+)
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'tokenapi.backends.TokenBackend'
 )
 
 # A sample logging configuration. The only tangible logging
