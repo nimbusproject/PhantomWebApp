@@ -16,4 +16,4 @@ fi
 includes=`find $INCLUDEDIR -name '*.coffee' | tr "\\n" "," | sed 's/,$//'`
 
 echo casperjs test $TESTDIR --pre=login.coffee --includes=$includes --fail-fast
-casperjs test $TESTDIR/*domain.coffee --pre=login.coffee --includes=$includes --fail-fast
+casperjs test $TESTDIR/*.coffee --pre=login.coffee --includes=$includes --fail-fast
