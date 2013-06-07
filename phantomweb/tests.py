@@ -6,7 +6,7 @@ from django.utils import unittest
 from mock import patch, Mock
 from dashi.exceptions import DashiError
 
-from phantomweb.models import HostMaxPairDB, LaunchConfiguration, PhantomUser, RabbitInfoDB
+from phantomweb.models import LaunchConfiguration, PhantomUser, RabbitInfoDB
 
 
 def setUpModule():
@@ -23,15 +23,9 @@ def setUpModule():
     rabbitmq_info.save()
     launch_configuration = LaunchConfiguration(name='testlc', username='fred')
     launch_configuration.save()
-    host_max_pair = HostMaxPairDB.objects.create(cloud_name="site1", max_vms=-1,
-        launch_config=launch_configuration, rank=1, common_image=True)
-    host_max_pair.save()
 
     launch_configuration = LaunchConfiguration(name='deletabletestlc', username='fred')
     launch_configuration.save()
-    host_max_pair = HostMaxPairDB.objects.create(cloud_name="site1", max_vms=-1,
-        launch_config=launch_configuration, rank=1, common_image=True)
-    host_max_pair.save()
 
 
 class SitesTestCase(unittest.TestCase):
@@ -46,9 +40,11 @@ class SitesTestCase(unittest.TestCase):
             content = json.loads(response.content)
             self.assertEqual(len(content), 2)
             self.assertIn({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
-                'uri': '/api/dev/sites/site1'}, content)
+                'uri': '/api/dev/sites/site1',
+                'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
             self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
-                'uri': '/api/dev/sites/site2'}, content)
+                'uri': '/api/dev/sites/site2',
+                'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
 
     def test_get_sites_with_details(self):
         def list_sites(obj, key):
@@ -68,6 +64,7 @@ class SitesTestCase(unittest.TestCase):
                 return {'access_key': 'blah', 'secret_key': 'blorp', 'key_name': 'blap'}
             else:
                 return {}
+
         def get_user_images(obj):
             return ['image1']
 
@@ -84,9 +81,11 @@ class SitesTestCase(unittest.TestCase):
                 content = json.loads(response.content)
                 self.assertEqual(len(content), 2)
                 self.assertIn({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
-                    'uri': '/api/dev/sites/site1', 'user_images': ['image1'], 'public_images': []}, content)
+                    'uri': '/api/dev/sites/site1', 'user_images': ['image1'], 'public_images': [],
+                    'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
                 self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
-                    'uri': '/api/dev/sites/site2', 'user_images': [], 'public_images': []}, content)
+                    'uri': '/api/dev/sites/site2', 'user_images': [], 'public_images': [],
+                    'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
 
     def test_not_get_sites(self):
         c = Client()
@@ -391,7 +390,10 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                     "mappings": {
                         "site1": {
                             "iaas_image": "hello-phantom.gz",
-                            "iaas_allocation": "m1.small"
+                            "iaas_allocation": "m1.small",
+                            "max_vms": -1,
+                            "rank": 1,
+                            "common": True
                         }
                     },
                     "contextualization": {
@@ -431,7 +433,10 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                     "mappings": {
                         "site1": {
                             "iaas_image": "hello-phantom.gz",
-                            "iaas_allocation": "m1.small"
+                            "iaas_allocation": "m1.small",
+                            "max_vms": -1,
+                            "rank": 1,
+                            "common": True
                         }
                     },
                     "contextualization": {
@@ -467,13 +472,16 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
 
     def test_post_launchconfiguration_resource(self):
-        def describe_dt(caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+        def describe_dt(obj, caller, dt_name):
+            if caller == "freds_access_key_id" and dt_name == "mysecondlc":
                 return {
                     "mappings": {
                         "hotel": {
                             "iaas_image": "hello-phantom.gz",
-                            "iaas_allocation": "m1.small"
+                            "iaas_allocation": "m1.small",
+                            "max_vms": -1,
+                            "rank": 1,
+                            "common": True
                         }
                     },
                     "contextualization": {
@@ -482,7 +490,13 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                     }
                 }
             else:
-                self.fail("Unknown arguments received")
+                self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
+
+        def update_dt(obj, caller, dt_name, dt):
+            if caller == "freds_access_key_id" and dt_name == "mysecondlc":
+                return
+            else:
+                self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
 
         def list_credentials(self, caller):
             if caller == "freds_access_key_id":
@@ -509,7 +523,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
         with patch.multiple('ceiclient.client.DTRSClient', describe_dt=describe_dt,
                 list_credentials=list_credentials, describe_site=describe_site,
-                describe_credentials=describe_credentials):
+                describe_credentials=describe_credentials, update_dt=update_dt):
             c = Client()
             c.login(username='fred', password='secret')
 
@@ -555,17 +569,26 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                 return {
                     "mappings": {
                         "hotel": {
-                            "iaas_image": "hello-phantom.gz",
-                            "iaas_allocation": "m1.small"
+                            "iaas_image": "goodbye-cloud",
+                            "iaas_allocation": "m2.large",
+                            "max_vms": 3,
+                            "common": False,
+                            "rank": 2,
                         }
                     },
                     "contextualization": {
                         "method": "userdata",
-                        "userdata": "Hello Cloud!"
+                        "userdata": "Goodbye, Cruel World",
                     }
                 }
             else:
                 self.fail("Unknown arguments received")
+
+        def update_dt(obj, caller, dt_name, dt):
+            if caller == "freds_access_key_id" and dt_name == "testlc":
+                return
+            else:
+                self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
 
         def list_credentials(self, caller):
             if caller == "freds_access_key_id":
@@ -592,7 +615,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
         with patch.multiple('ceiclient.client.DTRSClient', describe_dt=describe_dt,
                 list_credentials=list_credentials, describe_site=describe_site,
-                describe_credentials=describe_credentials):
+                describe_credentials=describe_credentials, update_dt=update_dt):
             c = Client()
             c.login(username='fred', password='secret')
 
