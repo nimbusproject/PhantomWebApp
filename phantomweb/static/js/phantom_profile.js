@@ -1,7 +1,8 @@
 var g_cloud_map = {};
 var g_selected_cloud = null;
 var ENTER_KEYCODE = 13;
-
+var g_chef_servers = {};
+var g_selected_chef = null;
 
 function jq(myid) {
     return '#' + myid.replace(/(:|\.)/g,'\\$1');
@@ -42,6 +43,38 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#add-chef-server").click(function() {
+        add_chef_server($("#chef-credentials-name").val());
+        $("#add-chef-modal").modal('hide');
+    });
+
+    $("#add-chef-form").submit(function() {
+        add_chef_server($("#chef-credentials-name").val());
+        $("#add-chef-modal").modal('hide');
+        return false;
+    });
+
+    $("#add-chef-modal").on('show', function() {
+        $("#chef-credentials-name").val("");
+    });
+
+    $("#add-chef-modal").on('shown', function() {
+        $("#chef-credentials-name").focus();
+    });
+
+    $("#chef-nav").on('click', "a.chef-server", function() {
+        var chef_server_id = $(this).attr("id");
+        var chef_server_name = chef_server_id.split("chef-server-")[1];
+        select_chef_server(chef_server_name);
+        return false;
+    });
+
+    $("#chef-save").click(function() {
+
+        save_chef_server();
+        return false;
+    });
+
     $(document).keypress(function(e) {
         if (e.which == ENTER_KEYCODE) {
 
@@ -61,8 +94,85 @@ $(document).ready(function() {
         $("#").addClass("active");
     }
 
-    phantom_cloud_edit_load_page();
+    //TODO PDA reenable before committing
+    //phantom_cloud_edit_load_page();
+    load_chef_servers();
 });
+
+function add_chef_server(chef_server_name) {
+
+    if (!chef_server_name) {
+        return false;
+    }
+
+    var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
+        chef_server_name + "'>" + chef_server_name + "</a></li>";
+    $("#chef-header").after(new_chef_server);
+    g_chef_servers[chef_server_name] = {};
+    select_chef_server(chef_server_name);
+}
+
+function select_chef_server(chef_server_name) {
+
+    if (!chef_server_name) {
+        return false;
+    }
+
+    if (!g_chef_servers.hasOwnProperty(chef_server_name)) {
+        return false;
+    }
+
+    $("a.chef-server").parent().removeClass("active");
+    $("a#chef-server-" + chef_server_name).parent().addClass("active");
+
+    var chef_server = g_chef_servers[chef_server_name];
+
+    $("#chef-hostname").val(chef_server['hostname']).focus();
+    $("#chef-client-key").val(chef_server['client-key']);
+    $("#chef-validator-key").val(chef_server['validator-key']);
+
+    g_selected_chef = chef_server_name;
+}
+
+function save_chef_server() {
+
+    if (!g_selected_chef) {
+        return false;
+    }
+
+    var credentials = {
+        'hostname': $("#chef-hostname").val(),
+        'client-key': $("#chef-client-key").val(),
+        'validator-key': $("#chef-validator-key").val(),
+    };
+
+    g_chef_servers[g_selected_chef] = credentials;
+
+    console.log("POST credentials ");
+    console.log(credentials);
+}
+
+function load_chef_servers() {
+
+    //TODO make this real
+    g_chef_servers = {
+        'firstone': {'hostname': 'somechef', 'client-key': 'key', 'validator-key': 'zzz'},
+        'secondone': {'hostname': '2somechef', 'client-key': '2key', 'validator-key': '2zzz'},
+    }
+
+    var first_chef_server = null;
+    for (var chef_server_name in g_chef_servers) {
+        if (first_chef_server === null) {
+            first_chef_server = chef_server_name;
+        }
+        var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
+            chef_server_name + "'>" + chef_server_name + "</a></li>";
+        $("#chef-header").after(new_chef_server);
+
+    }
+
+    select_chef_server(first_chef_server);
+}
 
 function phantom_cloud_edit_enable(enable) {
     if(enable) {

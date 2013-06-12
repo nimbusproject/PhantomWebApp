@@ -39,10 +39,10 @@ class SitesTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             content = json.loads(response.content)
             self.assertEqual(len(content), 2)
-            self.assertIn({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
+            self.assertIn({'credentials': '/api/dev/credentials/sites/site1', 'id': 'site1',
                 'uri': '/api/dev/sites/site1',
                 'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
-            self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
+            self.assertIn({'credentials': '/api/dev/credentials/sites/site2', 'id': 'site2',
                 'uri': '/api/dev/sites/site2',
                 'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
 
@@ -80,10 +80,10 @@ class SitesTestCase(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 content = json.loads(response.content)
                 self.assertEqual(len(content), 2)
-                self.assertIn({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
+                self.assertIn({'credentials': '/api/dev/credentials/sites/site1', 'id': 'site1',
                     'uri': '/api/dev/sites/site1', 'user_images': ['image1'], 'public_images': [],
                     'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
-                self.assertIn({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
+                self.assertIn({'credentials': '/api/dev/credentials/sites/site2', 'id': 'site2',
                     'uri': '/api/dev/sites/site2', 'user_images': [], 'public_images': [],
                     'instance_types': ['m1.small', 'm1.large', 'm1.xlarge']}, content)
 
@@ -109,13 +109,13 @@ class SitesTestCase(unittest.TestCase):
             response = c.get('/api/dev/sites/site1')
             self.assertEqual(response.status_code, 200)
             content = json.loads(response.content)
-            self.assertEqual({'credentials': '/api/dev/credentials/site1', 'id': 'site1',
+            self.assertEqual({'credentials': '/api/dev/credentials/sites/site1', 'id': 'site1',
                 'uri': '/api/dev/sites/site1'}, content)
 
             response = c.get('/api/dev/sites/site2')
             self.assertEqual(response.status_code, 200)
             content = json.loads(response.content)
-            self.assertEqual({'credentials': '/api/dev/credentials/site2', 'id': 'site2',
+            self.assertEqual({'credentials': '/api/dev/credentials/sites/site2', 'id': 'site2',
                 'uri': '/api/dev/sites/site2'}, content)
 
             response = c.get('/api/dev/sites/site3')
@@ -133,6 +133,251 @@ class SitesTestCase(unittest.TestCase):
 
         response = c.delete('/api/dev/sites/site1')
         self.assertEqual(response.status_code, 405)
+
+
+class ChefCredentialsTestCase(unittest.TestCase):
+    def test_get_chef_credentials(self):
+
+        with patch('ceiclient.client.DTRSClient.list_credentials') as mock_list_credentials:
+            mock_list_credentials.return_value = ['site1', 'site2']
+
+            def describe_credentials(caller, site_name, credential_type=None):
+                if caller == "freds_access_key_id" and site_name == "site1":
+                    return {
+                        "url": "site1_url",
+                        "client_key": "site1_client_key",
+                        "validator_key": "site1_validator_key"
+                    }
+                elif caller == "freds_access_key_id" and site_name == "site2":
+                    return {
+                        "url": "site2_url",
+                        "client_key": "site2_client_key",
+                        "validator_key": "site2_validator_key"
+                    }
+                else:
+                    self.fail("Unknown arguments received")
+
+            with patch('ceiclient.client.DTRSClient.describe_credentials', side_effect=describe_credentials):
+                c = Client()
+                c.login(username='fred', password='secret')
+
+                response = c.get('/api/dev/credentials/chef')
+                self.assertEqual(response.status_code, 200)
+                content = json.loads(response.content)
+                self.assertEqual(len(content), 2)
+                self.assertIn(
+                    {
+                        "id": "site1",
+                        "server_url": "site1_url",
+                        "client_key": "site1_client_key",
+                        "validator_key": "site1_validator_key",
+                        "uri": "/api/dev/credentials/chef/site1"
+                    },
+                    content)
+                self.assertIn(
+                    {
+                        "id": "site2",
+                        "server_url": "site2_url",
+                        "client_key": "site2_client_key",
+                        "validator_key": "site2_validator_key",
+                        "uri": "/api/dev/credentials/chef/site2"
+                    },
+                    content)
+
+    def test_get_credentials_resource(self):
+        with patch('ceiclient.client.DTRSClient.describe_site') as mock_describe_site:
+            mock_describe_site.return_value = {}
+
+            with patch('ceiclient.client.DTRSClient.list_credentials') as mock_list_credentials:
+                mock_list_credentials.return_value = ['site1', 'site2']
+
+                def describe_credentials(caller, site_name, credential_type=None):
+                    if caller == "freds_access_key_id" and site_name == "site1":
+                        return {
+                            "url": "site1_url",
+                            "client_key": "site1_client_key",
+                            "validator_key": "site1_validator_key"
+                        }
+                    elif caller == "freds_access_key_id" and site_name == "site2":
+                        return {
+                            "url": "site2_url",
+                            "client_key": "site2_client_key",
+                            "validator_key": "site2_validator_key"
+                        }
+                    else:
+                        self.fail("Unknown arguments received")
+
+                with patch('ceiclient.client.DTRSClient.describe_credentials', side_effect=describe_credentials):
+                    c = Client()
+                    c.login(username='fred', password='secret')
+
+                    response = c.get('/api/dev/credentials/chef/site1')
+                    self.assertEqual(response.status_code, 200)
+                    content = json.loads(response.content)
+                    self.assertEqual(
+                        {
+                            "id": "site1",
+                            "server_url": "site1_url",
+                            "client_key": "site1_client_key",
+                            "validator_key": "site1_validator_key",
+                            "uri": "/api/dev/credentials/chef/site1"
+                        },
+                        content)
+
+                    response = c.get('/api/dev/credentials/chef/site2')
+                    self.assertEqual(response.status_code, 200)
+                    content = json.loads(response.content)
+                    self.assertEqual(
+                        {
+                            "id": "site2",
+                            "server_url": "site2_url",
+                            "client_key": "site2_client_key",
+                            "validator_key": "site2_validator_key",
+                            "uri": "/api/dev/credentials/chef/site2"
+                        },
+                        content)
+
+                    response = c.get('/api/dev/credentials/chef/site3')
+                    self.assertEqual(response.status_code, 404)
+
+    def test_post_credentials(self):
+        with patch('ceiclient.client.DTRSClient.list_sites') as mock_list_sites:
+            mock_list_sites.return_value = ["site1", "site2", "site3"]
+
+            with patch('ceiclient.client.DTRSClient.describe_site') as mock_describe_site:
+                mock_describe_site.return_value = {}
+
+                with patch('ceiclient.client.DTRSClient.list_credentials') as mock_list_credentials:
+                    mock_list_credentials.return_value = ['site1', 'site2']
+
+                    def describe_credentials(caller, site_name, credential_type=None):
+                        if caller == "freds_access_key_id" and site_name == "site1":
+                            return {
+                                "url": "site1_url",
+                                "client_key": "site1_client_key",
+                                "validator_key": "site1_validator_key"
+                            }
+                        elif caller == "freds_access_key_id" and site_name == "site2":
+                            return {
+                                "url": "site2_url",
+                                "client_key": "site2_client_key",
+                                "validator_key": "site2_validator_key"
+                            }
+                        else:
+                            self.fail("Unknown arguments received")
+
+                    with patch('ceiclient.client.DTRSClient.add_credentials', return_value=None):
+                        with patch('ceiclient.client.DTRSClient.describe_credentials',
+                                side_effect=describe_credentials):
+                            c = Client()
+                            c.login(username='fred', password='secret')
+
+                            post_content = {
+                                "id": "site3",
+                                "client_key": "site3_client_key",
+                                "validator_key": "site3_validator_ley",
+                                "server_url": "site3_url"
+                            }
+                            response = c.post('/api/dev/credentials/chef',
+                                json.dumps(post_content), content_type='application/json')
+                            self.assertEqual(response.status_code, 201)
+                            content = json.loads(response.content)
+                            self.assertEqual(
+                                {
+                                    "id": "site3",
+                                    "client_key": "site3_client_key",
+                                    "validator_key": "site3_validator_ley",
+                                    "server_url": "site3_url",
+                                    "uri": "/api/dev/credentials/chef/site3"
+                                },
+                                content)
+
+    def test_put_credentials(self):
+        with patch('ceiclient.client.DTRSClient.list_sites') as mock_list_sites:
+            mock_list_sites.return_value = ["site1", "site2"]
+
+            with patch('ceiclient.client.DTRSClient.describe_site') as mock_describe_site:
+                mock_describe_site.return_value = {}
+
+                with patch('ceiclient.client.DTRSClient.list_credentials') as mock_list_credentials:
+                    mock_list_credentials.return_value = ['site1', 'site2']
+
+                    def describe_credentials(caller, site_name, credential_type=None):
+                        if caller == "freds_access_key_id" and site_name == "site1":
+                            return {
+                                "client_key": "site1_client_key",
+                                "validator_key": "site1_validator_key",
+                                "url": "site1_url"
+                            }
+                        elif caller == "freds_access_key_id" and site_name == "site2":
+                            return {
+                                "client_key": "site2_client_key",
+                                "validator_key": "site2_validator_key",
+                                "url": "site2_url"
+                            }
+                        else:
+                            self.fail("Unknown arguments received")
+
+                    with patch('ceiclient.client.DTRSClient.update_credentials', return_value=None):
+                        with patch('ceiclient.client.DTRSClient.describe_credentials',
+                                side_effect=describe_credentials):
+                            c = Client()
+                            c.login(username='fred', password='secret')
+
+                            post_content = {
+                                "id": "site2",
+                                "client_key": "site2_client_key",
+                                "validator_key": "site2_validator_key",
+                                "server_url": "site2_url"
+                            }
+                            response = c.put('/api/dev/credentials/chef/site2', json.dumps(post_content),
+                                content_type='application/json')
+                            self.assertEqual(response.status_code, 201)
+                            content = json.loads(response.content)
+                            self.assertEqual(
+                                {
+                                    "id": "site2",
+                                    "client_key": "site2_client_key",
+                                    "validator_key": "site2_validator_key",
+                                    "server_url": "site2_url",
+                                    "uri": "/api/dev/credentials/chef/site2"
+                                },
+                                content)
+
+    def test_delete_credentials(self):
+        with patch('ceiclient.client.DTRSClient.list_sites') as mock_list_sites:
+            mock_list_sites.return_value = ["site1", "site2"]
+
+            with patch('ceiclient.client.DTRSClient.describe_site') as mock_describe_site:
+                mock_describe_site.return_value = {}
+
+                with patch('ceiclient.client.DTRSClient.list_credentials') as mock_list_credentials:
+                    mock_list_credentials.return_value = ['site1', 'site2']
+
+                    def describe_credentials(caller, site_name):
+                        if caller == "freds_access_key_id" and site_name == "site1":
+                            return {
+                                "access_key": "site1_access_key_id",
+                                "secret_key": "site1_secret_access_key",
+                                "key_name": "site1_phantom_ssh_key"
+                            }
+                        elif caller == "freds_access_key_id" and site_name == "site2":
+                            return {
+                                "access_key": "site2_access_key_id",
+                                "secret_key": "site2_secret_access_key",
+                                "key_name": "site2_phantom_ssh_key"
+                            }
+                        else:
+                            self.fail("Unknown arguments received")
+
+                    with patch('ceiclient.client.DTRSClient.remove_credentials', return_value=None):
+                        with patch('ceiclient.client.DTRSClient.describe_credentials',
+                                side_effect=describe_credentials):
+                            c = Client()
+                            c.login(username='fred', password='secret')
+
+                            response = c.delete('/api/dev/credentials/sites/site2')
+                            self.assertEqual(response.status_code, 204)
 
 
 class CredentialsTestCase(unittest.TestCase):
@@ -163,7 +408,7 @@ class CredentialsTestCase(unittest.TestCase):
                     c = Client()
                     c.login(username='fred', password='secret')
 
-                    response = c.get('/api/dev/credentials')
+                    response = c.get('/api/dev/credentials/sites')
                     self.assertEqual(response.status_code, 200)
                     content = json.loads(response.content)
                     self.assertEqual(len(content), 2)
@@ -173,7 +418,7 @@ class CredentialsTestCase(unittest.TestCase):
                             "access_key": "site1_access_key_id",
                             "secret_key": "site1_secret_access_key",
                             "key_name": "site1_phantom_ssh_key",
-                            "uri": "/api/dev/credentials/site1"
+                            "uri": "/api/dev/credentials/sites/site1"
                         },
                         content)
                     self.assertIn(
@@ -182,7 +427,7 @@ class CredentialsTestCase(unittest.TestCase):
                             "access_key": "site2_access_key_id",
                             "secret_key": "site2_secret_access_key",
                             "key_name": "site2_phantom_ssh_key",
-                            "uri": "/api/dev/credentials/site2"
+                            "uri": "/api/dev/credentials/sites/site2"
                         },
                         content)
 
@@ -213,7 +458,7 @@ class CredentialsTestCase(unittest.TestCase):
                     c = Client()
                     c.login(username='fred', password='secret')
 
-                    response = c.get('/api/dev/credentials/site1')
+                    response = c.get('/api/dev/credentials/sites/site1')
                     self.assertEqual(response.status_code, 200)
                     content = json.loads(response.content)
                     self.assertEqual(
@@ -222,11 +467,11 @@ class CredentialsTestCase(unittest.TestCase):
                             "access_key": "site1_access_key_id",
                             "secret_key": "site1_secret_access_key",
                             "key_name": "site1_phantom_ssh_key",
-                            "uri": "/api/dev/credentials/site1"
+                            "uri": "/api/dev/credentials/sites/site1"
                         },
                         content)
 
-                    response = c.get('/api/dev/credentials/site2')
+                    response = c.get('/api/dev/credentials/sites/site2')
                     self.assertEqual(response.status_code, 200)
                     content = json.loads(response.content)
                     self.assertEqual(
@@ -235,11 +480,11 @@ class CredentialsTestCase(unittest.TestCase):
                             "access_key": "site2_access_key_id",
                             "secret_key": "site2_secret_access_key",
                             "key_name": "site2_phantom_ssh_key",
-                            "uri": "/api/dev/credentials/site2"
+                            "uri": "/api/dev/credentials/sites/site2"
                         },
                         content)
 
-                    response = c.get('/api/dev/credentials/site3')
+                    response = c.get('/api/dev/credentials/sites/site3')
                     self.assertEqual(response.status_code, 404)
 
     def test_post_credentials(self):
@@ -280,7 +525,7 @@ class CredentialsTestCase(unittest.TestCase):
                                 "secret_key": "site3_secret_access_key",
                                 "key_name": "site3_phantom_ssh_key"
                             }
-                            response = c.post('/api/dev/credentials',
+                            response = c.post('/api/dev/credentials/sites',
                                 json.dumps(post_content), content_type='application/json')
                             self.assertEqual(response.status_code, 201)
                             content = json.loads(response.content)
@@ -290,7 +535,7 @@ class CredentialsTestCase(unittest.TestCase):
                                     "access_key": "site3_access_key_id",
                                     "secret_key": "site3_secret_access_key",
                                     "key_name": "site3_phantom_ssh_key",
-                                    "uri": "/api/dev/credentials/site3"
+                                    "uri": "/api/dev/credentials/sites/site3"
                                 },
                                 content)
 
@@ -332,7 +577,7 @@ class CredentialsTestCase(unittest.TestCase):
                                 "secret_key": "site2_secret_access_key",
                                 "key_name": "site2_phantom_ssh_key"
                             }
-                            response = c.put('/api/dev/credentials/site2', json.dumps(post_content),
+                            response = c.put('/api/dev/credentials/sites/site2', json.dumps(post_content),
                                 content_type='application/json')
                             self.assertEqual(response.status_code, 201)
                             content = json.loads(response.content)
@@ -342,7 +587,7 @@ class CredentialsTestCase(unittest.TestCase):
                                     "access_key": "site2_access_key_id",
                                     "secret_key": "site2_secret_access_key",
                                     "key_name": "site2_phantom_ssh_key",
-                                    "uri": "/api/dev/credentials/site2"
+                                    "uri": "/api/dev/credentials/sites/site2"
                                 },
                                 content)
 
@@ -378,7 +623,7 @@ class CredentialsTestCase(unittest.TestCase):
                             c = Client()
                             c.login(username='fred', password='secret')
 
-                            response = c.delete('/api/dev/credentials/site2')
+                            response = c.delete('/api/dev/credentials/sites/site2')
                             self.assertEqual(response.status_code, 204)
 
 

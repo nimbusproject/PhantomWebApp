@@ -431,6 +431,40 @@ class UserObjectMySQL(UserObject):
         self._load_clouds()
         return self.iaasclouds
 
+    def get_chef_credentials(self):
+        # TODO: this needs to actually be implemented in ceictl
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        credentials = {}
+        for credential_name in credential_names:
+            credential = self.dtrs.describe_credentials(self.access_key, credential_name, credential_type="chef")
+            credentials[credential_name] = credential
+        return credentials
+
+    def add_chef_credentials(self, name, url, client_key, validator_key):
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        if name in credential_names:
+            create = False
+        else:
+            create = True
+
+        credential = {
+            'url': url,
+            'client_key': client_key,
+            'validator_key': validator_key
+        }
+
+        if create:
+            return self.dtrs.add_credentials(self.access_key, name, credential, credential_type='chef')
+        else:
+            return self.dtrs.update_credentials(self.access_key, name, credential, credential_type='chef')
+
+    def delete_chef_credentials(self, name):
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        if name not in credential_names:
+            raise PhantomWebException("Unknown credentials %s" % name)
+
+        return self.dtrs.remove_credentials(self.access_key, name, credential_type='chef')
+
     def get_possible_sites(self, details=False):
         site_client = DTRSClient(self._dashi_conn)
         site_names = site_client.list_sites(self.access_key)
