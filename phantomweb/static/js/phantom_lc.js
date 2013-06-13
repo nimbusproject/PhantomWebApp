@@ -421,7 +421,7 @@ function phantom_lc_load_internal() {
         $('#loading').hide();
     }
 
-    var credentials_url = make_url('credentials')
+    var credentials_url = make_url('credentials/sites')
     phantomGET(credentials_url, load_credentials_success, load_credentials_failure);
 }
 

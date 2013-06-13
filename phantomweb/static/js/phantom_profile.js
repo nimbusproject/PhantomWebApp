@@ -75,6 +75,12 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#chef-remove").click(function() {
+
+        remove_chef_server();
+        return false;
+    });
+
     $(document).keypress(function(e) {
         if (e.which == ENTER_KEYCODE) {
 
@@ -94,8 +100,7 @@ $(document).ready(function() {
         $("#").addClass("active");
     }
 
-    //TODO PDA reenable before committing
-    //phantom_cloud_edit_load_page();
+    phantom_cloud_edit_load_page();
     load_chef_servers();
 });
 
@@ -127,9 +132,9 @@ function select_chef_server(chef_server_name) {
 
     var chef_server = g_chef_servers[chef_server_name];
 
-    $("#chef-hostname").val(chef_server['hostname']).focus();
-    $("#chef-client-key").val(chef_server['client-key']);
-    $("#chef-validator-key").val(chef_server['validator-key']);
+    $("#chef-url").val(chef_server['server_url']).focus();
+    $("#chef-client-key").val(chef_server['client_key']);
+    $("#chef-validator-key").val(chef_server['validator_key']);
 
     g_selected_chef = chef_server_name;
 }
@@ -141,37 +146,80 @@ function save_chef_server() {
     }
 
     var credentials = {
-        'hostname': $("#chef-hostname").val(),
-        'client-key': $("#chef-client-key").val(),
-        'validator-key': $("#chef-validator-key").val(),
+        'id': g_selected_chef,
+        'server_url': $("#chef-url").val(),
+        'client_key': $("#chef-client-key").val(),
+        'validator_key': $("#chef-validator-key").val(),
     };
 
     g_chef_servers[g_selected_chef] = credentials;
 
-    console.log("POST credentials ");
-    console.log(credentials);
+    var success_func = function(ret) {
+        phantom_cloud_edit_enable(true);
+    }
+
+    var error_func = function(err) {
+        phantom_alert("Problem saving Chef Credentials: " + err);
+        phantom_cloud_edit_enable(true);
+    }
+
+    var url = make_url("credentials/chef");
+    phantomPOST(url, credentials, success_func, error_func);
+    phantom_cloud_edit_enable(false);
+}
+
+function remove_chef_server() {
+
+    if (!g_selected_chef) {
+        return false;
+    }
+
+    var success_func = function (obj) {
+        load_chef_servers();
+    }
+
+    var error_func = function(obj, message) {
+        phantom_alert(message);
+        phantom_cloud_edit_enable(true);
+    }
+
+    var url = make_url("credentials/chef/" + g_selected_chef);
+    phantom_cloud_edit_enable(false);
+    phantomDELETE(url, success_func, error_func);
 }
 
 function load_chef_servers() {
 
-    //TODO make this real
-    g_chef_servers = {
-        'firstone': {'hostname': 'somechef', 'client-key': 'key', 'validator-key': 'zzz'},
-        'secondone': {'hostname': '2somechef', 'client-key': '2key', 'validator-key': '2zzz'},
-    }
+    function loaded(credentials) {
 
-    var first_chef_server = null;
-    for (var chef_server_name in g_chef_servers) {
-        if (first_chef_server === null) {
-            first_chef_server = chef_server_name;
+        var chef_servers = {};
+        for (var i=0; i<credentials.length; i++) {
+            var credential = credentials[i];
+            chef_servers[credential['id']] = credential;
         }
-        var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
-            chef_server_name + "'>" + chef_server_name + "</a></li>";
-        $("#chef-header").after(new_chef_server);
 
+        g_chef_servers = chef_servers;
+
+        var first_chef_server = null;
+        for (var chef_server_name in g_chef_servers) {
+            if (first_chef_server === null) {
+                first_chef_server = chef_server_name;
+            }
+            var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
+                chef_server_name + "'>" + chef_server_name + "</a></li>";
+            $("#chef-header").after(new_chef_server);
+        }
+
+        select_chef_server(first_chef_server);
     }
 
-    select_chef_server(first_chef_server);
+    var error_func = function(obj, message) {
+        phantom_alert(message);
+        phantom_cloud_edit_enable(true);
+    }
+
+    var url = make_url('credentials/chef');
+    phantomGET(url, loaded, error_func);
 }
 
 function phantom_cloud_edit_enable(enable) {
@@ -232,7 +280,7 @@ function change_password_click() {
                 .parent().parent().addClass("error");
         }
         else {
-            alert("UNKNOWN ERROR: " + error_message);
+            phantom_alert("UNKNOWN ERROR: " + error_message);
         }
     };
 
@@ -287,7 +335,7 @@ function phantom_cloud_edit_add_click() {
         phantom_cloud_edit_enable(true);
     }
 
-    var url = make_url('credentials');
+    var url = make_url('credentials/sites');
     phantom_cloud_edit_enable(false);
     phantomPOST(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
 }
@@ -357,7 +405,7 @@ function phantom_cloud_edit_change_cloud (cloud_name) {
         phantom_cloud_edit_change_cloud_internal(cloud_name);
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -434,12 +482,12 @@ function phantom_cloud_edit_load_sites() {
             }
         }
 
-        var credentials_url = make_url('credentials?details=true');
+        var credentials_url = make_url('credentials/sites?details=true');
         phantomGET(credentials_url, credentials_loaded, error_func);
     }
 
     var error_func = function(obj, error_msg) {
-        alert(error_msg);
+        phantom_alert(error_msg);
         phantom_cloud_edit_enable(true);
     };
 
@@ -454,7 +502,7 @@ function phantom_cloud_edit_load_page() {
         phantom_cloud_edit_load_sites();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -467,7 +515,7 @@ function phantom_cloud_edit_remove_click() {
         return;
     }
 
-    var url = make_url("credentials/" + cloud_name);
+    var url = make_url("credentials/sites/" + cloud_name);
 
     var success_func = function (obj) {
         $("#phantom_cloud_edit_name").empty();
@@ -479,7 +527,7 @@ function phantom_cloud_edit_remove_click() {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_cloud_edit_enable(true);
     }
 
