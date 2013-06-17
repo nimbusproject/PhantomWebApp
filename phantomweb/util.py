@@ -350,7 +350,7 @@ class UserObjectMySQL(UserObject):
             domains.append(domain_description)
         return domains
 
-    def create_dt(self, dt_name, cloud_params):
+    def create_dt(self, dt_name, cloud_params, context_params):
         dt = self.get_dt(dt_name)
         if dt is None:
             dt = {}
@@ -381,13 +381,25 @@ class UserObjectMySQL(UserObject):
             mapping['rank'] = parameters.get('rank')
             mapping['max_vms'] = parameters.get('max_vms')
 
-            # Contextualization
-            if parameters.get('user_data'):
-                contextualization = dt.get('contextualization')
-                if contextualization is None:
-                    contextualization = dt['contextualization'] = {}
-                contextualization['method'] = 'userdata'
-                contextualization['userdata'] = parameters['user_data']
+        # Contextualization
+        if context_params.get('contextualization_method') == 'user_data' or context_params.get('user_data'):
+            contextualization = dt.get('contextualization')
+            if contextualization is None:
+                contextualization = dt['contextualization'] = {}
+            contextualization['method'] = 'userdata'
+            contextualization['userdata'] = context_params['user_data']
+        elif context_params.get('contextualization_method') == 'chef':
+            contextualization = dt.get('contextualization')
+            if contextualization is None:
+                contextualization = dt['contextualization'] = {}
+            if contextualization.get('userdata') is not None:
+                del contextualization['userdata']
+            contextualization['method'] = 'chef'
+            contextualization['run_list'] = context_params.get('chef_runlist')
+            contextualization['attributes'] = context_params.get('chef_attributes')
+        elif parameters.get('contextualization_method') == 'none':
+            contextualization = dt['contextualization'] = {}
+            contextualization['method'] = None
 
         if create:
             return self.dtrs.add_dt(self.access_key, dt_name, dt)

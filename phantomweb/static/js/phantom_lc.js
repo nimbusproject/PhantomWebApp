@@ -49,7 +49,7 @@ $(document).ready(function() {
 
 
     $("#phantom_lc_add").click(function() {
-        phantom_lc_enable_click();
+        save_lc_values();
         return false;
     });
 
@@ -58,17 +58,29 @@ $(document).ready(function() {
         return false;
     });
 
-    $("#phantom_lc_info_area input, #phantom_lc_info_area select, #phantom_lc_info_area").change(function() {
+    var autosave_cloud_fields = "#phantom_lc_info_area input, #phantom_lc_info_area select, #phantom_lc_info_area";
+
+    $(autosave_cloud_fields).change(function() {
         if (g_arranged_cloud_values[g_selected_cloud]) {
-            phantom_lc_enable_click();
+            save_lc_values();
         }
         return false;
     });
 
-    $("#phantom_lc_info_area input, #phantom_lc_info_area, #phantom_lc_info_area").keyup(function() {
+    $(autosave_cloud_fields).bind('keyup', function() {
         if (g_arranged_cloud_values[g_selected_cloud]) {
-            phantom_lc_enable_click();
+            save_lc_values();
         }
+        return false;
+    });
+
+    $("#phantom_lc_order_area").on("keyup", "textarea", function() {
+        save_lc_values();
+        return false;
+    });
+
+    $("#phantom_lc_order_area").on("change", "select", function() {
+        save_lc_values();
         return false;
     });
 
@@ -91,6 +103,8 @@ $(document).ready(function() {
         }
     });
 
+    $("#lc-help").popover();
+
     $("#phantom_lc_button_add").click(function() {
         phantom_lc_add_lc_click();
         return false;
@@ -106,8 +120,33 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#phantom_lc_contextualization").change(function() {
+        var context_type = $(this).val();
+        select_contextualization_method(context_type);
+    });
+
     phantom_lc_load();
 });
+
+function select_contextualization_method(context_type) {
+
+    if (context_type == "chef") {
+        $(".context-details").hide();
+        $("#phantom_lc_chef_runlist").parent().show();
+        $("#phantom_lc_chef_attributes").parent().show();
+        $("#phantom_lc_contextualization").val("chef");
+    }
+    else if (context_type == "user_data") {
+        $(".context-details").hide();
+        $("#phantom_lc_userdata").parent().show();
+        $("#phantom_lc_contextualization").val("user_data");
+    }
+    else {
+        $(".context-details").hide();
+        $("#phantom_lc_contextualization").val("none");
+    }
+
+}
 
 function phantom_lc_buttons(enabled) {
 
@@ -176,7 +215,7 @@ function phantom_lc_change_image_type() {
 }
 
 function phantom_lc_select_new_cloud_internal(cloud_name) {
-    if (cloud_name == undefined || cloud_name == null || cloud_name == "") {
+    if (!cloud_name) {
         return;
     }
     var cloud_data = g_cloud_map[cloud_name];
@@ -262,6 +301,7 @@ function phantom_lc_change_lc_internal(lc_name) {
 
     g_selected_lc = lc_name;
     g_selected_cloud = null;
+    var lc = g_lc_info[lc_name];
 
     $("#launch_config_options_head").text(lc_name + " Launch Configuration");
 
@@ -270,6 +310,7 @@ function phantom_lc_change_lc_internal(lc_name) {
 
     $("#cloud_options_name").text("cloud");
     $("#cloud_table_body").empty();
+
 
     if (lc_name == g_blank_name) {
         // set to blank values
@@ -282,21 +323,43 @@ function phantom_lc_change_lc_internal(lc_name) {
     else {
         $("#phantom_lc_name_input").val(lc_name);
         $("#phantom_lc_name_input").text(lc_name);
-        g_arranged_cloud_values = g_lc_info[lc_name]['cloud_params'];
+        g_arranged_cloud_values = lc['cloud_params'];
         if (g_arranged_cloud_values === undefined) {
             g_arranged_cloud_values = {};
+        }
+        
+
+        if (! ('contextualization_method' in lc)) {
+            $("#phantom_lc_userdata").val(lc['user_data']);
+            select_contextualization_method('user_data');
+        }
+        else if (lc['contextualization_method'] == 'user_data') {
+            $("#phantom_lc_userdata").val(lc['user_data']);
+            select_contextualization_method('user_data');
+        }
+        else if (lc['contextualization_method'] == 'chef') {
+            $("#phantom_lc_chef_runlist").val(lc['chef_runlist']);
+            $("#phantom_lc_chef_attributes").val(lc['chef_attributes']);
+            select_contextualization_method('chef');
+        }
+        else {
+            select_contextualization_method('none');
         }
     }
 
     $("#phantom_lc_max_vm").val("");
-    $("#phantom_lc_userdata").val("");
-
+    
     $("#phantom_lc_order").empty();
     var ordered = Array();
     for (var site in g_arranged_cloud_values) {
         var s = g_arranged_cloud_values[site]
         var ndx = s.rank;
-        ordered[ndx - 1] = site;
+        if (ndx) {
+            ordered[ndx - 1] = site;
+        }
+        else {
+            ordered.push(site);
+        }
     }
 
     var table_body = $("#cloud_table_body");
@@ -434,14 +497,42 @@ function phantom_lc_load() {
     }
 }
 
-function phantom_lc_enable_click() {
+function save_lc_values() {
 
     $("#phantom_lc_info_area div").removeClass("error");
 
+    var lc = g_lc_info[g_selected_lc];
     var cloud_name = g_selected_cloud;
+    var contextualization_method = $("#phantom_lc_contextualization").val().trim();
+    var chef_runlist = $("#phantom_lc_chef_runlist").val();
+    var chef_attributes = $("#phantom_lc_chef_attributes").val();
+    var user_data = $("#phantom_lc_userdata").val();
+
+    if (contextualization_method == 'chef') {
+        lc['contextualization_method'] = 'chef';
+        lc['chef_runlist'] = chef_runlist;
+        lc['chef_attributes'] = chef_attributes;
+        delete lc['user_data'];
+    }
+    else if(contextualization_method == 'user_data') {
+        lc['user_data'] = user_data;
+        delete lc['chef_runlist'];
+        delete lc['chef_attributes'];
+    }
+    else {
+        lc['contextualization_method'] = 'none';
+        delete lc['chef_runlist'];
+        delete lc['chef_attributes'];
+        delete lc['user_data'];
+    }
+
+
+    if (cloud_name === null) {
+        return;
+    }
+
     var max_vm = $("#phantom_lc_max_vm").val().trim();
     var instance_type = $("#phantom_lc_instance").val().trim();
-
     var common;
     var image_id = "";
     if ($("#phantom_lc_common_choice_checked").is(':checked')) {
@@ -482,15 +573,15 @@ function phantom_lc_enable_click() {
         phantom_warning("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
     }
-    var user_data = $("#phantom_lc_userdata").val();
+
     var entry = {
         'cloud': cloud_name,
         'max_vms': max_vm,
         'image_id': image_id,
         'instance_type': instance_type,
         'common': common,
-        'user_data': user_data
     };
+
 
     g_arranged_cloud_values[cloud_name] = entry;
 
@@ -498,6 +589,7 @@ function phantom_lc_enable_click() {
     $("#cloud_table_body tr td").filter(function() { return $(this).text() == cloud_name})
       .parent().replaceWith(new_row);
     phantom_lc_order_selected_click(cloud_name);
+
 }
 
 function phantom_lc_disable_click() {
@@ -514,6 +606,7 @@ function phantom_lc_disable_click() {
 
 function phantom_lc_save_click_internal() {
     var lc_name = g_selected_lc;
+    var lc = g_lc_info[lc_name];
 
     var err_msg = null;
     if (!lc_name) {
@@ -529,6 +622,23 @@ function phantom_lc_save_click_internal() {
         'name': lc_name,
         'cloud_params': {},
     };
+
+    if (! ('contextualization_method' in lc)) {
+        data['contextualization_method'] = 'user_data';
+        data['user_data'] = lc['user_data'];
+    }
+    else if (lc['contextualization_method'] == 'user_data') {
+        data['contextualization_method'] = 'user_data';
+        data['user_data'] = lc['user_data'];
+    }
+    else if (lc['contextualization_method'] == 'chef') {
+        data['contextualization_method'] = 'chef';
+        data['chef_runlist'] = lc['chef_runlist'];
+        data['chef_attributes'] = lc['chef_attributes'];
+    }
+    else {
+        data['contextualization_method'] = 'none';
+    }
 
     $("#cloud_table_body td.cloud-data-site").each(function(i) {
 
@@ -548,7 +658,7 @@ function phantom_lc_save_click_internal() {
         site['instance_type'] = cloud_data['instance_type'];
         site['max_vms'] = cloud_data['max_vms'];
         site['common'] = cloud_data['common'];
-        site['user_data'] = cloud_data['user_data'];
+
     });
 
     var success_func = function(obj) {
@@ -680,7 +790,7 @@ function phantom_lc_order_selected_click(cloud_name) {
 
             $("#phantom_lc_max_vm").val(cloud_val_dict['max_vms']);
             $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
-            $("#phantom_lc_userdata").val(cloud_val_dict['user_data']);
+
 
             if (cloud_val_dict['common']) {
                 $("#phantom_lc_common_image_input").val(cloud_val_dict['image_id']);

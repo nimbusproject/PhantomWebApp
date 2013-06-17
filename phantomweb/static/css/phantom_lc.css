@@ -1,4 +1,8 @@
 
+.context-details {
+    display: none;
+}
+
 .sidebar-nav {
     padding: 9px 0;
 }
@@ -7,6 +11,10 @@
     .lc-well {
         min-height: 400px;
     }
+}
+
+#lc_config {
+    display: table;
 }
 
 #phantom_lc_heading_div

@@ -662,6 +662,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(lc["name"], "testlc")
             self.assertEqual(lc["owner"], "fred")
             self.assertEqual(lc["uri"], "/api/dev/launchconfigurations/%s" % lc_id)
+            self.assertEqual(lc["user_data"], "Hello Cloud!")
+            self.assertEqual(lc["contextualization_method"], "user_data")
 
             cloud_param = lc["cloud_params"][lc["cloud_params"].keys()[0]]
             self.assertEqual(cloud_param["max_vms"], -1)
@@ -669,7 +671,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(cloud_param["rank"], 1)
             self.assertEqual(cloud_param["image_id"], "hello-phantom.gz")
             self.assertEqual(cloud_param["instance_type"], "m1.small")
-            self.assertEqual(cloud_param["user_data"], "Hello Cloud!")
 
     def test_get_launchconfiguration_resource(self):
         def describe_dt(caller, dt_name):
@@ -704,6 +705,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(lc["name"], "testlc")
             self.assertEqual(lc["owner"], "fred")
             self.assertEqual(lc["uri"], "/api/dev/launchconfigurations/%s" % lc_id)
+            self.assertEqual(lc["contextualization_method"], "user_data")
+            self.assertEqual(lc["user_data"], "Hello Cloud!")
 
             cloud_param = lc["cloud_params"][lc["cloud_params"].keys()[0]]
             self.assertEqual(cloud_param["max_vms"], -1)
@@ -711,7 +714,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(cloud_param["rank"], 1)
             self.assertEqual(cloud_param["image_id"], "hello-phantom.gz")
             self.assertEqual(cloud_param["instance_type"], "m1.small")
-            self.assertEqual(cloud_param["user_data"], "Hello Cloud!")
 
             response = c.get('/api/dev/launchconfigurations/UnknownID')
             self.assertEqual(response.status_code, 404)
@@ -774,6 +776,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
             post_content = {
                 "name": "mysecondlc",
+                "contextualization_method": "user_data",
+                "user_data": "Hello World",
                 "cloud_params": {
                     "hotel": {
                         "image_id": "hello-cloud",
@@ -781,7 +785,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                         "max_vms": -1,
                         "common": True,
                         "rank": 1,
-                        "user_data": "Hello World"
                     }
                 }
             }
@@ -793,6 +796,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(lc["owner"], "fred")
             assert lc["id"]
             assert lc["uri"].startswith("/api/dev/launchconfigurations/")
+            self.assertEqual(lc["user_data"], "Hello World")
+            self.assertEqual(lc["contextualization_method"], "user_data")
 
             cloud_param = lc["cloud_params"][lc["cloud_params"].keys()[0]]
             self.assertEqual(cloud_param["max_vms"], -1)
@@ -800,7 +805,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(cloud_param["rank"], 1)
             self.assertEqual(cloud_param["image_id"], "hello-cloud")
             self.assertEqual(cloud_param["instance_type"], "m1.large")
-            self.assertEqual(cloud_param["user_data"], "Hello World")
 
             # Ensure we can't post twice
             response = c.post('/api/dev/launchconfigurations', json.dumps(post_content),
@@ -866,6 +870,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
             put_content = {
                 "name": "testlc",
+                "contextualization_method": "user_data",
+                "user_data": "Goodbye, Cruel World",
                 "cloud_params": {
                     "hotel": {
                         "image_id": "goodbye-cloud",
@@ -873,7 +879,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                         "max_vms": 3,
                         "common": False,
                         "rank": 2,
-                        "user_data": "Goodbye, Cruel World"
                     }
                 }
             }
@@ -887,6 +892,8 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(lc["name"], "testlc")
             self.assertEqual(lc["owner"], "fred")
             self.assertEqual(lc["uri"], "/api/dev/launchconfigurations/%s" % lc_id)
+            self.assertEqual(lc["contextualization_method"], "user_data")
+            self.assertEqual(lc["user_data"], "Goodbye, Cruel World")
 
             cloud_param = lc["cloud_params"][lc["cloud_params"].keys()[0]]
             self.assertEqual(cloud_param["max_vms"], 3)
@@ -894,7 +901,6 @@ class LaunchConfigurationTestCase(unittest.TestCase):
             self.assertEqual(cloud_param["rank"], 2)
             self.assertEqual(cloud_param["image_id"], "goodbye-cloud")
             self.assertEqual(cloud_param["instance_type"], "m2.large")
-            self.assertEqual(cloud_param["user_data"], "Goodbye, Cruel World")
 
     def test_delete_launchconfiguration(self):
         def describe_dt(self, caller, dt_name):

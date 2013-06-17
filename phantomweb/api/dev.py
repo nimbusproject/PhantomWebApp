@@ -455,27 +455,49 @@ def launchconfigurations(request):
         except:
             return HttpResponseBadRequest()
 
-        required_params = ["name", "cloud_params"]
+        required_params = ['name', 'cloud_params', 'contextualization_method']
         if not has_all_required_params(required_params, content):
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest("Request must have %s params" % ", ".join(required_params))
         name = content['name']
         cloud_params = content['cloud_params']
         username = request.user.username
+
+        required_cloud_params = ['image_id', 'instance_type', 'max_vms', 'common', 'rank']
+        for cloud_name, cloud_p in cloud_params.iteritems():
+            if not has_all_required_params(required_cloud_params, cloud_p):
+                missing = list(set(required_params) - set(cloud_p))
+                return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
+                    cloud_name, ", ".join(missing)))
 
         lc = get_launch_configuration_by_name(username, name)
         if lc is not None:
             # LC already exists, redirect to existing one
             return HttpResponseRedirect("/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id))
 
-        lc = create_launch_configuration(username, name, cloud_params)
+        contextualization_method = content.get('contextualization_method')
+        context_params = {
+            'contextualization_method': contextualization_method,
+            'user_data': content.get('user_data'),
+            'chef_runlist': content.get('chef_runlist'),
+            'chef_attributes': content.get('chef_attributes')
+        }
+
+        lc = create_launch_configuration(username, name, cloud_params, context_params)
 
         response_dict = {
             "id": lc.id,
             "name": name,
             "owner": username,
+            'contextualization_method': contextualization_method,
             "cloud_params": cloud_params,
             "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
         }
+
+        if contextualization_method == "user_data":
+            response_dict['user_data'] = content.get('user_data')
+        elif contextualization_method == "chef":
+            response_dict['chef_runlist'] = content.get('chef_runlist')
+            response_dict['chef_attributes'] = content.get('chef_attributes')
 
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
     return h
@@ -506,7 +528,7 @@ def launchconfiguration_resource(request, id):
         except:
             return HttpResponseBadRequest()
 
-        required_params = ["name", "cloud_params"]
+        required_params = ['name', 'cloud_params', 'contextualization_method']
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest()
 
@@ -519,8 +541,23 @@ def launchconfiguration_resource(request, id):
                 return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
                     cloud_name, ", ".join(missing)))
 
-        response_dict = update_launch_configuration(lc.id, cloud_params)
+        contextualization_method = content.get('contextualization_method')
+        context_params = {
+            'contextualization_method': contextualization_method,
+            'user_data': content.get('user_data'),
+            'chef_runlist': content.get('chef_runlist'),
+            'chef_attributes': content.get('chef_attributes')
+        }
+
+        response_dict = update_launch_configuration(lc.id, cloud_params, context_params)
         response_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id)
+        response_dict['contextualization_method'] = contextualization_method
+
+        if contextualization_method == "user_data":
+            response_dict['user_data'] = content.get('user_data')
+        elif contextualization_method == "chef":
+            response_dict['chef_runlist'] = content.get('chef_runlist')
+            response_dict['chef_attributes'] = content.get('chef_attributes')
 
         h = HttpResponse(json.dumps(response_dict), status=200, mimetype='application/javascript')
         return h
