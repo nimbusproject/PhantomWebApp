@@ -173,7 +173,7 @@ def get_launch_configuration(id):
     user_obj = get_user_object(lc.username)
     dt = user_obj.get_dt(lc.name)
     if dt is None:
-        log.error("DT %s doesn't seem to be in DTRS, continuing anyway")
+        log.error("DT %s doesn't seem to be in DTRS, continuing anyway" % lc.name)
         dt = {}
 
     for cloud, mapping in dt.get('mappings', {}).iteritems():
