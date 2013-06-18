@@ -215,10 +215,6 @@ def remove_launch_configuration(username, lc_id):
     except Exception:
         log.exception("Couldn't delete dt %s" % lc.name)
 
-    host_max_pairs = lc.hostmaxpairdb_set.all()
-    for hmp in host_max_pairs:
-        hmp.delete()
-
     lc.delete()
 
 
