@@ -1,6 +1,7 @@
 // TODO: turn this into some kind of model object
 var g_domain_data = {};
-var g_launch_config_names = {};
+var g_launch_configs = {};
+var g_chef_credentials = {};
 var g_domain_details = {};
 var g_domain_details_cache = {};
 var g_decision_engines_by_name = {'Sensor': 'sensor', 'Multi Cloud': 'multicloud'};
@@ -21,6 +22,7 @@ $(document).ready(function() {
     $("#phantom_domain_main_combined_pane_inner").hide();
     $("#scaling_sensor_value").hide();
     $("#domain-metrics").hide();
+    $("#phantom_domain_chef_choice").parent().parent().hide();
 
     var $sensor_input = $("#phantom_domain_sensors_input").tagsManager({
         typeahead: true,
@@ -41,6 +43,18 @@ $(document).ready(function() {
     $("input[name=hidden-tags]").change(function() {
         phantom_update_sensors();
         return false;
+    });
+
+    $("#phantom_domain_lc_choice").change(function() {
+        var lc_name = $("#phantom_domain_lc_choice").val();
+        var lc = g_launch_configs[lc_name];
+        console.log(lc);
+        if (lc && lc.contextualization_method === "chef") {
+            $("#phantom_domain_chef_choice").parent().parent().show();
+        }
+        else {
+            $("#phantom_domain_chef_choice").parent().parent().hide();
+        }
     });
 
 
@@ -246,10 +260,18 @@ function phantom_update_sensors() {
 function phantom_domain_load_lc_names() {
     $("#phantom_domain_lc_choice").empty();
 
-    for(var lc_name in g_launch_config_names) {
-        lc_name = g_launch_config_names[lc_name];
+    for(var lc_name in g_launch_configs) {
         var new_opt = $('<option>', {'name': lc_name, value: lc_name, text: lc_name});
         $("#phantom_domain_lc_choice").append(new_opt);
+    }
+}
+
+function phantom_domain_load_chef_names() {
+    $("#phantom_domain_chef_choice").empty();
+
+    for(var chef_name in g_chef_credentials) {
+        var new_opt = $('<option>', {'name': chef_name, value: chef_name, text: chef_name});
+        $("#phantom_domain_chef_choice").append(new_opt);
     }
 }
 
@@ -298,11 +320,21 @@ function phantom_domain_load_internal(select_domain_on_success) {
     select_domain_on_success = typeof select_domain_on_success !== 'undefined' ? select_domain_on_success : null;
 
     var load_lc_success_func = function(lcs) {
-        g_launch_config_names = [];
+        g_launch_configs = {};
         for(var i=0; i<lcs.length; i++) {
             var lc = lcs[i];
-            g_launch_config_names.push(lc.name);
+            g_launch_configs[lc.name] = lc;
         }
+        var url = make_url('credentials/chef')
+        phantomGET(url, load_chef_credentials_success_func, error_func);
+    }
+
+    var load_chef_credentials_success_func = function(creds) {
+        g_chef_credentials = {};
+        for(var i=0; i<creds.length; i++) {
+            var cred = creds[i];
+            g_chef_credentials[cred.id] = cred;
+       }
         var url = make_url('domains')
         phantomGET(url, domain_success_func, error_func);
     }
@@ -336,7 +368,6 @@ function phantom_domain_load_internal(select_domain_on_success) {
     var lc_url = make_url('launchconfigurations')
     phantom_domain_buttons(false);
     phantomGET(lc_url, load_lc_success_func, error_func);
-
 }
 
 function phantom_domain_load() {
@@ -389,6 +420,11 @@ function gather_domain_params_from_ui() {
      * a formatted dictionary that can be used in a start or update call
      */
     var lc_name = $("#phantom_domain_lc_choice").val();
+    var chef_server_name = null;
+    if ( $("#phantom_domain_chef_choice").is(':visible')) {
+        chef_server_name = $("#phantom_domain_chef_choice").val();
+    }
+    var lc_name = $("#phantom_domain_lc_choice").val();
     var domain_name = $("#phantom_domain_name_label").text();
     var de_name = g_decision_engines_by_name[$("#phantom_domain_de_choice").val()];
     var monitor_sensors_raw = $("input[name=hidden-tags]").val();
@@ -434,6 +470,10 @@ function gather_domain_params_from_ui() {
 
     var data = {"name": domain_name, "lc_name": lc_name, "de_name": de_name,
         "monitor_sensors": monitor_sensors, "monitor_domain_sensors": monitor_domain_sensors};
+
+    if (chef_server_name) {
+        data['chef_credential'] = chef_server_name;
+    }
 
     if (de_name == "multicloud") {
         if (! vm_count) {
@@ -483,6 +523,7 @@ function gather_domain_params_from_ui() {
         return null;
     }
 
+    console.log(data);
     return data;
 }
 
@@ -568,6 +609,7 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
 
     phantom_domain_deselect_domain();
     phantom_domain_load_lc_names();
+    phantom_domain_load_chef_names();
     phantom_domain_load_de_names();
 
     g_selected_domain = domain_name;
@@ -586,10 +628,34 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
         phantom_select_de(DEFAULT_DECISION_ENGINE);
         $("#phantom_domain_start_buttons").show();
         $("#phantom_domain_running_buttons").hide();
+
+        var lc_name = $("#phantom_domain_lc_choice").val();
+        if (lc_name) {
+            var lc = g_launch_configs[lc_name];
+            if (lc && lc.contextualization_method == "chef") {
+                $("#phantom_domain_chef_choice").parent().parent().show();
+            }
+            else {
+                $("#phantom_domain_chef_choice").parent().parent().hide();
+            }
+        }
     }
     else {
 
         $("#phantom_domain_lc_choice").val(domain_data.lc_name);
+        var lc = g_launch_configs[domain_data.lc_name];
+        console.log("lc: " + domain_data.lc_name);
+        if (lc && lc.contextualization_method == "chef") {
+            $("#phantom_domain_chef_choice").parent().parent().show();
+            if (domain_data["chef_credential"]) {
+                $("#phantom_domain_chef_choice").val(domain_data.chef_credential);
+            }
+        }
+        else {
+            $("#phantom_domain_chef_choice").parent().parent().hide();
+        }
+
+
         $("#phantom_domain_start_buttons").hide();
         $("#phantom_domain_running_buttons").show();
         phantom_select_de(g_decision_engines_by_type[domain_data.de_name]);

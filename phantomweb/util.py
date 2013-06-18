@@ -193,6 +193,12 @@ class UserObjectMySQL(UserObject):
         removed = self.epum.remove_domain(domain, caller=self.access_key)
         return removed
 
+    def _api_parameters_to_general_opts(self, parameters):
+        general_opts = {}
+        if 'chef_credential' in parameters:
+            general_opts['chef_credential'] = parameters['chef_credential']
+        return general_opts
+
     def _api_parameters_to_domain_opts(self, parameters):
         domain_opts = {}
         de_name = parameters.get('de_name')
@@ -241,12 +247,13 @@ class UserObjectMySQL(UserObject):
     def add_domain(self, username, name, parameters):
 
         domain_opts = self._api_parameters_to_domain_opts(parameters)
+        general_opts = self._api_parameters_to_general_opts(parameters)
         id = str(uuid4())
         parameters['id'] = id
         domain_opts['name'] = id
         domain_opts['phantom_name'] = name
 
-        conf = {'engine_conf': domain_opts}
+        conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
             self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
@@ -259,11 +266,12 @@ class UserObjectMySQL(UserObject):
 
         name = parameters.get('name')
         domain_opts = self._api_parameters_to_domain_opts(parameters)
+        general_opts = self._api_parameters_to_general_opts(parameters)
         parameters['id'] = id
         domain_opts['name'] = id
         domain_opts['phantom_name'] = name
 
-        conf = {'engine_conf': domain_opts}
+        conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
             self.epum.reconfigure_domain(id, conf, caller=self.access_key)
@@ -294,6 +302,7 @@ class UserObjectMySQL(UserObject):
         except DashiError:
             return None
         engine_conf = domain_description.get('config', {}).get('engine_conf', {})
+        general_conf = domain_description.get('config', {}).get('general', {})
 
         ent = {}
         ent['id'] = domain_description['name']
@@ -302,6 +311,8 @@ class UserObjectMySQL(UserObject):
         ent['sensor_data'] = self._sanitize_sensor_data(domain_description.get('sensor_data', {}))
         ent['monitor_sensors'] = ",".join(engine_conf.get('monitor_sensors', []))
         ent['monitor_domain_sensors'] = ",".join(engine_conf.get('monitor_domain_sensors', []))
+        if 'chef_credential' in general_conf:
+            ent['chef_credential'] = general_conf['chef_credential']
 
         if ent['de_name'] == 'multicloud':
             ent['vm_count'] = engine_conf.get('minimum_vms')

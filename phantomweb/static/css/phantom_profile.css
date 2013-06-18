@@ -4,8 +4,16 @@
 
 @media (min-width: 768px) {
     .chef-well {
-        min-height: 400px;
+        min-height: 400px !important;
     }
+}
+
+#chef-server-form {
+    display: none;
+}
+
+#chef-credentials {
+    min-height: 400px;
 }
 
 #phantom_cloud_edit_content

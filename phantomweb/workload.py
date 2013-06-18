@@ -172,20 +172,24 @@ def get_launch_configuration(id):
 
     user_obj = get_user_object(lc.username)
     dt = user_obj.get_dt(lc.name)
+    if dt is None:
+        dt = {}
+    contextualization = dt.get('contextualization', {})
 
-    userdata = dt.get("contextualization", {}).get("userdata")
-    method = dt.get("contextualization", {}).get("method")
-    run_list = dt.get("contextualization", {}).get("run_list")
-    attributes = dt.get("contextualization", {}).get("attributes")
-    if method == 'userdata' or userdata is not None:
-        lc_dict["contextualization_method"] = 'user_data'
-        lc_dict["user_data"] = userdata
-    elif method == 'chef':
-        lc_dict["contextualization_method"] = 'chef'
-        lc_dict["chef_runlist"] = run_list
-        lc_dict["chef_attributes"] = attributes
-    elif method is None:
-        lc_dict["contextualization_method"] = 'none'
+    if contextualization:
+        userdata = contextualization.get("userdata")
+        method = contextualization.get("method")
+        run_list = contextualization.get("run_list")
+        attributes = contextualization.get("attributes")
+        if method == 'userdata' or userdata is not None:
+            lc_dict["contextualization_method"] = 'user_data'
+            lc_dict["user_data"] = userdata
+        elif method == 'chef':
+            lc_dict["contextualization_method"] = 'chef'
+            lc_dict["chef_runlist"] = run_list
+            lc_dict["chef_attributes"] = attributes
+        elif method is None:
+            lc_dict["contextualization_method"] = 'none'
 
     for cloud, mapping in dt.get('mappings', {}).iteritems():
 
