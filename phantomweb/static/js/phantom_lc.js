@@ -530,6 +530,7 @@ function phantom_lc_save_click_internal() {
         'cloud_params': {},
     };
 
+    var ndx = 0;
     $("#cloud_table_body td.cloud-data-site").each(function(i) {
 
         var site_name = $(this).text();
@@ -541,7 +542,7 @@ function phantom_lc_save_click_internal() {
         data['cloud_params'][site_name] = {};
         var site = data['cloud_params'][site_name];
 
-        var ndx = i + 1;
+        ndx = ndx + 1;
 
         site['rank'] = ndx;
         site['image_id'] = cloud_data['image_id'];
@@ -571,6 +572,7 @@ function phantom_lc_save_click_internal() {
     }
     else {
         var lc_id = g_lc_info[lc_name]['id']
+        console.log("PUTING " + lc_id);
         var url = make_url("launchconfigurations/" + lc_id);
         phantomPUT(url, data, success_func, error_func);
     }
