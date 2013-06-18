@@ -311,7 +311,14 @@ function phantom_domain_load_internal(select_domain_on_success) {
         g_domain_data = {};
         for(var i=0; i<domains.length; i++) {
             var domain = domains[i];
-            g_domain_data[domain.name] = domain;
+            //TODO: This is needed to support domains from before the API existed.
+            //It should eventually be removed
+            if (domain['name']) {
+                g_domain_data[domain.name] = domain;
+            }
+            else if (domain['id']) {
+                g_domain_data[domain.id] = domain;
+            }
         }
 
         phantom_domain_load_domain_names();
