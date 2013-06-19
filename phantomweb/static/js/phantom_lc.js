@@ -294,9 +294,11 @@ function phantom_lc_change_lc_internal(lc_name) {
     $("#phantom_lc_order").empty();
     var ordered = Array();
     for (var site in g_arranged_cloud_values) {
-        var s = g_arranged_cloud_values[site]
-        var ndx = s.rank;
-        ordered[ndx - 1] = site;
+        if (site in g_cloud_map) {
+            var s = g_arranged_cloud_values[site]
+            var ndx = s.rank;
+            ordered[ndx - 1] = site;
+        }
     }
 
     var table_body = $("#cloud_table_body");
@@ -477,7 +479,7 @@ function phantom_lc_enable_click() {
         phantom_alert("You must select an instance type.");
         return;
     }
-    if (max_vm < -1 || max_vm > 32000) {
+    if (max_vm < -1 || max_vm > 32000 || isNaN(parseInt(max_vm,10))) {
         $("#phantom_lc_max_vm").parent().addClass("error");
         phantom_warning("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
         return;
@@ -485,7 +487,7 @@ function phantom_lc_enable_click() {
     var user_data = $("#phantom_lc_userdata").val();
     var entry = {
         'cloud': cloud_name,
-        'max_vms': max_vm,
+        'max_vms': parseInt(max_vm),
         'image_id': image_id,
         'instance_type': instance_type,
         'common': common,
