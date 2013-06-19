@@ -362,9 +362,7 @@ class UserObjectMySQL(UserObject):
         cloud_credentials = self.get_clouds()
 
         for cloud_name, parameters in cloud_params.iteritems():
-            mapping = dt['mappings'].get(cloud_name)
-            if mapping is None:
-                mapping = dt['mappings'][cloud_name] = {}
+            mapping = dt['mappings'][cloud_name] = {}  # Clears out old mapping
             credentials = cloud_credentials.get(cloud_name, None)
 
             # Required by EPUM
