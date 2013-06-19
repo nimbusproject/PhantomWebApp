@@ -500,7 +500,9 @@ function phantom_lc_load() {
 function save_lc_values() {
 
     $("#phantom_lc_info_area div").removeClass("error");
+    $("#phantom_lc_order_area div").removeClass("error");
 
+    clear_phantom_alerts();
     var lc = g_lc_info[g_selected_lc];
     var cloud_name = g_selected_cloud;
     var contextualization_method = $("#phantom_lc_contextualization").val().trim();
@@ -509,6 +511,37 @@ function save_lc_values() {
     var user_data = $("#phantom_lc_userdata").val();
 
     if (contextualization_method == 'chef') {
+
+        try {
+            var chef_runlist_json = JSON.parse(chef_runlist);
+            var first_val = chef_runlist_json[0];
+            if (!first_val) {
+                throw "Runlist must be at a list with at least one element";
+            }
+        }
+        catch(err) {
+            $("#phantom_lc_chef_runlist").parent().addClass("error");
+            if (err.toString().indexOf("JSON.parse") != -1) {
+                phantom_alert("Couldn't parse runlist: " + err);
+            }
+            else {
+                phantom_alert(err);
+            }
+        }
+
+        try {
+            var chef_attributes_json = JSON.parse(chef_attributes);
+        }
+        catch(err) {
+            $("#phantom_lc_chef_attributes").parent().addClass("error");
+            if (err.toString().indexOf("JSON.parse") != -1) {
+                phantom_alert("Couldn't parse attributes: " + err);
+            }
+            else {
+                phantom_alert(err);
+            }
+        }
+
         lc['contextualization_method'] = 'chef';
         lc['chef_runlist'] = chef_runlist;
         lc['chef_attributes'] = chef_attributes;

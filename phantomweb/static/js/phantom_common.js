@@ -54,6 +54,10 @@ function phantom_warning(alert_text) {
     phantom_info(alert_text, "");
 }
 
+function clear_phantom_alerts() {
+    $("#alert-container").empty();
+}
+
 function make_url(p) {
     var base_url = document.location.href.concat("/");
 
