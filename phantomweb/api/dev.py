@@ -134,8 +134,14 @@ def site_resource(request, site):
         response_dict = {
             "id": site,
             "credentials": "/api/%s/credentials/sites/%s" % (API_VERSION, site),
+            "instance_types": all_sites[site].get('instance_types', []),
             "uri": "/api/%s/sites/%s" % (API_VERSION, site)
         }
+        if details:
+            if response_dict.get('user_images') is None:
+                response_dict['user_images'] = []
+            if response_dict.get('public_images') is None:
+                response_dict['public_images'] = []
         h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
     else:
         h = HttpResponseNotFound('Site %s not found' % site, mimetype='application/javascript')
