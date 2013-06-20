@@ -310,8 +310,8 @@ def launchconfigurations(request):
     elif request.method == "POST":
         try:
             content = json.loads(request.body)
-        except:
-            return HttpResponseBadRequest()
+        except Exception as e:
+            return HttpResponseBadRequest("Could not load JSON from %s: %s" % (request.body, e))
 
         required_params = ["name", "cloud_params"]
         if not has_all_required_params(required_params, content):
