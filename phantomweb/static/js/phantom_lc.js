@@ -397,7 +397,30 @@ function phantom_lc_change_lc_click(lc_name) {
 }
 
 function phantom_lc_load_internal() {
-    phantom_lc_buttons(false);
+
+    var load_sites_success = function(sites) {
+
+        g_cloud_map = {};
+        for(var i=0; i<sites.length; i++) {
+            var site = sites[i];
+            g_cloud_map[site.id] = {};
+            g_cloud_map[site.id]['user_images'] = site['user_images'];
+            g_cloud_map[site.id]['public_images'] = site['public_images'];
+            g_cloud_map[site.id]['instance_types'] = site['instance_types'];
+        }
+    }
+
+    var load_credentials_success = function(clouds) {
+        for(var i=0; i<clouds.length; i++) {
+            var cloud = clouds[i];
+            if (!cloud.id in g_cloud_map) {
+                console.log('replacing ' + cloud.id);
+                g_cloud_map[cloud.id] = {};
+            }
+            g_cloud_map[cloud.id]['status'] = 0;
+        }
+    }
+
     var load_lc_success = function(launchconfigs) {
         try {
             $("#alert-container").empty();
@@ -441,51 +464,28 @@ function phantom_lc_load_internal() {
         }
     }
 
-    var load_sites_success = function(sites) {
-
-        for(var i=0; i<sites.length; i++) {
-            var site = sites[i];
-            if (!g_cloud_map.hasOwnProperty(site.id)) {
-                g_cloud_map[site.id] = {};
-            }
-            g_cloud_map[site.id]['user_images'] = site['user_images'];
-            g_cloud_map[site.id]['public_images'] = site['public_images'];
-            g_cloud_map[site.id]['instance_types'] = site['instance_types'];
-        }
-
-        var lc_url = make_url('launchconfigurations')
-        phantomGET(lc_url, load_lc_success, phantom_lc_load_error_func);
-        phantom_info("Loading Launch Configurations");
-    }
-
-    var load_sites_failure = function(clouds) {
-
-        phantom_alert("There was a problem loading your clouds.  Please try again later. ".concat(err.message));
-        $('#loading').hide();
-    }
-
-    var load_credentials_success = function(clouds) {
-        g_cloud_map = {};
-        for(var i=0; i<clouds.length; i++) {
-            var cloud = clouds[i];
-            if (!g_cloud_map.hasOwnProperty(cloud.id)) {
-                g_cloud_map[cloud.id] = {};
-            }
-            g_cloud_map[cloud.id]['status'] = 0;
-            //TODO: add attrs from creds?
-        }
-
-        var sites_url = make_url('sites?details=true')
-        phantomGET(sites_url, load_sites_success, load_sites_failure);
-    }
-
-    var load_credentials_failure = function(err) {
-        phantom_alert("There was a problem loading your cloud credentials.  Please try again later. ".concat(err.message));
-        $('#loading').hide();
-    }
-
     var credentials_url = make_url('credentials/sites')
-    phantomGET(credentials_url, load_credentials_success, load_credentials_failure);
+    var cred_request = phantomGET(credentials_url);
+
+    var sites_url = make_url('sites?details=true')
+    var sites_request = phantomGET(sites_url)
+
+    var lc_url = make_url('launchconfigurations')
+    var lc_request = phantomGET(lc_url);
+
+    phantom_lc_buttons(false);
+    phantom_info("Loading Launch Configurations");
+
+    $.when(cred_request, sites_request, lc_request)
+        .done(function(credentials, sites, lcs) {
+            load_sites_success(sites[0]);
+            load_credentials_success(credentials[0]);
+            load_lc_success(lcs[0]);
+        })
+        .fail(function(err) {
+            phantom_alert("There was a problem loading your launch configs.  Please try again later. ".concat(err.message));
+            $('#loading').hide();
+        });
 }
 
 function phantom_lc_load() {
@@ -752,6 +752,7 @@ function phantom_lc_delete_internal(lc_name) {
         phantom_lc_buttons(true);
         $("#phantom_lc_info_area").hide();
         $("#phantom_lc_order_area").hide();
+        clear_phantom_alerts();
     }
 
     var error_func = function(obj, message) {
