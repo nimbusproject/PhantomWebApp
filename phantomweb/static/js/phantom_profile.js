@@ -70,7 +70,6 @@ $(document).ready(function() {
     });
 
     $("#chef-save").click(function() {
-
         save_chef_server();
         return false;
     });
@@ -123,7 +122,7 @@ function select_chef_server(chef_server_name) {
         return false;
     }
 
-    if (!g_chef_servers.hasOwnProperty(chef_server_name)) {
+    if (!chef_server_name in g_chef_servers) {
         return false;
     }
 
@@ -134,7 +133,7 @@ function select_chef_server(chef_server_name) {
 
     var chef_server = g_chef_servers[chef_server_name];
 
-    $("#chef-url").val(chef_server['server_url']).focus();
+    $("#chef-url").val(chef_server['server_url']);
     $("#chef-client-key").val(chef_server['client_key']);
     $("#chef-validator-key").val(chef_server['validator_key']);
 
@@ -147,6 +146,11 @@ function save_chef_server() {
         return false;
     }
 
+    var update = false;
+    if ((g_selected_chef in g_chef_servers) && !$.isEmptyObject(g_chef_servers[g_selected_chef])) {
+        update = true;
+    }
+
     var credentials = {
         'id': g_selected_chef,
         'server_url': $("#chef-url").val(),
@@ -154,14 +158,8 @@ function save_chef_server() {
         'validator_key': $("#chef-validator-key").val(),
     };
 
-    var update = false;
-    if (g_selected_chef in g_chef_servers) {
-        update = true;
-    }
-
-    g_chef_servers[g_selected_chef] = credentials;
-
     var success_func = function(ret) {
+        g_chef_servers[g_selected_chef] = credentials;
         phantom_cloud_edit_enable(true);
     }
 
@@ -204,13 +202,11 @@ function remove_chef_server() {
 
 function load_chef_servers() {
 
-    function loaded(credentials) {
-        console.log("loaded");
-        console.log(credentials);
+    function loaded(chef_credentials) {
 
         var chef_servers = {};
-        for (var i=0; i<credentials.length; i++) {
-            var credential = credentials[i];
+        for (var i=0; i<chef_credentials.length; i++) {
+            var credential = chef_credentials[i];
             chef_servers[credential['id']] = credential;
         }
 
@@ -447,8 +443,6 @@ function make_cloud_table_row(site, status) {
 function phantom_cloud_edit_load_sites() {
 
     var credentials_loaded = function(credentials){
-        console.log("sites loaded");
-        console.log(credentials);
 
         $("#cloud-credentials .help-inline").remove();
         $("#cloud_table_body").empty();
@@ -470,7 +464,6 @@ function phantom_cloud_edit_load_sites() {
         for(var site_name in g_cloud_map) {
             var status = null;
             var credentials = g_cloud_map[site_name];
-            console.log(credentials);
 
             if (!credentials["key_name"] && !credentials["access_key"] && !credentials["secret_key"]) {
                 status = "Disabled";
@@ -483,7 +476,6 @@ function phantom_cloud_edit_load_sites() {
             }
             $("#cloud_table_body").append(make_cloud_table_row(site_name, status));
         }
-        console.log("BLAP");
         phantom_cloud_edit_change_cloud_internal();
         phantom_cloud_edit_enable(true);
     };
@@ -499,18 +491,25 @@ function phantom_cloud_edit_load_sites() {
             }
         }
 
-        var credentials_url = make_url('credentials/sites?details=true');
-        phantomGET(credentials_url, credentials_loaded, error_func);
     }
 
-    var error_func = function(obj, error_msg) {
-        phantom_alert(error_msg);
-        phantom_cloud_edit_enable(true);
-    };
+    var sites_url = make_url('sites');
+    var sites_request = phantomGET(sites_url);
+
+    var credentials_url = make_url('credentials/sites?details=true');
+    var credentials_request = phantomGET(credentials_url);
+
+    $.when(sites_request, credentials_request)
+        .done(function(sites, credentials) {
+            sites_loaded(sites[0]);
+            credentials_loaded(credentials[0]);
+        })
+        .fail(function(sites_err, credentials_err) {
+            phantom_alert("Problem getting credentials: " + sites_err.responseText + credentials_err.responseText);
+            phantom_cloud_edit_enable(true);
+        });
 
     phantom_cloud_edit_enable(false);
-    var sites_url = make_url('sites');
-    phantomGET(sites_url, sites_loaded, error_func);
 }
 
 function phantom_cloud_edit_load_page() {
