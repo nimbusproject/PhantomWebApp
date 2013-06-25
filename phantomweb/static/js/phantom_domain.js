@@ -48,7 +48,6 @@ $(document).ready(function() {
     $("#phantom_domain_lc_choice").change(function() {
         var lc_name = $("#phantom_domain_lc_choice").val();
         var lc = g_launch_configs[lc_name];
-        console.log(lc);
         if (lc && lc.contextualization_method === "chef") {
             $("#phantom_domain_chef_choice").parent().parent().show();
         }
@@ -325,8 +324,6 @@ function phantom_domain_load_internal(select_domain_on_success) {
             var lc = lcs[i];
             g_launch_configs[lc.name] = lc;
         }
-        var url = make_url('credentials/chef')
-        phantomGET(url, load_chef_credentials_success_func, error_func);
     }
 
     var load_chef_credentials_success_func = function(creds) {
@@ -334,9 +331,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
         for(var i=0; i<creds.length; i++) {
             var cred = creds[i];
             g_chef_credentials[cred.id] = cred;
-       }
-        var url = make_url('domains')
-        phantomGET(url, domain_success_func, error_func);
+        }
     }
 
     var domain_success_func = function(domains) {
@@ -348,8 +343,8 @@ function phantom_domain_load_internal(select_domain_on_success) {
 
         phantom_domain_load_domain_names();
         phantom_domain_buttons(true);
-        if (select_domain_on_success) {
-            phantom_domain_select_domain(select_domain_on_success);
+        if (g_selected_domain && select_domain_on_success) {
+            phantom_domain_select_domain(g_selected_domain, select_domain_on_success);
         }
         else if (g_selected_domain === null) {
             var domain_name = $("a.domain").first().text();
@@ -365,9 +360,34 @@ function phantom_domain_load_internal(select_domain_on_success) {
         $('#loading').hide();
     }
 
-    var lc_url = make_url('launchconfigurations')
     phantom_domain_buttons(false);
-    phantomGET(lc_url, load_lc_success_func, error_func);
+
+    var lc_url = make_url('launchconfigurations')
+    var lc_request = phantomGET(lc_url);
+
+    var chef_url = make_url('credentials/chef')
+    var chef_request = phantomGET(chef_url)
+
+    var domain_url = make_url('domains')
+    var domain_request = phantomGET(domain_url);
+
+    $.when(lc_request, chef_request, domain_request)
+        .done(function(lc_response, chef_credentials_response, domains_response) {
+            var lcs = lc_response[0];
+            var chef_credentials = chef_credentials_response[0];
+            var domains = domains_response[0];
+
+            load_lc_success_func(lcs);
+            load_chef_credentials_success_func(chef_credentials);
+            domain_success_func(domains);
+        })
+        .fail(function(message) {
+            phantom_alert("There was a problem loading your domains.  Please try again later. ".concat(err.message));
+            $('#loading').hide();
+        });
+
+
+
 }
 
 function phantom_domain_load() {
@@ -523,7 +543,6 @@ function gather_domain_params_from_ui() {
         return null;
     }
 
-    console.log(data);
     return data;
 }
 
@@ -644,7 +663,6 @@ function phantom_domain_select_domain_internal(domain_name, load_details) {
 
         $("#phantom_domain_lc_choice").val(domain_data.lc_name);
         var lc = g_launch_configs[domain_data.lc_name];
-        console.log("lc: " + domain_data.lc_name);
         if (lc && lc.contextualization_method == "chef") {
             $("#phantom_domain_chef_choice").parent().parent().show();
             if (domain_data["chef_credential"]) {
@@ -951,6 +969,10 @@ function phantom_domain_details_internal() {
 
     var domain_name = $("#phantom_domain_name_label").text();
     var domain_id = g_domain_data[domain_name]['id'];
+
+    if (!domain_id) {
+        return;
+    }
 
     if (domain_name in g_domain_details_cache) {
         g_domain_details = g_domain_details_cache[domain_name];
