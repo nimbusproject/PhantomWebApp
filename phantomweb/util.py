@@ -1,3 +1,4 @@
+import json
 import logging
 import urlparse
 import boto.ec2
@@ -406,8 +407,16 @@ class UserObjectMySQL(UserObject):
             if contextualization.get('userdata') is not None:
                 del contextualization['userdata']
             contextualization['method'] = 'chef'
-            contextualization['run_list'] = context_params.get('chef_runlist')
-            contextualization['attributes'] = context_params.get('chef_attributes')
+            try:
+                contextualization['run_list'] = json.loads(context_params.get('chef_runlist', '[]'))
+            except Exception:
+                log.exception("Problem parsing LC content")
+                raise PhantomWebException("Problem parsing runlist when creating LC: %s" % context_params.get('chef_runlist'))
+            try:
+                contextualization['attributes'] = json.loads(context_params.get('chef_attributes', '{}'))
+            except Exception:
+                log.exception("Problem parsing LC content")
+                raise PhantomWebException("Problem parsing chef attributes when creating LC: %s" % context_params.get('chef_attributes'))
         elif parameters.get('contextualization_method') == 'none':
             contextualization = dt['contextualization'] = {}
             contextualization['method'] = None

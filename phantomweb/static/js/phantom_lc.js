@@ -338,8 +338,8 @@ function phantom_lc_change_lc_internal(lc_name) {
             select_contextualization_method('user_data');
         }
         else if (lc['contextualization_method'] == 'chef') {
-            $("#phantom_lc_chef_runlist").val(lc['chef_runlist']);
-            $("#phantom_lc_chef_attributes").val(lc['chef_attributes']);
+            $("#phantom_lc_chef_runlist").val(JSON.stringify(lc['chef_runlist']));
+            $("#phantom_lc_chef_attributes").val(JSON.stringify(lc['chef_attributes']));
             select_contextualization_method('chef');
         }
         else {
