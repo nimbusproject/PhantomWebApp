@@ -161,6 +161,7 @@ def chef_credentials(request):
             credentials_dict = {
                 "id": credential_name,
                 "server_url": credential['url'],
+                "client_name": credential.get('client_name', 'admin'),
                 "client_key": credential['client_key'],
                 "validator_key": credential['validator_key'],
                 "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, credential_name)
@@ -174,12 +175,13 @@ def chef_credentials(request):
             msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
             return HttpResponseBadRequest(msg)
 
-        required_params = ["id", "server_url", "client_key", "validator_key"]
+        required_params = ["id", "server_url", "client_name", "client_key", "validator_key"]
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
 
         name = content["id"]
         url = content["server_url"]
+        client_name = content["client_name"]
         client_key = content["client_key"]
         validator_key = content["validator_key"]
 
@@ -191,6 +193,7 @@ def chef_credentials(request):
         response_dict = {
             "id": name,
             "server_url": url,
+            "client_name": client_name,
             "client_key": client_key,
             "validator_key": validator_key,
             "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, name)
@@ -198,7 +201,7 @@ def chef_credentials(request):
 
         # Add credentials to DTRS
         try:
-            user_obj.add_chef_credentials(name, url, client_key, validator_key)
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key)
         except:
             msg = "Failed to add credentials for %s" % name
             raise
@@ -223,6 +226,7 @@ def chef_credentials_resource(request, site):
             response_dict = {
                 "id": site,
                 "server_url": credential['url'],
+                "client_name": credential['client_name'],
                 "client_key": credential['client_key'],
                 "validator_key": credential['validator_key'],
                 "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, site)
@@ -238,12 +242,13 @@ def chef_credentials_resource(request, site):
             msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
             return HttpResponseBadRequest(msg)
 
-        required_params = ["server_url", "client_key", "validator_key"]
+        required_params = ["server_url", "client_key", "client_name", "validator_key"]
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
 
         name = site
         url = content["server_url"]
+        client_name = content["client_name"]
         client_key = content["client_key"]
         validator_key = content["validator_key"]
 
@@ -255,6 +260,7 @@ def chef_credentials_resource(request, site):
         response_dict = {
             "id": name,
             "server_url": url,
+            "client_name": client_name,
             "client_key": client_key,
             "validator_key": validator_key,
             "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, name)
@@ -262,7 +268,7 @@ def chef_credentials_resource(request, site):
 
         # Add credentials to DTRS
         try:
-            user_obj.add_chef_credentials(name, url, client_key, validator_key)
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key)
         except:
             log.exception("Failed to add credentials for site %s" % site)
             return HttpResponseServerError()

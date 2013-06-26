@@ -134,6 +134,7 @@ function select_chef_server(chef_server_name) {
     var chef_server = g_chef_servers[chef_server_name];
 
     $("#chef-url").val(chef_server['server_url']);
+    $("#chef-client-name").val(chef_server['client_name']);
     $("#chef-client-key").val(chef_server['client_key']);
     $("#chef-validator-key").val(chef_server['validator_key']);
 
@@ -154,6 +155,7 @@ function save_chef_server() {
     var credentials = {
         'id': g_selected_chef,
         'server_url': $("#chef-url").val(),
+        'client_name': $("#chef-client-name").val(),
         'client_key': $("#chef-client-key").val(),
         'validator_key': $("#chef-validator-key").val(),
     };
