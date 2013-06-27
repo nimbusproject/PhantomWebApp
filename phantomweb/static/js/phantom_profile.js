@@ -14,6 +14,7 @@ $(document).ready(function() {
         e.preventDefault();
         window.location.hash = $(this).attr("href");
         $(this).tab('show');
+        return false;
     });
 
     $("#phantom_cloud_edit_add").click(function() {
@@ -35,6 +36,7 @@ $(document).ready(function() {
         $(this).parent().children().removeClass("info");
         var cloud_name = $(this).children().first().text();
         phantom_cloud_edit_change_cloud(cloud_name);
+        return false;
     });
 
 
@@ -46,6 +48,7 @@ $(document).ready(function() {
     $("#add-chef-server").click(function() {
         add_chef_server($("#chef-credentials-name").val());
         $("#add-chef-modal").modal('hide');
+        return false;
     });
 
     $("#add-chef-form").submit(function() {
@@ -92,6 +95,10 @@ $(document).ready(function() {
     if (window.location.hash === "#account-settings") {
         window.scrollTo(0, 0);
         $("#domain-nav a[href=#account-settings]").tab("show");
+    }
+    else if (window.location.hash === "#chef-credentials") {
+        window.scrollTo(0, 0);
+        $("#domain-nav a[href=#chef-credentials]").tab("show");
     }
     else { // Default
         window.scrollTo(0, 0);

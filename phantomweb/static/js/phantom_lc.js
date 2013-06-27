@@ -20,6 +20,7 @@ $(document).ready(function() {
         $(this).parent().children().removeClass("info");
         var cloud_name = $(this).children().first().text();
         phantom_lc_order_selected_click(cloud_name);
+        return false;
     });
 
     $("#cloud_table_body").sortable({
@@ -46,7 +47,6 @@ $(document).ready(function() {
         $phantom_lc_common_image_input.on('focus', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
         $phantom_lc_common_image_input.on('click', $phantom_lc_common_image_input.typeahead.bind($phantom_lc_common_image_input, 'lookup'));
     }
-
 
     $("#phantom_lc_add").click(function() {
         save_lc_values();
@@ -75,12 +75,16 @@ $(document).ready(function() {
     });
 
     $("#phantom_lc_order_area").on("keyup", "textarea", function() {
-        save_lc_values();
+        if (g_arranged_cloud_values[g_selected_cloud]) {
+            save_lc_values();
+        }
         return false;
     });
 
     $("#phantom_lc_order_area").on("change", "select", function() {
-        save_lc_values();
+        if (g_arranged_cloud_values[g_selected_cloud]) {
+            save_lc_values();
+        }
         return false;
     });
 
@@ -116,7 +120,11 @@ $(document).ready(function() {
     });
 
     $("#phantom_lc_save").click(function() {
-        phantom_lc_save_click();
+        var valid = save_lc_values();
+        console.log(valid);
+        if (valid) {
+            phantom_lc_save_click();
+        }
         return false;
     });
 
@@ -385,6 +393,10 @@ function phantom_lc_change_lc_internal(lc_name) {
     }
 
     $("#phantom_lc_order_area").show();
+    var first_cloud = $("td.cloud-data-site").first().text();
+    if (first_cloud) {
+        phantom_lc_order_selected_click(first_cloud);
+    }
 }
 
 function phantom_lc_change_lc_click(lc_name) {
@@ -522,11 +534,12 @@ function save_lc_values() {
         catch(err) {
             $("#phantom_lc_chef_runlist").parent().addClass("error");
             if (err.toString().indexOf("JSON.parse") != -1) {
-                phantom_alert("Couldn't parse runlist: " + err);
+                phantom_warning("Couldn't parse runlist: " + err);
             }
             else {
-                phantom_alert(err);
+                phantom_warning(err);
             }
+            return false;
         }
 
         try {
@@ -538,8 +551,9 @@ function save_lc_values() {
                 phantom_alert("Couldn't parse attributes: " + err);
             }
             else {
-                phantom_alert(err);
+                phantom_warning(err);
             }
+            return false;
         }
 
         lc['contextualization_method'] = 'chef';
@@ -560,8 +574,12 @@ function save_lc_values() {
     }
 
 
-    if (cloud_name === null) {
-        return;
+    if (cloud_name === null && g_arranged_cloud_values === {}) {
+        phantom_warning("You must set up at least one cloud");
+        return false;
+    }
+    else if (cloud_name === null) {
+        return true;
     }
 
     var max_vm = $("#phantom_lc_max_vm").val().trim();
@@ -579,12 +597,12 @@ function save_lc_values() {
 
     if (!cloud_name) {
         phantom_warning("You must select a cloud.");
-        return;
+        return false;
     }
     if (!max_vm) {
         $("#phantom_lc_max_vm").parent().addClass("error");
         phantom_warning("You must select a maximum number of VMs for this cloud.");
-        return;
+        return false;
     }
     if (!image_id) {
         if ($("#phantom_lc_common_choice_checked").is(":checked")) {
@@ -594,17 +612,17 @@ function save_lc_values() {
             $("#phantom_lc_user_images_choices").parent().addClass("error");
         }
         phantom_warning("You must select an image.");
-        return;
+        return false;
     }
     if (!instance_type) {
         $("#phantom_lc_instance").parent().addClass("error");
         phantom_alert("You must select an instance type.");
-        return;
+        return false;
     }
     if (max_vm < -1 || max_vm > 32000) {
         $("#phantom_lc_max_vm").parent().addClass("error");
         phantom_warning("You must specify a maximum number of VMs between -1 (infinity) and 32000.");
-        return;
+        return false;
     }
 
     var entry = {
@@ -615,14 +633,13 @@ function save_lc_values() {
         'common': common,
     };
 
-
     g_arranged_cloud_values[cloud_name] = entry;
 
     var new_row = make_cloud_table_row(cloud_name, "Enabled");
     $("#cloud_table_body tr td").filter(function() { return $(this).text() == cloud_name})
       .parent().replaceWith(new_row);
     phantom_lc_order_selected_click(cloud_name);
-
+    return true;
 }
 
 function phantom_lc_disable_click() {
