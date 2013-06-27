@@ -162,6 +162,7 @@ def chef_credentials(request):
                 "id": credential_name,
                 "server_url": credential['url'],
                 "client_name": credential.get('client_name', 'admin'),
+                "validation_client_name": credential.get('validation_client_name', 'chef-validator'),
                 "client_key": credential['client_key'],
                 "validator_key": credential['validator_key'],
                 "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, credential_name)
@@ -182,6 +183,7 @@ def chef_credentials(request):
         name = content["id"]
         url = content["server_url"]
         client_name = content["client_name"]
+        validation_client_name = content.get("validation_client_name")
         client_key = content["client_key"]
         validator_key = content["validator_key"]
 
@@ -201,7 +203,8 @@ def chef_credentials(request):
 
         # Add credentials to DTRS
         try:
-            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key)
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key,
+                    validation_client_name=validation_client_name)
         except:
             msg = "Failed to add credentials for %s" % name
             raise
@@ -229,6 +232,7 @@ def chef_credentials_resource(request, site):
                 "client_name": credential['client_name'],
                 "client_key": credential['client_key'],
                 "validator_key": credential['validator_key'],
+                "validation_client_name": credential.get('validation_client_name', 'chef-validator'),
                 "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, site)
             }
             h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
@@ -249,6 +253,7 @@ def chef_credentials_resource(request, site):
         name = site
         url = content["server_url"]
         client_name = content["client_name"]
+        validation_client_name = content.get("validation_client_name", 'chef-validator')
         client_key = content["client_key"]
         validator_key = content["validator_key"]
 
@@ -263,12 +268,14 @@ def chef_credentials_resource(request, site):
             "client_name": client_name,
             "client_key": client_key,
             "validator_key": validator_key,
+            "validation_client_name": validation_client_name,
             "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, name)
         }
 
         # Add credentials to DTRS
         try:
-            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key)
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key,
+                    validation_client_name=validation_client_name)
         except:
             log.exception("Failed to add credentials for site %s" % site)
             return HttpResponseServerError()

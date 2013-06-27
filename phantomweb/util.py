@@ -472,7 +472,8 @@ class UserObjectMySQL(UserObject):
             credentials[credential_name] = credential
         return credentials
 
-    def add_chef_credentials(self, name, url, client_name, client_key, validator_key):
+    def add_chef_credentials(self, name, url, client_name, client_key, validator_key,
+            validation_client_name=None):
         credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
         if name in credential_names:
             create = False
@@ -483,7 +484,8 @@ class UserObjectMySQL(UserObject):
             'url': url,
             'client_name': client_name,
             'client_key': client_key,
-            'validator_key': validator_key
+            'validator_key': validator_key,
+            'validation_client_name': validation_client_name
         }
 
         if create:
