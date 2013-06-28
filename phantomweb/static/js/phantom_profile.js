@@ -39,6 +39,11 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#ssh_cloud_table_body").on('click', 'tr', function(event){
+        $("#ssh_cloud_table_body tr").removeClass('error');
+        $(this).toggleClass("info");
+        return false;
+    });
 
     $("#change_password_button").click(function() {
         change_password_click();
@@ -93,6 +98,12 @@ $(document).ready(function() {
     $("#chef-remove").click(function() {
 
         remove_chef_server();
+        return false;
+    });
+
+    $("#upload_key_button").click(function() {
+
+        upload_ssh_key();
         return false;
     });
 
@@ -256,6 +267,70 @@ function load_chef_servers() {
 
     var url = make_url('credentials/chef');
     phantomGET(url, loaded, error_func);
+}
+
+function upload_ssh_key() {
+
+    clear_phantom_alerts();
+    $(".control-group").removeClass('error');
+
+    var ssh_key_name = $("#ssh_key_name").val();
+    var ssh_key = $("#ssh_key_value").val();
+
+    if (!ssh_key_name) {
+        phantom_warning("You must provide an SSH key name");
+        $("#ssh_key_name").parent().parent().addClass("error");
+        return false;
+    }
+
+    if (!ssh_key || ssh_key.indexOf("ssh-") === -1) {
+        phantom_warning("You must provide a valid SSH key");
+        $("#ssh_key_value").parent().parent().addClass("error");
+        return false;
+    }
+
+    var data = {
+        'name': ssh_key_name,
+        'key': ssh_key
+    };
+
+    var requests = [];
+
+    $("#ssh_cloud_table_body tr.info td").each(function() {
+        var site = $(this).text();
+
+        if (g_cloud_map[site]['keyname_list'] &&
+            g_cloud_map[site]['keyname_list'].indexOf(ssh_key_name) > -1) {
+            phantom_warning("You already have a key named " + ssh_key_name +
+                " on " + site + ". Overwriting with this new key.");
+        }
+
+        var url = make_url('sites/' + site + '/sshkey');
+        var request = phantomPOST(url, data);
+        requests.push(request);
+    });
+
+    if (requests.length === 0) {
+        phantom_warning("You should pick one or more clouds to upload to.");
+        $("#ssh_cloud_table_body tr").addClass('error');
+        return false;
+    }
+    $('#loading').show();
+
+    $.when.apply($, requests)    
+        .done(function() {
+            clear_phantom_alerts();
+            phantom_info("Uploaded " + ssh_key_name + ".");
+            $("#ssh-key-form input").val("");
+            $("#ssh-key-form textarea").val("");
+            $("#ssh_cloud_table_body tr").removeClass("info");
+            $('#loading').hide();
+        })
+        .fail(function() {
+            clear_phantom_alerts();
+            phantom_alert("Problem uploading ssh key.");
+            $('#loading').hide();
+        });
 }
 
 function phantom_cloud_edit_enable(enable) {
@@ -464,6 +539,14 @@ function make_cloud_table_row(site, status) {
     return row;
 }
 
+function make_ssh_cloud_table_row(site) {
+
+    var row = "<tr id='ssh-cloud-row-" + site + "'>" +
+      "<td class='ssh-cloud-data-site'>" + site + "</td>" +
+      "</tr>";
+    return row;
+}
+
 function phantom_cloud_edit_load_sites() {
 
     var credentials_loaded = function(credentials){
@@ -497,6 +580,7 @@ function phantom_cloud_edit_load_sites() {
             }
             else {
                 status = "Enabled";
+                $("#ssh_cloud_table_body").append(make_ssh_cloud_table_row(site_name));
             }
             $("#cloud_table_body").append(make_cloud_table_row(site_name, status));
         }

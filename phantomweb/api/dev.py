@@ -19,7 +19,7 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     update_launch_configuration, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
     terminate_domain_instance, get_sensors, remove_launch_configuration, \
-    get_launch_configuration_object, get_all_keys
+    get_launch_configuration_object, get_all_keys, upload_key
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -164,6 +164,31 @@ def site_resource(request, site):
         h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
     else:
         h = HttpResponseNotFound('Site %s not found' % site, mimetype='application/javascript')
+    return h
+
+
+@token_or_logged_in_required
+@optional_pretty_print
+@require_http_methods(["POST"])
+def site_ssh_key_resource(request, site):
+    user_obj = get_user_object(request.user.username)
+    try:
+        content = json.loads(request.body)
+    except:
+        msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
+        return HttpResponseBadRequest(msg)
+
+    required_params = ["name", "key"]
+    if not has_all_required_params(required_params, content):
+        return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
+
+    name = content['name']
+    key = content['key']
+
+    cloud = user_obj.get_cloud(site)
+    upload_key(cloud, name, key)
+
+    h = HttpResponse(request.body, status=201)
     return h
 
 

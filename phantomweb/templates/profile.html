@@ -58,6 +58,7 @@
           <li class="divider"></li>
           <li class=""><a class="nav-profile-menu" href="#cloud-credentials">Cloud Credentials</a></li>
           <li class=""><a class="nav-profile-menu" href="#chef-credentials">Chef Credentials</a></li>
+          <li class=""><a class="nav-profile-menu" href="#add-ssh-key">Add SSH Key</a></li>
           <li class=""><a class="nav-profile-menu" href="#account-settings">Change Password</a></li>
         </ul>
       </div><!--/.well -->
@@ -197,6 +198,47 @@
                     <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
                   </div>
 
+                </fieldset>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane" id="add-ssh-key">
+        <div class="well well-small">
+          <h5 class="magic-underline phantom_area_header">Add SSH Key</h5>
+          <div class="row-fluid">
+            <div class="span3">
+              <table class="table table-condensed table-bordered table-hover table-white" id="ssh_clouds_table">
+                <thead>
+                  <tr>
+                    <th>Add to Cloud</th>
+                  </tr>
+                </thead>
+                <tbody id="ssh_cloud_table_body">
+                </tbody>
+              </table>
+            </div>
+            <div class="span9 well well-small">
+              <form id="ssh-key-form" class="form-horizontal">
+                <fieldset>
+                  <div class="control-group" >
+                    <label for="ssh_key_name" class="control-label">Key Name:</label>
+                    <div class="controls">
+                      <input id="ssh_key_name" type="text"/>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <label for="ssh_key_value" class="control-label">Key:</label>
+                    <div class="controls">
+                      <textarea id="ssh_key_value" class="span12"></textarea>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <div class="controls">
+                      <button id="upload_key_button" class="btn btn-primary" type="button">Upload SSH Key</button>
+                    </div>
+                  </div>
                 </fieldset>
               </form>
             </div>
