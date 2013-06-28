@@ -125,6 +125,13 @@ def get_all_keys(clouds):
     return key_dict
 
 
+def upload_key(cloud, name, key):
+    """upload an ssh key to iaas
+    """
+
+    cloud.upload_key(name, key)
+
+
 def create_launch_configuration(username, name, cloud_params, context_params):
     lc = LaunchConfiguration.objects.create(name=name, username=username)
 

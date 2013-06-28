@@ -114,6 +114,13 @@ class UserCloudInfo(object):
 
         return keyname_list
 
+    def upload_key(self, key_name, key):
+        connection = self.get_iaas_compute_con()
+        try:
+            connection.import_key_pair(key_name, key)
+        except Exception, ex:
+            raise PhantomWebException("Error uploading ssh key to %s: %s" % (key_name, ex))
+
     def _connect_nimbus(self):
         if 'host' and 'port' not in self.site_desc:
             raise PhantomWebException("The site %s is misconfigured." % (self.cloudname))
@@ -456,7 +463,8 @@ class UserObjectMySQL(UserObject):
     def get_cloud(self, name):
         self._load_clouds()
         if name not in self.iaasclouds:
-            raise PhantomWebException("No cloud named %s associated with the user" % (name))
+            raise PhantomWebException("No cloud named %s associated with the user. You have %s" % (
+                name, self.iaasclouds))
         return self.iaasclouds[name]
 
     def get_clouds(self):
