@@ -110,13 +110,13 @@ class SitesTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             content = json.loads(response.content)
             self.assertEqual({'credentials': '/api/dev/credentials/sites/site1', 'id': 'site1',
-                'uri': '/api/dev/sites/site1'}, content)
+                'uri': '/api/dev/sites/site1', 'instance_types': [u'm1.small', u'm1.large', u'm1.xlarge']}, content)
 
             response = c.get('/api/dev/sites/site2')
             self.assertEqual(response.status_code, 200)
             content = json.loads(response.content)
             self.assertEqual({'credentials': '/api/dev/credentials/sites/site2', 'id': 'site2',
-                'uri': '/api/dev/sites/site2'}, content)
+                'uri': '/api/dev/sites/site2', 'instance_types': [u'm1.small', u'm1.large', u'm1.xlarge']}, content)
 
             response = c.get('/api/dev/sites/site3')
             self.assertEqual(response.status_code, 404)
@@ -146,12 +146,16 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     return {
                         "url": "site1_url",
                         "client_key": "site1_client_key",
+                        "client_name": "fred",
+                        "validation_client_name": "fred-validator",
                         "validator_key": "site1_validator_key"
                     }
                 elif caller == "freds_access_key_id" and site_name == "site2":
                     return {
                         "url": "site2_url",
                         "client_key": "site2_client_key",
+                        "client_name": "fred",
+                        "validation_client_name": "fred-validator",
                         "validator_key": "site2_validator_key"
                     }
                 else:
@@ -170,6 +174,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                         "id": "site1",
                         "server_url": "site1_url",
                         "client_key": "site1_client_key",
+                        "client_name": "fred",
+                        "validation_client_name": "fred-validator",
                         "validator_key": "site1_validator_key",
                         "uri": "/api/dev/credentials/chef/site1"
                     },
@@ -178,6 +184,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     {
                         "id": "site2",
                         "server_url": "site2_url",
+                        "client_name": "fred",
+                        "validation_client_name": "fred-validator",
                         "client_key": "site2_client_key",
                         "validator_key": "site2_validator_key",
                         "uri": "/api/dev/credentials/chef/site2"
@@ -196,12 +204,16 @@ class ChefCredentialsTestCase(unittest.TestCase):
                         return {
                             "url": "site1_url",
                             "client_key": "site1_client_key",
+                            "client_name": "fred",
+                            "validation_client_name": "fred-validator",
                             "validator_key": "site1_validator_key"
                         }
                     elif caller == "freds_access_key_id" and site_name == "site2":
                         return {
                             "url": "site2_url",
                             "client_key": "site2_client_key",
+                            "client_name": "fred",
+                            "validation_client_name": "fred-validator",
                             "validator_key": "site2_validator_key"
                         }
                     else:
@@ -220,6 +232,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             "server_url": "site1_url",
                             "client_key": "site1_client_key",
                             "validator_key": "site1_validator_key",
+                            "client_name": "fred",
+                            "validation_client_name": "fred-validator",
                             "uri": "/api/dev/credentials/chef/site1"
                         },
                         content)
@@ -233,6 +247,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             "server_url": "site2_url",
                             "client_key": "site2_client_key",
                             "validator_key": "site2_validator_key",
+                            "client_name": "fred",
+                            "validation_client_name": "fred-validator",
                             "uri": "/api/dev/credentials/chef/site2"
                         },
                         content)
@@ -255,12 +271,16 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             return {
                                 "url": "site1_url",
                                 "client_key": "site1_client_key",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "validator_key": "site1_validator_key"
                             }
                         elif caller == "freds_access_key_id" and site_name == "site2":
                             return {
                                 "url": "site2_url",
                                 "client_key": "site2_client_key",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "validator_key": "site2_validator_key"
                             }
                         else:
@@ -276,6 +296,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                 "id": "site3",
                                 "client_key": "site3_client_key",
                                 "validator_key": "site3_validator_ley",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "server_url": "site3_url"
                             }
                             response = c.post('/api/dev/credentials/chef',
@@ -287,6 +309,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                     "id": "site3",
                                     "client_key": "site3_client_key",
                                     "validator_key": "site3_validator_ley",
+                                    "client_name": "fred",
+                                    "validation_client_name": "fred-validator",
                                     "server_url": "site3_url",
                                     "uri": "/api/dev/credentials/chef/site3"
                                 },
@@ -307,12 +331,16 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             return {
                                 "client_key": "site1_client_key",
                                 "validator_key": "site1_validator_key",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "url": "site1_url"
                             }
                         elif caller == "freds_access_key_id" and site_name == "site2":
                             return {
                                 "client_key": "site2_client_key",
                                 "validator_key": "site2_validator_key",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "url": "site2_url"
                             }
                         else:
@@ -328,6 +356,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                 "id": "site2",
                                 "client_key": "site2_client_key",
                                 "validator_key": "site2_validator_key",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
                                 "server_url": "site2_url"
                             }
                             response = c.put('/api/dev/credentials/chef/site2', json.dumps(post_content),
@@ -339,6 +369,8 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                     "id": "site2",
                                     "client_key": "site2_client_key",
                                     "validator_key": "site2_validator_key",
+                                    "client_name": "fred",
+                                    "validation_client_name": "fred-validator",
                                     "server_url": "site2_url",
                                     "uri": "/api/dev/credentials/chef/site2"
                                 },
