@@ -482,11 +482,15 @@ def credentials_resource(request, site):
 @require_http_methods(["GET", "POST"])
 def launchconfigurations(request):
     if request.method == "GET":
-        all_launch_configurations = get_all_launch_configurations(request.user.username)
+        public = str_to_bool(request.GET.get('public', 'false'))
+
+        all_launch_configurations = get_all_launch_configurations(request.user.username, public=public)
         response_list = []
-        for lc_id in all_launch_configurations:
+        for lc_id, lc in all_launch_configurations.iteritems():
             lc_dict = get_launch_configuration(lc_id)
             lc_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc_dict.get('id'))
+            if 'description' in lc:
+                lc_dict['description'] = lc['description']
             response_list.append(lc_dict)
 
         h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')

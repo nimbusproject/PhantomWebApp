@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from phantomweb.models import PhantomInfoDB, RabbitInfoDB, LaunchConfigurationDB, HostMaxPairDB, PhantomUser
+from phantomweb.models import PhantomInfoDB, RabbitInfoDB, LaunchConfigurationDB,\
+    HostMaxPairDB, PhantomUser, LaunchConfiguration, PublicLaunchConfiguration
 
 
 class PhantomInfoAdmin(admin.ModelAdmin):
@@ -15,10 +16,22 @@ class RabbitInfoAdmin(admin.ModelAdmin):
 admin.site.register(RabbitInfoDB, RabbitInfoAdmin)
 
 
+class AutoScaleLaunchConfigurationAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(LaunchConfigurationDB, AutoScaleLaunchConfigurationAdmin)
+
+
 class LaunchConfigurationAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(LaunchConfigurationDB, LaunchConfigurationAdmin)
+admin.site.register(LaunchConfiguration, LaunchConfigurationAdmin)
+
+
+class PublicLaunchConfigurationAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(PublicLaunchConfiguration, LaunchConfigurationAdmin)
 
 
 class HostMaxPairAdmin(admin.ModelAdmin):
