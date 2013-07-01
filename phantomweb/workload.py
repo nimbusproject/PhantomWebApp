@@ -10,7 +10,8 @@ import boto
 import boto.ec2.autoscale
 import statsd
 
-from phantomweb.models import LaunchConfiguration, LaunchConfigurationDB, HostMaxPairDB
+from phantomweb.models import LaunchConfiguration, LaunchConfigurationDB, HostMaxPairDB, \
+    PublicLaunchConfiguration
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_object
 
@@ -148,12 +149,25 @@ def update_launch_configuration(id, cloud_params):
     return lc
 
 
-def get_all_launch_configurations(username):
-    lcs = LaunchConfiguration.objects.filter(username=username)
-    lc_list = []
-    for lc in lcs:
-        lc_list.append(lc.id)
-    return lc_list
+def get_all_launch_configurations(username, public=False):
+
+    if public is True:
+        public_lcs = PublicLaunchConfiguration.objects.all()
+        lcs = {}
+        for public_lc in public_lcs:
+            lcs[public_lc.launch_configuration.id] = {
+                'id': public_lc.launch_configuration.id,
+                'description': public_lc.description,
+            }
+
+    else:
+        lcs = {}
+        all_lcs = LaunchConfiguration.objects.filter(username=username)
+        for lc in all_lcs:
+            lcs[lc.id] = {
+                'id': lc.id,
+            }
+    return lcs
 
 
 def get_launch_configuration(id):

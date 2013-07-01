@@ -178,6 +178,18 @@ def django_profile_html(request):
 
 @LogEntryDecorator
 @login_required
+def django_publiclc_html(request):
+    response_dict = {}
+    response_dict.update(csrf(request))
+    response_dict['user'] = request.user
+    t = loader.get_template('../templates/publiclaunchconfigurations.html')
+    c = Context(response_dict)
+
+    return HttpResponse(t.render(c))
+
+
+@LogEntryDecorator
+@login_required
 def django_sites_load(request):
     user_obj = get_user_object(request.user.username)
     response_dict = phantom_sites_load(request.GET, user_obj)
