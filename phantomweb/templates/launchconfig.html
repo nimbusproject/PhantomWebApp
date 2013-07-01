@@ -46,21 +46,34 @@
       <div class="well well-small lc-well">
         <div id="phantom_lc_order_area">
           <h5 class="phantom_area_header magic-underline" id="launch_config_options_head">Launch Configuration</h5>
-          <p class="help-block"><small>Virtual machines are launched on your enabled clouds in the order that the clouds are listed below. You can change this priority by dragging the clouds into the order you would like your virtual machines to start.</small>
-          </p>
-          <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
-            <thead>
-              <tr>
-                <th>Cloud</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="cloud_table_body">
-            </tbody>
-          </table>
+
+          <form class="form-horizontal">
+            <div class="control-group">
+              <label for="phantom_lc_contextualization" class="phantom_lc_info_label">Contextualization Type:</label>
+              <select id="phantom_lc_contextualization" class="span6 pull-right">
+                <option value="none" selected>None</option>
+                <option value="user_data">User Data</option>
+                <option value="chef">Chef</option>
+              </select>
+            </div>
+
+            <div class="control-group context-details">
+              <label class="" for="phantom_lc_userdata">User Data</label>
+              <textarea class="span12" rows="5" id="phantom_lc_userdata"></textarea>
+            </div>
+
+            <div class="control-group context-details">
+              <label class="" for="phantom_lc_chef_runlist">Chef Runlist</label>
+              <textarea class="span12" rows="2" id="phantom_lc_chef_runlist"></textarea>
+            </div>
+
+            <div class="control-group context-details">
+              <label class="" for="phantom_lc_chef_attributes">Chef Attributes</label>
+              <textarea class="span12" rows="5" id="phantom_lc_chef_attributes"></textarea>
+            </div>
+          </form>
 
           <div id="lc-buttons" class="btn-toolbar">
-
             <div class="pull-right">
               <input id="phantom_lc_save" class="btn btn-primary" type="button" value="Save"/>
               <input id="phantom_lc_delete" class="btn btn-danger" type="button" value="Delete"/>
@@ -72,6 +85,20 @@
 
     <div class="span5">
       <div class="well well-small lc-well">
+        <h5 class="phantom_area_header magic-underline">Available Clouds
+          <a class="pull-right" href="#" id="lc-help" rel="popover" data-content="Virtual machines are launched on your enabled clouds in the order that the clouds are listed below. You can change this priority by dragging the clouds into the order you would like your virtual machines to start." data-original-title="Launch Config Help" data-placement="left"><i class="icon-question-sign" ></i></a></h5>
+        <div>
+          <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
+            <thead>
+              <tr>
+                <th>Cloud</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="cloud_table_body">
+            </tbody>
+          </table>
+        </div>
         <div id="phantom_lc_info_area">
 
           <h5 class="phantom_area_header magic-underline"><span id="cloud_options_name">Cloud</span> Options</h5>
@@ -91,22 +118,16 @@
 
             <div class="control-group form-inline">
               <label class="radio" for="phantom_lc_common_choice_checked">
-                <input id="phantom_lc_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_lc_change_image_type()"/> Public Image
+                <input id="phantom_lc_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_lc_change_image_type()"/>Public Image
               </label>
               <input type="text" id="phantom_lc_common_image_input" class="pull-right span6"/>
             </div>
 
             <div class="control-group form-inline">
               <label class="radio" for="phantom_lc_user_choice_checked">
-                <input class="" id="phantom_lc_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_lc_change_image_type()"/> Personal Image
+                <input class="" id="phantom_lc_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_lc_change_image_type()"/>Personal Image
               </label>
               <select name="user_images" id="phantom_lc_user_images_choices" class="pull-right span6"></select>
-            </div>
-
-            <div class="control-group">
-              <label class="" for="phantom_lc_userdata">User Data</label>
-
-              <textarea class="span12" rows="5" id="phantom_lc_userdata"></textarea>
             </div>
 
             <div class="control-group" id="cloud-enable-buttons" style="display: none">

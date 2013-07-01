@@ -54,6 +54,10 @@ function phantom_warning(alert_text) {
     phantom_info(alert_text, "");
 }
 
+function clear_phantom_alerts() {
+    $("#alert-container").empty();
+}
+
 function make_url(p) {
     var base_url = document.location.href.concat("/");
 
@@ -92,10 +96,14 @@ function phantomGET(url, func, error_func) {
                 var obj = data;
                 if(obj.error_message != undefined) {
                     var error_msg = obj.error_message;
-                    error_func(url, error_msg);
+                    if (error_func) {
+                        error_func(url, error_msg);
+                    }
                 }
                 else {
-                    func(obj);
+                    if (func) {
+                        func(obj);
+                    }
                 }
             }
             catch(err) {
@@ -105,7 +113,9 @@ function phantomGET(url, func, error_func) {
         error : function(request, status, error) {
             try {
                 var error_msg = "Error communicating with the service ".concat(request.statusText);
-                error_func(url, error_msg);
+                if (error_func) {
+                    error_func(url, error_msg);
+                }
             }
             catch(err) {
                 alert(err);

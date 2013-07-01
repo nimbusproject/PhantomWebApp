@@ -124,18 +124,18 @@ def get_all_keys(clouds):
     return key_dict
 
 
-def create_launch_configuration(username, name, cloud_params):
+def create_launch_configuration(username, name, cloud_params, context_params):
     lc = LaunchConfiguration.objects.create(name=name, username=username)
 
     user_obj = get_user_object(username)
-    user_obj.create_dt(name, cloud_params)
+    user_obj.create_dt(name, cloud_params, context_params)
 
     lc.save()
 
     return lc
 
 
-def update_launch_configuration(id, cloud_params):
+def update_launch_configuration(id, cloud_params, context_params):
     lc = get_launch_configuration(id)
     if lc is None:
         raise PhantomWebException("Trying to update lc %s that doesn't exist?" % id)
@@ -143,7 +143,7 @@ def update_launch_configuration(id, cloud_params):
     username = lc.get('owner')
     name = lc.get('name')
     user_obj = get_user_object(username)
-    user_obj.create_dt(name, cloud_params)
+    user_obj.create_dt(name, cloud_params, context_params)
 
     return lc
 
@@ -175,6 +175,22 @@ def get_launch_configuration(id):
     if dt is None:
         log.error("DT %s doesn't seem to be in DTRS, continuing anyway" % lc.name)
         dt = {}
+    contextualization = dt.get('contextualization', {})
+
+    if contextualization:
+        userdata = contextualization.get("userdata")
+        method = contextualization.get("method")
+        run_list = contextualization.get("run_list")
+        attributes = contextualization.get("attributes")
+        if method == 'userdata' or userdata is not None:
+            lc_dict["contextualization_method"] = 'user_data'
+            lc_dict["user_data"] = userdata
+        elif method == 'chef':
+            lc_dict["contextualization_method"] = 'chef'
+            lc_dict["chef_runlist"] = run_list
+            lc_dict["chef_attributes"] = attributes
+        elif method is None:
+            lc_dict["contextualization_method"] = 'none'
 
     for cloud, mapping in dt.get('mappings', {}).iteritems():
 
@@ -183,8 +199,7 @@ def get_launch_configuration(id):
             "common": mapping.get('common'),
             "rank": mapping.get('rank'),
             "image_id": mapping.get("iaas_image"),
-            "instance_type": mapping.get("iaas_allocation"),
-            "user_data": dt.get("contextualization", {}).get("userdata")
+            "instance_type": mapping.get("iaas_allocation")
         }
 
     return lc_dict

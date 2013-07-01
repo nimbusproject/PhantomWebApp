@@ -1,3 +1,4 @@
+import json
 import logging
 import urlparse
 import boto.ec2
@@ -193,6 +194,12 @@ class UserObjectMySQL(UserObject):
         removed = self.epum.remove_domain(domain, caller=self.access_key)
         return removed
 
+    def _api_parameters_to_general_opts(self, parameters):
+        general_opts = {}
+        if 'chef_credential' in parameters:
+            general_opts['chef_credential'] = parameters['chef_credential']
+        return general_opts
+
     def _api_parameters_to_domain_opts(self, parameters):
         domain_opts = {}
         de_name = parameters.get('de_name')
@@ -241,12 +248,13 @@ class UserObjectMySQL(UserObject):
     def add_domain(self, username, name, parameters):
 
         domain_opts = self._api_parameters_to_domain_opts(parameters)
+        general_opts = self._api_parameters_to_general_opts(parameters)
         id = str(uuid4())
         parameters['id'] = id
         domain_opts['name'] = id
         domain_opts['phantom_name'] = name
 
-        conf = {'engine_conf': domain_opts}
+        conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
             self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
@@ -259,11 +267,12 @@ class UserObjectMySQL(UserObject):
 
         name = parameters.get('name')
         domain_opts = self._api_parameters_to_domain_opts(parameters)
+        general_opts = self._api_parameters_to_general_opts(parameters)
         parameters['id'] = id
         domain_opts['name'] = id
         domain_opts['phantom_name'] = name
 
-        conf = {'engine_conf': domain_opts}
+        conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
             self.epum.reconfigure_domain(id, conf, caller=self.access_key)
@@ -294,6 +303,7 @@ class UserObjectMySQL(UserObject):
         except DashiError:
             return None
         engine_conf = domain_description.get('config', {}).get('engine_conf', {})
+        general_conf = domain_description.get('config', {}).get('general', {})
 
         ent = {}
         ent['id'] = domain_description['name']
@@ -302,6 +312,8 @@ class UserObjectMySQL(UserObject):
         ent['sensor_data'] = self._sanitize_sensor_data(domain_description.get('sensor_data', {}))
         ent['monitor_sensors'] = ",".join(engine_conf.get('monitor_sensors', []))
         ent['monitor_domain_sensors'] = ",".join(engine_conf.get('monitor_domain_sensors', []))
+        if 'chef_credential' in general_conf:
+            ent['chef_credential'] = general_conf['chef_credential']
 
         if ent['de_name'] == 'multicloud':
             ent['vm_count'] = engine_conf.get('minimum_vms')
@@ -350,19 +362,21 @@ class UserObjectMySQL(UserObject):
             domains.append(domain_description)
         return domains
 
-    def create_dt(self, dt_name, cloud_params):
+    def create_dt(self, dt_name, cloud_params, context_params):
         dt = self.get_dt(dt_name)
         if dt is None:
             dt = {}
+            dt['mappings'] = {}
             create = True
         else:
             create = False
 
-        dt['mappings'] = {}  # Clears out existing mappings
         cloud_credentials = self.get_clouds()
 
         for cloud_name, parameters in cloud_params.iteritems():
-            mapping = dt['mappings'][cloud_name] = {}
+            mapping = dt['mappings'].get(cloud_name)
+            if mapping is None:
+                mapping = dt['mappings'][cloud_name] = {}
             credentials = cloud_credentials.get(cloud_name, None)
 
             # Required by EPUM
@@ -379,13 +393,33 @@ class UserObjectMySQL(UserObject):
             mapping['rank'] = parameters.get('rank')
             mapping['max_vms'] = parameters.get('max_vms')
 
-            # Contextualization
-            if parameters.get('user_data'):
-                contextualization = dt.get('contextualization')
-                if contextualization is None:
-                    contextualization = dt['contextualization'] = {}
-                contextualization['method'] = 'userdata'
-                contextualization['userdata'] = parameters['user_data']
+        # Contextualization
+        if context_params.get('contextualization_method') == 'user_data' or context_params.get('user_data'):
+            contextualization = dt.get('contextualization')
+            if contextualization is None:
+                contextualization = dt['contextualization'] = {}
+            contextualization['method'] = 'userdata'
+            contextualization['userdata'] = context_params['user_data']
+        elif context_params.get('contextualization_method') == 'chef':
+            contextualization = dt.get('contextualization')
+            if contextualization is None:
+                contextualization = dt['contextualization'] = {}
+            if contextualization.get('userdata') is not None:
+                del contextualization['userdata']
+            contextualization['method'] = 'chef'
+            try:
+                contextualization['run_list'] = json.loads(context_params.get('chef_runlist', '[]'))
+            except Exception:
+                log.exception("Problem parsing LC content")
+                raise PhantomWebException("Problem parsing runlist when creating LC: %s" % context_params.get('chef_runlist'))
+            try:
+                contextualization['attributes'] = json.loads(context_params.get('chef_attributes', '{}'))
+            except Exception:
+                log.exception("Problem parsing LC content")
+                raise PhantomWebException("Problem parsing chef attributes when creating LC: %s" % context_params.get('chef_attributes'))
+        elif parameters.get('contextualization_method') == 'none':
+            contextualization = dt['contextualization'] = {}
+            contextualization['method'] = None
 
         if create:
             return self.dtrs.add_dt(self.access_key, dt_name, dt)
@@ -428,6 +462,43 @@ class UserObjectMySQL(UserObject):
     def get_clouds(self):
         self._load_clouds()
         return self.iaasclouds
+
+    def get_chef_credentials(self):
+        # TODO: this needs to actually be implemented in ceictl
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        credentials = {}
+        for credential_name in credential_names:
+            credential = self.dtrs.describe_credentials(self.access_key, credential_name, credential_type="chef")
+            credentials[credential_name] = credential
+        return credentials
+
+    def add_chef_credentials(self, name, url, client_name, client_key, validator_key,
+            validation_client_name=None):
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        if name in credential_names:
+            create = False
+        else:
+            create = True
+
+        credential = {
+            'url': url,
+            'client_name': client_name,
+            'client_key': client_key,
+            'validator_key': validator_key,
+            'validation_client_name': validation_client_name
+        }
+
+        if create:
+            return self.dtrs.add_credentials(self.access_key, name, credential, credential_type='chef')
+        else:
+            return self.dtrs.update_credentials(self.access_key, name, credential, credential_type='chef')
+
+    def delete_chef_credentials(self, name):
+        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        if name not in credential_names:
+            raise PhantomWebException("Unknown credentials %s" % name)
+
+        return self.dtrs.remove_credentials(self.access_key, name, credential_type='chef')
 
     def get_possible_sites(self, details=False):
         site_client = DTRSClient(self._dashi_conn)

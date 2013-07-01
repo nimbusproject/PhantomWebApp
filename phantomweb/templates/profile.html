@@ -18,12 +18,34 @@
 <div class="container-fluid inner-container">
   <div class="row-fluid">
     <div class="span2">
-      <div id="loading" class="progress progress-striped active">
+      <div id="loading" class="progress progress-striped progress-phantom active">
         <div class="bar" style="width: 100%"></div>
       </div>
     </div>
     <div class="span10" id="alert-container">
     </div>
+  </div>
+</div>
+
+<div class="modal hide fade" id="add-chef-modal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Add a Chef Server</h3>
+  </div>
+  <div class="modal-body">
+    <form class="form" id="add-chef-form">
+      <fieldset>
+        <div class="control-group" >
+          <div class="controls">
+            <input id="chef-credentials-name" class="span6" type="text" placeholder="Chef Server Name" />
+          </div>
+        </div>
+      </fieldset>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Close</a>
+    <a href="#" class="btn btn-primary" id="add-chef-server">Add Chef Server</a>
   </div>
 </div>
 
@@ -35,6 +57,7 @@
           <li class="nav-header">{{ user.username }}'s Profile</li>
           <li class="divider"></li>
           <li class=""><a class="nav-profile-menu" href="#cloud-credentials">Cloud Credentials</a></li>
+          <li class=""><a class="nav-profile-menu" href="#chef-credentials">Chef Credentials</a></li>
           <li class=""><a class="nav-profile-menu" href="#account-settings">Change Password</a></li>
         </ul>
       </div><!--/.well -->
@@ -42,7 +65,7 @@
     <div class="tab-content span10">
       <div class="tab-pane" id="cloud-credentials">
         <div class="well well-small">
-            <h5 class="magic-underline">Cloud Credentials</h5>
+          <h5 class="magic-underline phantom_area_header">Cloud Credentials</h5>
           <div class="row-fluid">
             <div class="span3">
               <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
@@ -58,59 +81,133 @@
             </div>
             <div class="span9 well well-small">
 
-          <form action="." method="post" class="form-horizontal">{% csrf_token %}
-            <fieldset>
-              <!--<div class="control-group" >
-                <label for="phantom_cloud_edit_name" class="control-label">Cloud:</label>
-                <div class="controls">
-                  <select id="phantom_cloud_edit_name" class="xphantom_cloud_edit_input"></select>
-                </div>
-              </div>-->
+              <form action="." method="post" class="form-horizontal">{% csrf_token %}
+                <fieldset>
+                  <!--<div class="control-group" >
+                    <label for="phantom_cloud_edit_name" class="control-label">Cloud:</label>
+                    <div class="controls">
+                      <select id="phantom_cloud_edit_name" class="xphantom_cloud_edit_input"></select>
+                    </div>
+                  </div>-->
 
-              <div class="control-group" >
-                <label class="control-label" for="phantom_cloud_edit_access">Access Key:</label>
-                <div class="controls">
-                  <input id="phantom_cloud_edit_access" class="xphantom_cloud_edit_input" type="text"/>
-                </div>
-              </div>
-              <div class="control-group" >
-                <label class="control-label" for="phantom_cloud_edit_secret">Secret Key:</label>
-                <div class="controls">
-                  <input id="phantom_cloud_edit_secret" class="xphantom_cloud_edit_input" type="password"/>
-                </div>
-              </div>
-              <div class="control-group" >
-                <label class="control-label" for="phantom_cloud_edit_keyname_list">SSH Key Name:</label>
-                <div class="controls">
-                  <select id="phantom_cloud_edit_keyname_list" class="xphantom_cloud_edit_input"></select>
-                </div>
-              </div>
-              <div class="control-group" >
-                <div class="controls">
-                  <input id="phantom_cloud_edit_add" type="button" class="btn btn-primary" value="Save Credentials"/>
-                  <input id="phantom_cloud_edit_remove" type="button" class="btn btn-danger" value="Disable"/>
-                </div>
-              </div>
-              <div class="phantom_cloud_edit_configured_list">
-                <ul id="phantom_cloud_edit_list">
-                </ul>
-              </div>
-              <div id="phantom_cloud_edit_status_message_div">
-                <label id="phantom_cloud_edit_key_message" class="phantom_cloud_edit_warning_message"></label>
-                <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
-              </div>
+                  <div class="control-group" >
+                    <label class="control-label" for="phantom_cloud_edit_access">Access Key:</label>
+                    <div class="controls">
+                      <input id="phantom_cloud_edit_access" class="xphantom_cloud_edit_input" type="text"/>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <label class="control-label" for="phantom_cloud_edit_secret">Secret Key:</label>
+                    <div class="controls">
+                      <input id="phantom_cloud_edit_secret" class="xphantom_cloud_edit_input" type="password"/>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <label class="control-label" for="phantom_cloud_edit_keyname_list">SSH Key Name:</label>
+                    <div class="controls">
+                      <select id="phantom_cloud_edit_keyname_list" class="xphantom_cloud_edit_input"></select>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <div class="controls">
+                      <input id="phantom_cloud_edit_add" type="button" class="btn btn-primary" value="Save Credentials"/>
+                      <input id="phantom_cloud_edit_remove" type="button" class="btn btn-danger" value="Disable"/>
+                    </div>
+                  </div>
+                  <div class="phantom_cloud_edit_configured_list">
+                    <ul id="phantom_cloud_edit_list">
+                    </ul>
+                  </div>
+                  <div id="phantom_cloud_edit_status_message_div">
+                    <label id="phantom_cloud_edit_key_message" class="phantom_cloud_edit_warning_message"></label>
+                    <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
+                  </div>
 
-            </fieldset>
-          </form>
-        </div>
-      </div>
+                </fieldset>
+              </form>
+            </div>
+          </div>
         </div>
       </div><!--/span-->
+      <div class="tab-pane" id="chef-credentials">
+        <div class="well well-small">
+          <h5 class="magic-underline phantom_area_header">Chef Credentials</h5>
+          <div class="row-fluid">
+            <div class="span2">
+              <div class="well well-small sidebar-nav chef-well">
+                <ul id="chef-nav" class="nav nav-list">
+                  <li>
+                    <a id="add-chef-server-button" href="#"  data-toggle="modal" data-target="#add-chef-modal">Add Chef Server</a>
+                  </li>
+                  <li class="divider"></li>
+                  <li class="nav-header" id="chef-header">Chef Servers</li>
+                </ul>
+              </div>
+            </div>
+            <div class="span10 well well-small chef-well">
+
+              <form action="." method="post" class="form" id="chef-server-form">{% csrf_token %}
+                <fieldset>
+
+                  <div class="control-group" >
+                    <label class="control-label" for="chef-url">Chef Server URL:</label>
+                    <div class="controls">
+                      <input id="chef-url" class="span6" type="text" />
+                    </div>
+                  </div>
+
+                  <div class="control-group" >
+                    <label class="control-label" for="chef-client-name">Chef Client Name:</label>
+                    <div class="controls">
+                      <input id="chef-client-name" class="span6" type="text" />
+                    </div>
+                  </div>
+
+                  <div class="control-group" >
+                    <label class="control-label" for="chef-validator-name">Chef Validation Client Name:</label>
+                    <div class="controls">
+                      <input id="chef-validator-name" class="span6" type="text" prompt="chef-validator" />
+                    </div>
+                  </div>
+
+                  <div class="control-group" >
+                    <label class="control-label" for="chef-client-key">Client Key:</label>
+                    <div class="controls">
+                      <textarea id="chef-client-key" class="span12"></textarea>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <label class="control-label" for="chef-validator-key">Validator Key:</label>
+                    <div class="controls">
+                      <textarea id="chef-validator-key" class="span12"></textarea>
+                    </div>
+                  </div>
+                  <div class="control-group" >
+                    <div class="controls">
+                      <input id="chef-save" type="button" class="btn btn-primary" value="Save Credentials"/>
+                      <input id="chef-remove" type="button" class="btn btn-danger" value="Remove"/>
+                    </div>
+                  </div>
+                  <div class="phantom_cloud_edit_configured_list">
+                    <ul id="phantom_cloud_edit_list">
+                    </ul>
+                  </div>
+                  <div id="phantom_cloud_edit_status_message_div">
+                    <label id="phantom_cloud_edit_key_message" class="phantom_cloud_edit_warning_message"></label>
+                    <label id="phantom_cloud_edit_status" class="phantom_cloud_edit_warning_message"></label>
+                  </div>
+
+                </fieldset>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="tab-pane" id="account-settings">
         <div class="well well-small">
           <form id="password-form" class="form-horizontal">
             <fieldset>
-              <h5 class="magic-underline">Change Password</h5>
+              <h5 class="magic-underline phantom_area_header">Change Password</h5>
               <div class="control-group" >
                 <label for="Old Password" class="control-label">Old Password:</label>
                 <div class="controls">

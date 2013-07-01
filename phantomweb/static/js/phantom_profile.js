@@ -1,7 +1,8 @@
 var g_cloud_map = {};
 var g_selected_cloud = null;
 var ENTER_KEYCODE = 13;
-
+var g_chef_servers = {};
+var g_selected_chef = null;
 
 function jq(myid) {
     return '#' + myid.replace(/(:|\.)/g,'\\$1');
@@ -13,6 +14,7 @@ $(document).ready(function() {
         e.preventDefault();
         window.location.hash = $(this).attr("href");
         $(this).tab('show');
+        return false;
     });
 
     $("#phantom_cloud_edit_add").click(function() {
@@ -34,11 +36,50 @@ $(document).ready(function() {
         $(this).parent().children().removeClass("info");
         var cloud_name = $(this).children().first().text();
         phantom_cloud_edit_change_cloud(cloud_name);
+        return false;
     });
 
 
     $("#change_password_button").click(function() {
         change_password_click();
+        return false;
+    });
+
+    $("#add-chef-server").click(function() {
+        add_chef_server($("#chef-credentials-name").val());
+        $("#add-chef-modal").modal('hide');
+        return false;
+    });
+
+    $("#add-chef-form").submit(function() {
+        add_chef_server($("#chef-credentials-name").val());
+        $("#add-chef-modal").modal('hide');
+        return false;
+    });
+
+    $("#add-chef-modal").on('show', function() {
+        $("#chef-credentials-name").val("");
+    });
+
+    $("#add-chef-modal").on('shown', function() {
+        $("#chef-credentials-name").focus();
+    });
+
+    $("#chef-nav").on('click', "a.chef-server", function() {
+        var chef_server_id = $(this).attr("id");
+        var chef_server_name = chef_server_id.split("chef-server-")[1];
+        select_chef_server(chef_server_name);
+        return false;
+    });
+
+    $("#chef-save").click(function() {
+        save_chef_server();
+        return false;
+    });
+
+    $("#chef-remove").click(function() {
+
+        remove_chef_server();
         return false;
     });
 
@@ -55,6 +96,10 @@ $(document).ready(function() {
         window.scrollTo(0, 0);
         $("#domain-nav a[href=#account-settings]").tab("show");
     }
+    else if (window.location.hash === "#chef-credentials") {
+        window.scrollTo(0, 0);
+        $("#domain-nav a[href=#chef-credentials]").tab("show");
+    }
     else { // Default
         window.scrollTo(0, 0);
         $("#domain-nav a[href=#cloud-credentials]").tab("show");
@@ -62,13 +107,147 @@ $(document).ready(function() {
     }
 
     phantom_cloud_edit_load_page();
+    load_chef_servers();
 });
+
+function add_chef_server(chef_server_name) {
+
+    if (!chef_server_name) {
+        return false;
+    }
+
+    var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
+        chef_server_name + "'>" + chef_server_name + "</a></li>";
+    $("#chef-header").after(new_chef_server);
+    g_chef_servers[chef_server_name] = {};
+    select_chef_server(chef_server_name);
+}
+
+function select_chef_server(chef_server_name) {
+
+    if (!chef_server_name) {
+        return false;
+    }
+
+    if (!chef_server_name in g_chef_servers) {
+        return false;
+    }
+
+    $("#chef-server-form").show();
+
+    $("a.chef-server").parent().removeClass("active");
+    $("a#chef-server-" + chef_server_name).parent().addClass("active");
+
+    var chef_server = g_chef_servers[chef_server_name];
+
+    $("#chef-url").val(chef_server['server_url']);
+    $("#chef-client-name").val(chef_server['client_name']);
+    $("#chef-validator-name").val(chef_server['validation_client_name']);
+    $("#chef-client-key").val(chef_server['client_key']);
+    $("#chef-validator-key").val(chef_server['validator_key']);
+
+    g_selected_chef = chef_server_name;
+}
+
+function save_chef_server() {
+
+    if (!g_selected_chef) {
+        return false;
+    }
+
+    var update = false;
+    if ((g_selected_chef in g_chef_servers) && !$.isEmptyObject(g_chef_servers[g_selected_chef])) {
+        update = true;
+    }
+
+    var credentials = {
+        'id': g_selected_chef,
+        'server_url': $("#chef-url").val(),
+        'validation_client_name': $("#chef-validator-name").val(),
+        'client_name': $("#chef-client-name").val(),
+        'client_key': $("#chef-client-key").val(),
+        'validator_key': $("#chef-validator-key").val(),
+    };
+
+    var success_func = function(ret) {
+        g_chef_servers[g_selected_chef] = credentials;
+        phantom_cloud_edit_enable(true);
+    }
+
+    var error_func = function(err) {
+        phantom_alert("Problem saving Chef Credentials: " + err);
+        phantom_cloud_edit_enable(true);
+    }
+
+    if (update) {
+        var url = make_url("credentials/chef/" + g_selected_chef);
+        phantomPUT(url, credentials, success_func, error_func);
+    }
+    else {
+        var url = make_url("credentials/chef");
+        phantomPOST(url, credentials, success_func, error_func);
+    }
+    phantom_info("Saving chef credentials...");
+    phantom_cloud_edit_enable(false);
+}
+
+function remove_chef_server() {
+
+    if (!g_selected_chef) {
+        return false;
+    }
+
+    var success_func = function (obj) {
+        load_chef_servers();
+    }
+
+    var error_func = function(obj, message) {
+        phantom_alert(message);
+        phantom_cloud_edit_enable(true);
+    }
+
+    var url = make_url("credentials/chef/" + g_selected_chef);
+    phantom_cloud_edit_enable(false);
+    phantomDELETE(url, success_func, error_func);
+}
+
+function load_chef_servers() {
+
+    function loaded(chef_credentials) {
+
+        var chef_servers = {};
+        for (var i=0; i<chef_credentials.length; i++) {
+            var credential = chef_credentials[i];
+            chef_servers[credential['id']] = credential;
+        }
+
+        g_chef_servers = chef_servers;
+
+        var first_chef_server = null;
+        for (var chef_server_name in g_chef_servers) {
+            if (first_chef_server === null) {
+                first_chef_server = chef_server_name;
+            }
+            var new_chef_server = "<li><a href='#' class='chef-server' id='chef-server-" +
+                chef_server_name + "'>" + chef_server_name + "</a></li>";
+            $("#chef-header").after(new_chef_server);
+        }
+
+        select_chef_server(first_chef_server);
+    }
+
+    var error_func = function(obj, message) {
+        phantom_alert(message);
+        phantom_cloud_edit_enable(true);
+    }
+
+    var url = make_url('credentials/chef');
+    phantomGET(url, loaded, error_func);
+}
 
 function phantom_cloud_edit_enable(enable) {
     if(enable) {
-        $("#phantom_cloud_edit_add").removeAttr("disabled", "disabled");
-        $("#phantom_cloud_edit_remove").removeAttr("disabled", "disabled");
-        $('#phantom_cloud_edit_name').removeAttr("disabled", "disabled");
+        $("input, textarea, select").removeAttr("disabled", "disabled");
 
         if ($("#phantom_cloud_edit_keyname_list").children().length === 0) {
             $("#phantom_cloud_edit_keyname_list").parent().parent().hide();
@@ -78,11 +257,10 @@ function phantom_cloud_edit_enable(enable) {
         }
 
         $('#loading').hide();
+        $('#alert-container').empty();
     }
     else {
-        $("#phantom_cloud_edit_add").attr("disabled", "disabled");
-        $("#phantom_cloud_edit_remove").attr("disabled", "disabled");
-        $("#phantom_cloud_edit_name").attr("disabled", "disabled");
+        $("input, textarea, select").attr("disabled", "disabled");
         $('#loading').show();
     }
 }
@@ -122,7 +300,7 @@ function change_password_click() {
                 .parent().parent().addClass("error");
         }
         else {
-            alert("UNKNOWN ERROR: " + error_message);
+            phantom_alert("UNKNOWN ERROR: " + error_message);
         }
     };
 
@@ -177,7 +355,7 @@ function phantom_cloud_edit_add_click() {
         phantom_cloud_edit_enable(true);
     }
 
-    var url = make_url('credentials');
+    var url = make_url('credentials/sites');
     phantom_cloud_edit_enable(false);
     phantomPOST(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
 }
@@ -204,7 +382,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     $("#phantom_cloud_edit_key_message").text("");
     $("#phantom_cloud_edit_keyname_list").empty();
-    if (!credentials['access_key'] || !credentials['secret_key']) {
+    if (!credentials || !credentials['access_key'] || !credentials['secret_key']) {
         $("#phantom_cloud_edit_access").val("");
         $("#phantom_cloud_edit_secret").val("");
         $("#phantom_cloud_edit_keyname_list").parent().parent().hide();
@@ -247,7 +425,7 @@ function phantom_cloud_edit_change_cloud (cloud_name) {
         phantom_cloud_edit_change_cloud_internal(cloud_name);
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -324,18 +502,25 @@ function phantom_cloud_edit_load_sites() {
             }
         }
 
-        var credentials_url = make_url('credentials?details=true');
-        phantomGET(credentials_url, credentials_loaded, error_func);
     }
 
-    var error_func = function(obj, error_msg) {
-        alert(error_msg);
-        phantom_cloud_edit_enable(true);
-    };
+    var sites_url = make_url('sites');
+    var sites_request = phantomGET(sites_url);
+
+    var credentials_url = make_url('credentials/sites?details=true');
+    var credentials_request = phantomGET(credentials_url);
+
+    $.when(sites_request, credentials_request)
+        .done(function(sites, credentials) {
+            sites_loaded(sites[0]);
+            credentials_loaded(credentials[0]);
+        })
+        .fail(function(sites_err, credentials_err) {
+            phantom_alert("Problem getting credentials: " + sites_err.responseText + credentials_err.responseText);
+            phantom_cloud_edit_enable(true);
+        });
 
     phantom_cloud_edit_enable(false);
-    var sites_url = make_url('sites');
-    phantomGET(sites_url, sites_loaded, error_func);
 }
 
 function phantom_cloud_edit_load_page() {
@@ -344,7 +529,7 @@ function phantom_cloud_edit_load_page() {
         phantom_cloud_edit_load_sites();
     }
     catch(err) {
-        alert(err);
+        phantom_alert(err);
     }
 }
 
@@ -357,7 +542,7 @@ function phantom_cloud_edit_remove_click() {
         return;
     }
 
-    var url = make_url("credentials/" + cloud_name);
+    var url = make_url("credentials/sites/" + cloud_name);
 
     var success_func = function (obj) {
         $("#phantom_cloud_edit_name").empty();
@@ -369,7 +554,7 @@ function phantom_cloud_edit_remove_click() {
     }
 
     var error_func = function(obj, message) {
-        alert(message);
+        phantom_alert(message);
         phantom_cloud_edit_enable(true);
     }
 

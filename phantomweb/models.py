@@ -22,7 +22,7 @@ class LaunchConfigurationDB(models.Model):
 class HostMaxPairDB(models.Model):
     cloud_name = models.CharField(max_length=128)
     max_vms = models.IntegerField()
-    launch_config = models.ForeignKey(LaunchConfigurationDB)
+    launch_config = models.ForeignKey(LaunchConfiguration)
     rank = models.IntegerField()
     common_image = models.BooleanField()
 

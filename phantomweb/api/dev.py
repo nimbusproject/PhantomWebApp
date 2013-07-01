@@ -112,7 +112,7 @@ def sites(request):
     all_sites = phantom_get_sites(request.GET, user_obj, details=details)
     response_list = []
     for site_name, site_dict in all_sites.iteritems():
-        site_dict["credentials"] = "/api/%s/credentials/%s" % (API_VERSION, site_name)
+        site_dict["credentials"] = "/api/%s/credentials/sites/%s" % (API_VERSION, site_name)
         site_dict["uri"] = "/api/%s/sites/%s" % (API_VERSION, site_name)
         if details:
             if site_dict.get('user_images') is None:
@@ -133,13 +133,174 @@ def site_resource(request, site):
     if site in all_sites:
         response_dict = {
             "id": site,
-            "credentials": "/api/%s/credentials/%s" % (API_VERSION, site),
+            "credentials": "/api/%s/credentials/sites/%s" % (API_VERSION, site),
+            "instance_types": all_sites[site].get('instance_types', []),
             "uri": "/api/%s/sites/%s" % (API_VERSION, site)
         }
+        if details:
+            if response_dict.get('user_images') is None:
+                response_dict['user_images'] = []
+            if response_dict.get('public_images') is None:
+                response_dict['public_images'] = []
         h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
     else:
         h = HttpResponseNotFound('Site %s not found' % site, mimetype='application/javascript')
     return h
+
+
+@token_or_logged_in_required
+@require_http_methods(["GET", "POST"])
+def chef_credentials(request):
+    user_obj = get_user_object(request.user.username)
+
+    if request.method == "GET":
+        all_credentials = user_obj.get_chef_credentials()
+
+        response_list = []
+        for credential_name, credential in all_credentials.iteritems():
+            credentials_dict = {
+                "id": credential_name,
+                "server_url": credential['url'],
+                "client_name": credential.get('client_name', 'admin'),
+                "validation_client_name": credential.get('validation_client_name', 'chef-validator'),
+                "client_key": credential['client_key'],
+                "validator_key": credential['validator_key'],
+                "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, credential_name)
+            }
+            response_list.append(credentials_dict)
+        h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
+    elif request.method == "POST":
+        try:
+            content = json.loads(request.body)
+        except:
+            msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
+            return HttpResponseBadRequest(msg)
+
+        required_params = ["id", "server_url", "client_name", "client_key", "validator_key"]
+        if not has_all_required_params(required_params, content):
+            return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
+
+        name = content["id"]
+        url = content["server_url"]
+        client_name = content["client_name"]
+        validation_client_name = content.get("validation_client_name")
+        client_key = content["client_key"]
+        validator_key = content["validator_key"]
+
+        # Check that the site exists
+        all_credentials = user_obj.get_chef_credentials()
+        if name in all_credentials:
+            return HttpResponseRedirect("/api/%s/credentials/chef/%s" % (API_VERSION, name))
+
+        response_dict = {
+            "id": name,
+            "server_url": url,
+            "client_name": client_name,
+            "client_key": client_key,
+            "validator_key": validator_key,
+            "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, name)
+        }
+
+        # Add credentials to DTRS
+        try:
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key,
+                    validation_client_name=validation_client_name)
+        except:
+            msg = "Failed to add credentials for %s" % name
+            raise
+            log.exception(msg)
+            return HttpResponseServerError(msg)
+
+        h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
+
+    return h
+
+
+@token_or_logged_in_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def chef_credentials_resource(request, site):
+    user_obj = get_user_object(request.user.username)
+
+    if request.method == "GET":
+        all_credentials = user_obj.get_chef_credentials()
+        credential = all_credentials.get(site)
+
+        if credential is not None:
+            response_dict = {
+                "id": site,
+                "server_url": credential['url'],
+                "client_name": credential['client_name'],
+                "client_key": credential['client_key'],
+                "validator_key": credential['validator_key'],
+                "validation_client_name": credential.get('validation_client_name', 'chef-validator'),
+                "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, site)
+            }
+            h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
+        else:
+            h = HttpResponseNotFound('Credentials for site %s not found' % site, mimetype='application/javascript')
+        return h
+    elif request.method == "PUT":
+        try:
+            content = json.loads(request.body)
+        except:
+            msg = "Bad request (%s). No JSON. See API docs: %s" % (request.body, DOC_URI)
+            return HttpResponseBadRequest(msg)
+
+        required_params = ["server_url", "client_key", "client_name", "validator_key"]
+        if not has_all_required_params(required_params, content):
+            return HttpResponseBadRequest("Bad request. Do not have all required parameters (%s)" % required_params)
+
+        name = site
+        url = content["server_url"]
+        client_name = content["client_name"]
+        validation_client_name = content.get("validation_client_name", 'chef-validator')
+        client_key = content["client_key"]
+        validator_key = content["validator_key"]
+
+        # Check that the credentials exist
+        all_credentials = user_obj.get_chef_credentials()
+        if site not in all_credentials:
+            return HttpResponseBadRequest()
+
+        response_dict = {
+            "id": name,
+            "server_url": url,
+            "client_name": client_name,
+            "client_key": client_key,
+            "validator_key": validator_key,
+            "validation_client_name": validation_client_name,
+            "uri": "/api/%s/credentials/chef/%s" % (API_VERSION, name)
+        }
+
+        # Add credentials to DTRS
+        try:
+            user_obj.add_chef_credentials(name, url, client_name, client_key, validator_key,
+                    validation_client_name=validation_client_name)
+        except:
+            log.exception("Failed to add credentials for site %s" % site)
+            return HttpResponseServerError()
+
+        h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
+
+        return h
+
+    elif request.method == "DELETE":
+        # Check that the credentials exist
+        all_credentials = user_obj.get_chef_credentials()
+        if site not in all_credentials:
+            return HttpResponseBadRequest()
+
+        # Remove credentials from DTRS
+        try:
+            user_obj.delete_chef_credentials(site)
+        except:
+            msg = "Failed to remove credentials for site %s" % site
+            log.exception(msg)
+            return HttpResponseServerError(msg)
+
+        h = HttpResponse(status=204)
+
+        return h
 
 
 @token_or_logged_in_required
@@ -161,7 +322,7 @@ def credentials(request):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "uri": "/api/%s/credentials/%s" % (API_VERSION, credentials_name)
+                "uri": "/api/%s/credentials/sites/%s" % (API_VERSION, credentials_name)
             }
             if details is True:
                 credentials_dict["available_keys"] = keys[cloud.cloudname]
@@ -193,7 +354,7 @@ def credentials(request):
             "access_key": access_key,
             "secret_key": secret_key,
             "key_name": key_name,
-            "uri": "/api/%s/credentials/%s" % (API_VERSION, site)
+            "uri": "/api/%s/credentials/sites/%s" % (API_VERSION, site)
         }
 
         # Add credentials to DTRS
@@ -226,7 +387,7 @@ def credentials_resource(request, site):
                 "access_key": cloud.iaas_key,
                 "secret_key": cloud.iaas_secret,
                 "key_name": cloud.keyname,
-                "uri": "/api/%s/credentials/%s" % (API_VERSION, cloud.cloudname)
+                "uri": "/api/%s/credentials/sites/%s" % (API_VERSION, cloud.cloudname)
             }
             if details is True:
                 response_dict["available_keys"] = keys[cloud.cloudname]
@@ -264,7 +425,7 @@ def credentials_resource(request, site):
             "access_key": access_key,
             "secret_key": secret_key,
             "key_name": key_name,
-            "uri": "/api/%s/credentials/%s" % (API_VERSION, site)
+            "uri": "/api/%s/credentials/sites/%s" % (API_VERSION, site)
         }
 
         # Add credentials to DTRS
@@ -310,30 +471,52 @@ def launchconfigurations(request):
     elif request.method == "POST":
         try:
             content = json.loads(request.body)
-        except Exception as e:
-            return HttpResponseBadRequest("Could not load JSON from %s: %s" % (request.body, e))
+        except:
+            return HttpResponseBadRequest("Couldn't load json from body")
 
-        required_params = ["name", "cloud_params"]
+        required_params = ['name', 'cloud_params', 'contextualization_method']
         if not has_all_required_params(required_params, content):
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest("Request must have %s params" % ", ".join(required_params))
         name = content['name']
         cloud_params = content['cloud_params']
         username = request.user.username
+
+        required_cloud_params = ['image_id', 'instance_type', 'max_vms', 'common', 'rank']
+        for cloud_name, cloud_p in cloud_params.iteritems():
+            if not has_all_required_params(required_cloud_params, cloud_p):
+                missing = list(set(required_params) - set(cloud_p))
+                return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
+                    cloud_name, ", ".join(missing)))
 
         lc = get_launch_configuration_by_name(username, name)
         if lc is not None:
             # LC already exists, redirect to existing one
             return HttpResponseRedirect("/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id))
 
-        lc = create_launch_configuration(username, name, cloud_params)
+        contextualization_method = content.get('contextualization_method')
+        context_params = {
+            'contextualization_method': contextualization_method,
+            'user_data': content.get('user_data'),
+            'chef_runlist': content.get('chef_runlist'),
+            'chef_attributes': content.get('chef_attributes')
+        }
+
+        lc = create_launch_configuration(username, name, cloud_params, context_params)
 
         response_dict = {
             "id": lc.id,
             "name": name,
             "owner": username,
+            'contextualization_method': contextualization_method,
             "cloud_params": cloud_params,
             "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
         }
+
+        if contextualization_method == "user_data":
+            response_dict['user_data'] = content.get('user_data')
+        elif contextualization_method == "chef":
+            response_dict['chef_runlist'] = content.get('chef_runlist')
+            response_dict['chef_attributes'] = content.get('chef_attributes')
 
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
     return h
@@ -364,7 +547,7 @@ def launchconfiguration_resource(request, id):
         except:
             return HttpResponseBadRequest()
 
-        required_params = ["name", "cloud_params"]
+        required_params = ['name', 'cloud_params', 'contextualization_method']
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest()
 
@@ -377,8 +560,23 @@ def launchconfiguration_resource(request, id):
                 return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
                     cloud_name, ", ".join(missing)))
 
-        response_dict = update_launch_configuration(lc.id, cloud_params)
+        contextualization_method = content.get('contextualization_method')
+        context_params = {
+            'contextualization_method': contextualization_method,
+            'user_data': content.get('user_data'),
+            'chef_runlist': content.get('chef_runlist'),
+            'chef_attributes': content.get('chef_attributes')
+        }
+
+        response_dict = update_launch_configuration(lc.id, cloud_params, context_params)
         response_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id)
+        response_dict['contextualization_method'] = contextualization_method
+
+        if contextualization_method == "user_data":
+            response_dict['user_data'] = content.get('user_data')
+        elif contextualization_method == "chef":
+            response_dict['chef_runlist'] = content.get('chef_runlist')
+            response_dict['chef_attributes'] = content.get('chef_attributes')
 
         h = HttpResponse(json.dumps(response_dict), status=200, mimetype='application/javascript')
         return h
