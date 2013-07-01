@@ -5,9 +5,9 @@ import sys
 import json
 import requests
 
-user_id = os.environ['user_id']
-token = os.environ['token']
-api_url = os.environ.get('phantom_url', "https://phantom.nimbusproject.org/api/dev")
+user_id = os.environ['USER_ID']
+token = os.environ['TOKEN']
+api_url = os.environ.get('PHANTOM_URL', "https://phantom.nimbusproject.org/api/dev")
 
 r = requests.get("%s/launchconfigurations" % api_url, auth=(user_id, token))
 all_lcs = r.json()
