@@ -32,7 +32,8 @@ new_lc = {
             "rank": 1,
             "user_data": None
         }
-    }
+    },
+    'contextualization_method': None
 }
 
 r = requests.post("%s/launchconfigurations" % api_url, data=json.dumps(new_lc), auth=(user_id, token))

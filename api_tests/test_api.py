@@ -44,7 +44,8 @@ new_lc = {
             "rank": 1,
             "user_data": 'USERDATA_TEST_STRING'
         }
-    }
+    },
+    'contextualization_method': 'user_data'
 }
 
 created_lc = None
