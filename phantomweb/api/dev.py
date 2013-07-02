@@ -25,6 +25,21 @@ DOC_URI = "http://www.nimbusproject.org/doc/phantom/latest/api.html"
 API_VERSION = 'dev'
 
 
+def optional_pretty_print(f):
+    def wrap(request, *args, **kwargs):
+        response = f(request, *args, **kwargs)
+        pretty = str_to_bool(request.GET.get('pretty', 'false'))
+        if response.status_code == 200 and pretty:
+            try:
+                content_json = json.loads(response.content)
+                pretty_json = json.dumps(content_json, indent=4, separators=(',', ': '))
+                response.content = pretty_json
+            except:
+                pass
+        return response
+    return wrap
+
+
 def basic_http_auth(f):
     def wrap(request, *args, **kwargs):
         if request.user:
@@ -105,6 +120,7 @@ def has_all_required_params(params, content):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET"])
 def sites(request):
     user_obj = get_user_object(request.user.username)
@@ -125,6 +141,7 @@ def sites(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET"])
 def site_resource(request, site):
     user_obj = get_user_object(request.user.username)
@@ -149,6 +166,7 @@ def site_resource(request, site):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "POST"])
 def chef_credentials(request):
     user_obj = get_user_object(request.user.username)
@@ -218,6 +236,7 @@ def chef_credentials(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "PUT", "DELETE"])
 def chef_credentials_resource(request, site):
     user_obj = get_user_object(request.user.username)
@@ -305,6 +324,7 @@ def chef_credentials_resource(request, site):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "POST"])
 def credentials(request):
     user_obj = get_user_object(request.user.username)
@@ -371,6 +391,7 @@ def credentials(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "PUT", "DELETE"])
 def credentials_resource(request, site):
     user_obj = get_user_object(request.user.username)
@@ -457,6 +478,7 @@ def credentials_resource(request, site):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "POST"])
 def launchconfigurations(request):
     if request.method == "GET":
@@ -524,6 +546,7 @@ def launchconfigurations(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "PUT", "DELETE"])
 def launchconfiguration_resource(request, id):
     if request.method == "GET":
@@ -594,6 +617,7 @@ def launchconfiguration_resource(request, id):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "POST"])
 def domains(request):
     if request.method == "GET":
@@ -631,6 +655,7 @@ def domains(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "PUT", "DELETE"])
 def domain_resource(request, id):
     if request.method == "GET":
@@ -678,6 +703,7 @@ def domain_resource(request, id):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET"])
 def instances(request, domain_id):
     if request.method == "GET":
@@ -696,6 +722,7 @@ def instances(request, domain_id):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET", "DELETE"])
 def instance_resource(request, domain_id, instance_id):
     if request.method == "GET":
@@ -753,6 +780,7 @@ def instance_resource(request, domain_id, instance_id):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET"])
 def sensors(request):
     if request.method == "GET":
@@ -771,6 +799,7 @@ def sensors(request):
 
 
 @token_or_logged_in_required
+@optional_pretty_print
 @require_http_methods(["GET"])
 def sensor_resource(request, sensor_id):
     if request.method == "GET":
