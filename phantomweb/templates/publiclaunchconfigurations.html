@@ -1,0 +1,43 @@
+{% extends "../templates/base.html" %}
+{% block title %}Public Launch Configurations - Phantom{% endblock %}
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_profile.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_public_lc.js"></script>
+{% endblock %}
+{% block bodytag %}{% endblock %}
+{% block nimbus_body  %}
+
+<div class="container-fluid inner-container">
+  <h3>Public Launch Configurations</h3>
+  <p>These are launch configurations that have been shared by other Phantom Users.
+  If you click the Import button, they will be available in your
+  <a href="/phantom/launchconfig">Launch Configuration</a> page, ready for you to
+  use in your <a href="/phantom/domain">Domains</a>.
+  </p>
+  <table class="table" id="public_lc_table">
+  </table>
+  <p><a id="show-all-lc" href="#">Other Launch Configurations</a></p>
+</div>
+
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
+</div>
+
+{% endblock %}
