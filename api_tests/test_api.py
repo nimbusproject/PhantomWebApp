@@ -41,11 +41,11 @@ new_lc = {
             "instance_type": it,
             "max_vms": max_vms,
             "common": common,
-            "rank": 1,
-            "user_data": 'USERDATA_TEST_STRING'
+            "rank": 1
         }
     },
-    'contextualization_method': 'user_data'
+    'contextualization_method': 'user_data',
+    "user_data": 'USERDATA_TEST_STRING'
 }
 
 created_lc = None
@@ -60,9 +60,9 @@ try:
 
     assert len(after_create) == len(initial_lc) + 1
     assert after_create[0].get('name') == lc_name
+    assert after_create[0].get('user_data') == user_data
     assert after_create[0]['cloud_params'][cloud].get('image_id') == image_id
     assert after_create[0]['cloud_params'][cloud].get('instance_type') == it
-    assert after_create[0]['cloud_params'][cloud].get('user_data') == user_data
 
     r = requests.get("%s/domains" % api_url, auth=(user_id, token))
     initial = r.json()
