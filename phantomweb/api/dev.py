@@ -107,7 +107,7 @@ def token_or_logged_in_required(view_func):
                 login(request, user)
                 return view_func(request, *args, **kwargs)
 
-        return HttpResponseForbidden()
+        return HttpResponseForbidden("Authorization Required")
     return _wrapped_view
 
 
