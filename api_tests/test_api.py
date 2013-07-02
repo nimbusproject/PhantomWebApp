@@ -47,6 +47,7 @@ new_lc = {
     }
 }
 
+created_lc = None
 try:
     r = requests.post("%s/launchconfigurations" % api_url, data=json.dumps(new_lc), auth=(user_id, token))
     created_lc = r.json()
@@ -104,9 +105,10 @@ try:
     assert len(after_delete) == len(initial)
 
 finally:
-    r = requests.delete("%s/launchconfigurations/%s" % (api_url, created_lc.get('id')), auth=(user_id, token))
-    if r.status_code != 204:
-        sys.exit("Problem deleting launch configuration %s" % r.text)
+    if created_lc is not None:
+        r = requests.delete("%s/launchconfigurations/%s" % (api_url, created_lc.get('id')), auth=(user_id, token))
+        if r.status_code != 204:
+            sys.exit("Problem deleting launch configuration %s" % r.text)
 
     r = requests.get("%s/launchconfigurations" % api_url, auth=(user_id, token))
     after_delete = r.json()
