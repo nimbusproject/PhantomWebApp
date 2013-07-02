@@ -497,7 +497,7 @@ def launchconfigurations(request):
         except:
             return HttpResponseBadRequest("Couldn't load json from body")
 
-        required_params = ['name', 'cloud_params', 'contextualization_method']
+        required_params = ['name', 'cloud_params']
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest("Request must have %s params" % ", ".join(required_params))
         name = content['name']
@@ -516,12 +516,31 @@ def launchconfigurations(request):
             # LC already exists, redirect to existing one
             return HttpResponseRedirect("/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id))
 
-        contextualization_method = content.get('contextualization_method')
+        contextualization_method = content.get('contextualization_method', 'None')
+        user_data = content.get('user_data')
+        chef_runlist = content.get('chef_runlist')
+        chef_attributes = content.get('chef_attributes')
+
+        if (contextualization_method is 'none' and
+                (user_data, chef_runlist, chef_attributes) is not (None, None, None)):
+            msg = "Your contextualization_method is 'none', but you have provided "
+            "'user_data', 'chef_runlist' or 'chef_attributes'?"
+            return HttpResponseBadRequest(msg)
+        elif (contextualization_method is 'user_data' and
+                (chef_runlist, chef_attributes) is not (None, None)):
+            msg = "Your contextualization_method is 'user_data', but you have provided "
+            "'chef_runlist' or 'chef_attributes'?"
+            return HttpResponseBadRequest(msg)
+        elif contextualization_method is 'chef' and user_data is not None:
+            msg = "Your contextualization_method is 'chef', but you have provided "
+            "'user_data'?"
+            return HttpResponseBadRequest(msg)
+
         context_params = {
             'contextualization_method': contextualization_method,
-            'user_data': content.get('user_data'),
-            'chef_runlist': content.get('chef_runlist'),
-            'chef_attributes': content.get('chef_attributes')
+            'user_data': user_data,
+            'chef_runlist': chef_runlist,
+            'chef_attributes': chef_attributes
         }
 
         lc = create_launch_configuration(username, name, cloud_params, context_params)
@@ -571,7 +590,7 @@ def launchconfiguration_resource(request, id):
         except:
             return HttpResponseBadRequest()
 
-        required_params = ['name', 'cloud_params', 'contextualization_method']
+        required_params = ['name', 'cloud_params']
         if not has_all_required_params(required_params, content):
             return HttpResponseBadRequest()
 
@@ -584,7 +603,26 @@ def launchconfiguration_resource(request, id):
                 return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
                     cloud_name, ", ".join(missing)))
 
-        contextualization_method = content.get('contextualization_method')
+        contextualization_method = content.get('contextualization_method', 'none')
+        user_data = content.get('user_data')
+        chef_runlist = content.get('chef_runlist')
+        chef_attributes = content.get('chef_attributes')
+
+        if (contextualization_method is 'none' and
+                (user_data, chef_runlist, chef_attributes) is not (None, None, None)):
+            msg = "Your contextualization_method is 'none', but you have provided "
+            "'user_data', 'chef_runlist' or 'chef_attributes'?"
+            return HttpResponseBadRequest(msg)
+        elif (contextualization_method is 'user_data' and
+                (chef_runlist, chef_attributes) is not (None, None)):
+            msg = "Your contextualization_method is 'user_data', but you have provided "
+            "'chef_runlist' or 'chef_attributes'?"
+            return HttpResponseBadRequest(msg)
+        elif contextualization_method is 'chef' and user_data is not None:
+            msg = "Your contextualization_method is 'chef', but you have provided "
+            "'user_data'?"
+            return HttpResponseBadRequest(msg)
+
         context_params = {
             'contextualization_method': contextualization_method,
             'user_data': content.get('user_data'),
@@ -597,10 +635,10 @@ def launchconfiguration_resource(request, id):
         response_dict['contextualization_method'] = contextualization_method
 
         if contextualization_method == "user_data":
-            response_dict['user_data'] = content.get('user_data')
+            response_dict['user_data'] = user_data
         elif contextualization_method == "chef":
-            response_dict['chef_runlist'] = content.get('chef_runlist')
-            response_dict['chef_attributes'] = content.get('chef_attributes')
+            response_dict['chef_runlist'] = chef_runlist
+            response_dict['chef_attributes'] = chef_attributes
 
         h = HttpResponse(json.dumps(response_dict), status=200, mimetype='application/javascript')
         return h
