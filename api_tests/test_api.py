@@ -50,6 +50,8 @@ new_lc = {
 created_lc = None
 try:
     r = requests.post("%s/launchconfigurations" % api_url, data=json.dumps(new_lc), auth=(user_id, token))
+    if r.status_code != 201:
+        sys.exit("Failed to create LC: %s" % r.text)
     created_lc = r.json()
 
     r = requests.get("%s/launchconfigurations" % api_url, auth=(user_id, token))
