@@ -121,7 +121,6 @@ $(document).ready(function() {
 
     $("#phantom_lc_save").click(function() {
         var valid = save_lc_values();
-        console.log(valid);
         if (valid) {
             phantom_lc_save_click();
         }
@@ -426,7 +425,6 @@ function phantom_lc_load_internal() {
         for(var i=0; i<clouds.length; i++) {
             var cloud = clouds[i];
             if (!cloud.id in g_cloud_map) {
-                console.log('replacing ' + cloud.id);
                 g_cloud_map[cloud.id] = {};
             }
             g_cloud_map[cloud.id]['status'] = 0;
@@ -699,10 +697,11 @@ function phantom_lc_save_click_internal() {
         if (!cloud_data) {
             return true; //each's equivalent of continue;
         }
+
         data['cloud_params'][site_name] = {};
         var site = data['cloud_params'][site_name];
 
-        var ndx = i + 1;
+        ndx = ndx + 1;
 
         site['rank'] = ndx;
         site['image_id'] = cloud_data['image_id'];
@@ -711,7 +710,8 @@ function phantom_lc_save_click_internal() {
         site['common'] = cloud_data['common'];
     });
 
-    var success_func = function(obj) {
+    var success_func = function(new_lc) {
+        g_lc_info[lc_name]['id'] = new_lc['id'];
         $("#alert-container").empty();
         var unsaved_idx = g_unsaved_lcs.indexOf(lc_name);
         if (unsaved_idx > -1) {
