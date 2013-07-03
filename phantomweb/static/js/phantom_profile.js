@@ -46,6 +46,19 @@ $(document).ready(function() {
     });
 
     $("#add-chef-server").click(function() {
+        var chef_server_name = $("#chef-credentials-name").val();
+        if (chef_server_name.match(/\s|\./g)) {
+            $("#chef-credentials-name")
+                .after('<span class="help-inline">No spaces or periods in name</span>')
+                .parent().parent().addClass("error");
+            return false;
+        }
+        else {
+            $("#chef-credentials-name")
+                .parent().parent().removeClass("error")
+                .children('span.help-inline').remove();
+        }
+
         add_chef_server($("#chef-credentials-name").val());
         $("#add-chef-modal").modal('hide');
         return false;
