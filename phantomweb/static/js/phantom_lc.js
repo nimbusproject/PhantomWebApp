@@ -548,7 +548,7 @@ function save_lc_values() {
         catch(err) {
             $("#phantom_lc_chef_attributes").parent().addClass("error");
             if (err.toString().indexOf("JSON.parse") != -1) {
-                phantom_alert("Couldn't parse attributes: " + err);
+                phantom_warning("Couldn't parse attributes: " + err);
             }
             else {
                 phantom_warning(err);
