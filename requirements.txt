@@ -2,7 +2,7 @@ amqp==1.0.10
 anyjson==0.3.3
 apache-libcloud==0.11.1
 boto==2.8.0
-ceiclient==0.2.0
+ceiclient==0.2.2
 cloudinitd==1.2
 dashi==0.3.0
 Django==1.4.5
