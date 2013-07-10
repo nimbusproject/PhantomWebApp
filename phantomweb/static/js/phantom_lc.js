@@ -407,6 +407,12 @@ function phantom_lc_change_lc_click(lc_name) {
     }
 }
 
+function get_hash_lc() {
+    var url_id = window.location.hash.substring(1);
+    return url_id;
+}
+
+
 function phantom_lc_load_internal() {
 
     var load_sites_success = function(sites) {
@@ -455,8 +461,14 @@ function phantom_lc_load_internal() {
             }
 
             if (g_selected_lc === null) {
+                var url_lc = get_hash_lc();
                 var first_lc = $("a.launch_config").first().text();
-                if (first_lc) {
+
+                if (g_lc_info.hasOwnProperty(url_lc)) {
+                    g_selected_lc = url_lc;
+                    phantom_lc_load_lc_names();
+                }
+                else if (first_lc) {
                     g_selected_lc = first_lc;
                     phantom_lc_load_lc_names();
                 }
