@@ -59,7 +59,6 @@ function import_lc(lc_id_to_import) {
     }
 
     var lc_to_import = available_launch_configs[lc_id_to_import];
-    lc_to_import['name'] = 'import'; //TODO: DELETEME
     delete lc_to_import['id'];
     delete lc_to_import['url'];
     delete lc_to_import['owner'];
