@@ -16,6 +16,32 @@
 {% block bodytag %}{% endblock %}
 {% block nimbus_body  %}
 
+<div class="modal hide fade" id="import-lc-modal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Import a Launch Configuration</h3>
+  </div>
+  <div class="modal-body">
+    <form class="form" id="add-lc-form">
+      <fieldset>
+        <div class="control-group" >
+          <div class="controls">
+            <label>Imported Launch Configuration Name</label>
+            <input id="import-lc-name" class="span6" type="text" placeholder="" />
+          </div>
+        </div>
+      </fieldset>
+    </form>
+    <div id="importing" class="progress progress-striped active" style="display: none">
+      <div class="bar" style="width: 100%"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Close</a>
+    <a href="#" class="btn btn-primary" id="import-launch-configuration">Import Launch Configuration</a>
+  </div>
+</div>
+
 <div class="container-fluid inner-container">
   <h3>Public Launch Configurations</h3>
   <p>These are launch configurations that have been shared by other Phantom Users.
