@@ -334,7 +334,7 @@ function phantom_lc_change_lc_internal(lc_name) {
         if (g_arranged_cloud_values === undefined) {
             g_arranged_cloud_values = {};
         }
-        
+
 
         if (! ('contextualization_method' in lc)) {
             $("#phantom_lc_userdata").val(lc['user_data']);
@@ -355,7 +355,7 @@ function phantom_lc_change_lc_internal(lc_name) {
     }
 
     $("#phantom_lc_max_vm").val("");
-    
+
     $("#phantom_lc_order").empty();
     var ordered = Array();
     for (var site in g_arranged_cloud_values) {
@@ -855,7 +855,7 @@ function phantom_lc_order_selected_click(cloud_name) {
             $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
 
 
-            if (cloud_val_dict['common']) {
+            if (cloud_val_dict['common'] == 'false' || ! cloud_val_dict['common']) {
                 $("#phantom_lc_common_image_input").val(cloud_val_dict['image_id']);
                 $("#phantom_lc_common_choice_checked").attr('checked',true);
             }
