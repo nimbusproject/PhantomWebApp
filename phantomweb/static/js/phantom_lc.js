@@ -854,8 +854,7 @@ function phantom_lc_order_selected_click(cloud_name) {
             $("#phantom_lc_max_vm").val(cloud_val_dict['max_vms']);
             $("#phantom_lc_instance").val(cloud_val_dict['instance_type']);
 
-
-            if (cloud_val_dict['common']) {
+            if (cloud_val_dict['common'] === true) {
                 $("#phantom_lc_common_image_input").val(cloud_val_dict['image_id']);
                 $("#phantom_lc_common_choice_checked").attr('checked',true);
             }
