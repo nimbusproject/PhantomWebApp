@@ -19,11 +19,20 @@ $(document).ready(function() {
 
     $("#public_lc_table").on("click", "button.import", function() {
         lc_to_import = $(this).data('name');
-        $('#import-lc-modal').modal('show')
+        $('#import-lc-modal').modal('show');
         return false;
     });
 
-    $("#import-launch-configuration").click(function() {
+    $("#import-lc-modal").on('shown', function() {
+        $("#import-lc-name").focus();
+        var lc = available_launch_configs[lc_to_import];
+        if (lc && lc.name &&  user_launch_configs.indexOf(lc.name) < 0) {
+            $("#import-lc-name").val(lc.name);
+            $("#import-lc-name").select();
+        }
+    });
+
+    var import_lc_verify = function() {
         $(".help-inline").remove();
         $import_lc_name = $("#import-lc-name");
 
@@ -39,6 +48,15 @@ $(document).ready(function() {
         $import_lc_name.parent().parent().hide()
         $("#importing").show();
         import_lc(lc_to_import, newname);
+        return false;
+    };
+
+    $("#import-launch-configuration").click(function() {
+        import_lc_verify();
+    });
+
+    $("#add-lc-form").submit(function() {
+        import_lc_verify();
         return false;
     });
 
@@ -86,7 +104,7 @@ function import_lc(lc_id_to_import, new_name) {
     }
 
     var import_lc_failure = function(error) {
-        phantom_error("Problem importing launch config! " + error);
+        phantom_alert("Problem importing launch config! " + error);
         console.log(error);
     }
 
