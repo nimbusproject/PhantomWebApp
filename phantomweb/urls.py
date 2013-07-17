@@ -8,6 +8,7 @@ from django.contrib.auth.views import password_reset, password_change, password_
 admin.autodiscover()
 
 DEV_VERSION = "dev"
+ACCEPTED_RESOURCE_PATTERN="[-_.0-9A-Za-z]"
 
 urlpatterns = patterns('',
 
@@ -56,17 +57,17 @@ urlpatterns = patterns('',
 
     url(r'^api/%s/sites$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
     url(r'^api/%s/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
-    url(r'^api/%s/sites/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
-    url(r'^api/%s/sites/([-0-9A-Za-z]+)(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.site_resource'),
+    url(r'^api/%s/sites/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_resource'),
+    url(r'^api/%s/sites/(%s+)(?P<details>\w+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_resource'),
     url(r'^api/%s/credentials/sites$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
-    url(r'^api/%s/credentials/sites/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials_resource'),
-    url(r'^api/%s/credentials/sites/([-0-9A-Za-z]+)(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
+    url(r'^api/%s/credentials/sites/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials_resource'),
+    url(r'^api/%s/credentials/sites/(%s+)(?P<details>\w+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/chef$' % DEV_VERSION, 'phantomweb.api.dev.chef_credentials'),
-    url(r'^api/%s/credentials/chef/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.chef_credentials_resource'),
+    url(r'^api/%s/credentials/chef/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.chef_credentials_resource'),
     url(r'^api/%s/launchconfigurations$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
     url(r'^api/%s/launchconfigurations(?P<public>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
-    url(r'^api/%s/launchconfigurations/([-0-9A-Za-z]+)$' % DEV_VERSION,
+    url(r'^api/%s/launchconfigurations/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN),
         'phantomweb.api.dev.launchconfiguration_resource'),
     url(r'^api/%s/domains$' % DEV_VERSION, 'phantomweb.api.dev.domains'),
     url(r'^api/%s/domains/([-0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.domain_resource'),
@@ -76,5 +77,5 @@ urlpatterns = patterns('',
     url(r'^api/%s/domains/([-0-9A-Za-z]+)/instances/([-0-9A-Za-z]+)(?P<details>\w+)$' % DEV_VERSION,
             'phantomweb.api.dev.instance_resource'),
     url(r'^api/%s/sensors$' % DEV_VERSION, 'phantomweb.api.dev.sensors'),
-    url(r'^api/%s/sensors/([-.0-9A-Za-z]+)$' % DEV_VERSION, 'phantomweb.api.dev.sensor_resource'),
+    url(r'^api/%s/sensors/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.sensor_resource'),
 )
