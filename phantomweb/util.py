@@ -417,7 +417,7 @@ class UserObjectMySQL(UserObject):
             except Exception:
                 log.exception("Problem parsing LC content")
                 raise PhantomWebException("Problem parsing chef attributes when creating LC: %s" % context_params.get('chef_attributes'))
-        elif parameters.get('contextualization_method') == 'none':
+        elif context_params.get('contextualization_method') == 'none':
             contextualization = dt['contextualization'] = {}
             contextualization['method'] = None
 
