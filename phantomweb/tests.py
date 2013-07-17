@@ -192,7 +192,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     },
                     content)
 
-    def test_get_credentials_resource(self):
+    def test_get_chef_credentials_resource(self):
         with patch('ceiclient.client.DTRSClient.describe_site') as mock_describe_site:
             mock_describe_site.return_value = {}
 
@@ -256,7 +256,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     response = c.get('/api/dev/credentials/chef/site3')
                     self.assertEqual(response.status_code, 404)
 
-    def test_post_credentials(self):
+    def test_post_chef_credentials(self):
         with patch('ceiclient.client.DTRSClient.list_sites') as mock_list_sites:
             mock_list_sites.return_value = ["site1", "site2", "site3"]
 
@@ -291,6 +291,18 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                 side_effect=describe_credentials):
                             c = Client()
                             c.login(username='fred', password='secret')
+
+                            post_content = {
+                                "id": "bad name &",
+                                "client_key": "site3_client_key",
+                                "validator_key": "site3_validator_ley",
+                                "client_name": "fred",
+                                "validation_client_name": "fred-validator",
+                                "server_url": "site3_url"
+                            }
+                            response = c.post('/api/dev/credentials/chef',
+                                json.dumps(post_content), content_type='application/json')
+                            self.assertEqual(response.status_code, 400)
 
                             post_content = {
                                 "id": "site3",

@@ -1,3 +1,4 @@
+import re
 import base64
 import json
 import logging
@@ -10,6 +11,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 
+from phantomweb.urls import ACCEPTED_RESOURCE_PATTERN
 from phantomweb.util import get_user_object, str_to_bool
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.workload import phantom_get_sites, get_all_launch_configurations, \
@@ -205,6 +207,10 @@ def chef_credentials(request):
         client_key = content["client_key"]
         validator_key = content["validator_key"]
 
+        if re.search("^%s+$" % ACCEPTED_RESOURCE_PATTERN, name) is None:
+            return HttpResponseBadRequest("%s isn't an acceptable id. Must match %s" % (
+                name, ACCEPTED_RESOURCE_PATTERN))
+
         # Check that the site exists
         all_credentials = user_obj.get_chef_credentials()
         if name in all_credentials:
@@ -368,7 +374,12 @@ def credentials(request):
         # Check that the site exists
         all_sites = phantom_get_sites(request.POST, user_obj)
         if site not in all_sites:
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest("%s doesn't seem to exist. I know about %s" % (
+                site, all_sites))
+
+        if re.search("^%s+$" % ACCEPTED_RESOURCE_PATTERN, site) is None:
+            return HttpResponseBadRequest("%s isn't an acceptable id. Must match %s" % (
+                site, ACCEPTED_RESOURCE_PATTERN))
 
         response_dict = {
             "id": site,
@@ -514,6 +525,10 @@ def launchconfigurations(request):
                 missing = list(set(required_params) - set(cloud_p))
                 return HttpResponseBadRequest("Missing parameters. %s needs: %s." % (
                     cloud_name, ", ".join(missing)))
+
+        if re.search("^%s+$" % ACCEPTED_RESOURCE_PATTERN, name) is None:
+            return HttpResponseBadRequest("%s isn't an acceptable id. Must match %s" % (
+                name, ACCEPTED_RESOURCE_PATTERN))
 
         lc = get_launch_configuration_by_name(username, name)
         if lc is not None:
