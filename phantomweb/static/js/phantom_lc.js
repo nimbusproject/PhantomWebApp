@@ -227,7 +227,7 @@ function phantom_lc_select_new_cloud_internal(cloud_name) {
     }
     var cloud_data = g_cloud_map[cloud_name];
 
-    if (!cloud_data || cloud_data.status != 0) {
+    if (!cloud_data || cloud_data['status'] != 0) {
         return;
     }
 

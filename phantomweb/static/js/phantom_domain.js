@@ -382,7 +382,7 @@ function phantom_domain_load_internal(select_domain_on_success) {
             domain_success_func(domains);
         })
         .fail(function(message) {
-            phantom_alert("There was a problem loading your domains.  Please try again later. ".concat(err.message));
+            phantom_alert("There was a problem loading your domains.  Please try again later. ".concat(message));
             $('#loading').hide();
         });
 }
@@ -965,8 +965,11 @@ function phantom_domain_details_internal() {
     phantom_domain_details_buttons(false);
 
     var domain_name = $("#phantom_domain_name_label").text();
-    var domain_id = g_domain_data[domain_name]['id'];
+    if (!domain_name || ! g_domain_data[domain_name]) {
+        return;
+    }
 
+    var domain_id = g_domain_data[domain_name]['id'];
     if (!domain_id) {
         return;
     }

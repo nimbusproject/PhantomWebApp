@@ -198,12 +198,16 @@ function phantomPOST(url, data_vals, func, error_func) {
     var success_func = function (success_data){
         try {
             var obj = success_data;
-            if(obj.error_message != undefined) {
+            if (obj.error_message != undefined) {
                 var error_msg = obj.error_message;
-                error_func(url, error_msg);
+                if (error_func) {
+                    error_func(url, error_msg);
+                }
             }
             else {
-                func(obj);
+                if (func) {
+                    func(obj);
+                }
             }
         }
         catch(err) {
@@ -219,7 +223,10 @@ function phantomPOST(url, data_vals, func, error_func) {
         else {
             var error_msg = "Error communicating with the service ".concat(request.statusText);
         }
-        error_func(url, error_msg);
+        console.log(error_msg);
+        if (error_func) {
+            error_func(url, error_msg);
+        }
     };
 
     $.ajaxSetup({ cache: false });
