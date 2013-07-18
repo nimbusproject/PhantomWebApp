@@ -577,6 +577,7 @@ function phantom_cloud_edit_load_sites() {
             }
             else if (!credentials["key_name"]) {
                 status = "Incomplete";
+                $("#ssh_cloud_table_body").append(make_ssh_cloud_table_row(site_name));
             }
             else {
                 status = "Enabled";
