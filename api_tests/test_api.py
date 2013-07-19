@@ -59,6 +59,9 @@ try:
     after_create = r.json()
 
     assert len(after_create) == len(initial_lc) + 1
+    # Find the LC we just created
+    after_create = filter(lambda x: x['name'] == lc_name, after_create)
+
     assert after_create[0].get('name') == lc_name
     assert after_create[0].get('user_data') == user_data
     assert after_create[0]['cloud_params'][cloud].get('image_id') == image_id
