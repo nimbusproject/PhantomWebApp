@@ -8,7 +8,7 @@ from django.contrib.auth.views import password_reset, password_change, password_
 admin.autodiscover()
 
 DEV_VERSION = "dev"
-ACCEPTED_RESOURCE_PATTERN="[-_.0-9A-Za-z]"
+ACCEPTED_RESOURCE_PATTERN = "[-_.0-9A-Za-z]"
 
 urlpatterns = patterns('',
 
@@ -64,10 +64,13 @@ urlpatterns = patterns('',
         DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_ssh_key_resource'),
     url(r'^api/%s/credentials/sites$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
-    url(r'^api/%s/credentials/sites/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials_resource'),
-    url(r'^api/%s/credentials/sites/(%s+)(?P<details>\w+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials'),
+    url(r'^api/%s/credentials/sites/(%s+)$' % (
+        DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials_resource'),
+    url(r'^api/%s/credentials/sites/(%s+)(?P<details>\w+)$' % (
+        DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/chef$' % DEV_VERSION, 'phantomweb.api.dev.chef_credentials'),
-    url(r'^api/%s/credentials/chef/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.chef_credentials_resource'),
+    url(r'^api/%s/credentials/chef/(%s+)$' % (
+        DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.chef_credentials_resource'),
     url(r'^api/%s/launchconfigurations$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
     url(r'^api/%s/launchconfigurations(?P<public>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.launchconfigurations'),
     url(r'^api/%s/launchconfigurations/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN),
