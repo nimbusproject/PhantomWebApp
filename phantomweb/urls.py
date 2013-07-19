@@ -58,8 +58,10 @@ urlpatterns = patterns('',
     url(r'^api/%s/sites$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
     url(r'^api/%s/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.sites'),
     url(r'^api/%s/sites/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_resource'),
-    url(r'^api/%s/sites/(%s+)(?P<details>\w+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_resource'),
-    url(r'^api/%s/sites/(%s+)/sshkey$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_ssh_key_resource'),
+    url(r'^api/%s/sites/(%s+)(?P<details>\w+)$' % (
+        DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_resource'),
+    url(r'^api/%s/sites/(%s+)/sshkeys$' % (
+        DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.site_ssh_key_resource'),
     url(r'^api/%s/credentials/sites$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/sites(?P<details>\w+)$' % DEV_VERSION, 'phantomweb.api.dev.credentials'),
     url(r'^api/%s/credentials/sites/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.credentials_resource'),

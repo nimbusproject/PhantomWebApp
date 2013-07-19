@@ -305,7 +305,7 @@ function upload_ssh_key() {
                 " on " + site + ". Overwriting with this new key.");
         }
 
-        var url = make_url('sites/' + site + '/sshkey');
+        var url = make_url('sites/' + site + '/sshkeys');
         var request = phantomPOST(url, data);
         requests.push(request);
     });
