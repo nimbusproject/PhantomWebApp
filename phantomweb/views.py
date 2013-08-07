@@ -3,14 +3,18 @@ from django.conf.urls.defaults import patterns
 from django.template import Context, loader
 import simplejson
 from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render
 from phantomweb.phantom_web_exceptions import PhantomRedirectException
 from phantomweb.util import get_user_object, LogEntryDecorator
 from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add,\
     phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save,\
     phantom_domain_load, phantom_domain_terminate, phantom_domain_resize,\
     phantom_domain_start, phantom_domain_details, phantom_instance_terminate, phantom_sensors_load
+from phantomweb.models import PhantomUser
 from django.contrib import admin
 
 
@@ -102,7 +106,6 @@ def django_instance_terminate(request):
 
 
 @LogEntryDecorator
-@login_required
 def django_phantom_html(request):
     try:
         # no need to talk to the workload app here
@@ -213,6 +216,32 @@ def django_sites_add(request):
     response_dict = phantom_sites_add(request.REQUEST, user_obj)
     h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
     return h
+
+
+@LogEntryDecorator
+def django_sign_up(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            if not form.cleaned_data['email']:
+                form.errors['email'] = ['You must provide an email address']
+                return
+            new_user = form.save()
+
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password1']
+
+            phantom_user = PhantomUser.objects.create(username=username, access_key_id=username)
+            phantom_user.save()
+
+            new_user = authenticate(username=username, password=password)
+            login(request, new_user)
+            return HttpResponseRedirect("/phantom/")
+    else:
+        form = UserCreationForm()
+    return render(request, "../templates/registration/signup.html", {
+        'form': form,
+    })
 
 
 @LogEntryDecorator

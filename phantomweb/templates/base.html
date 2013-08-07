@@ -70,7 +70,11 @@
                   <li id="nav-profile"><a href="/phantom/profile">Profile</a></li>
                   <li id="nav-launchconfig"><a href="/phantom/launchconfig">Launch Configurations</a></li>
                   <li id="nav-domains"><a href="/phantom/domain">Domains</a></li>
-                  <li id="nav-logout"><a href="/accounts/logout">Logout</a></li>
+                  {% if user.is_authenticated %}
+                  <li id="nav-logout"><a href="/accounts/logout">Logout {{user.username}}</a></li>
+                  {% else %}
+                  <li id="nav-logout"><a href="/accounts/login">Log In</a></li>
+                  {% endif %}
                 </ul>
               </div>
             </div>

@@ -17,6 +17,14 @@
             <p class="lead">Scaling your cloud applications is as easy as:</p>
 
             <ol id="xphantom_home_action_list">
+                {% if not user.is_authenticated %}
+                <li>
+                    <div class="xphantom_home_number_div">
+                      <a href="/accounts/signup" class="xphantom_home_number_label">Register an account</a> <small>or <a href="/accounts/login">log in</a></small>
+                    </div>
+                </li>
+                {% endif %}
+
                 <li>
                     <div class="xphantom_home_number_div">
                         <a href="/phantom/profile#cloud-credentials" class="xphantom_home_number_label">Create your Phantom Profile.</a>
