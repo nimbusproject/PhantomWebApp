@@ -231,9 +231,6 @@ def django_sign_up(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data['password1']
 
-            phantom_user = PhantomUser.objects.create(username=username, access_key_id=username)
-            phantom_user.save()
-
             new_user = authenticate(username=username, password=password)
             login(request, new_user)
             return HttpResponseRedirect("/phantom/")

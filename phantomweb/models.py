@@ -68,8 +68,3 @@ class UserPhantomInfoDB(models.Model):
     phantom_secret = models.CharField(max_length=128)
     phantom_url = models.CharField(max_length=128)
     public_key = models.CharField(max_length=1024)
-
-
-class PhantomUser(models.Model):
-    username = models.CharField(max_length=128, primary_key=True)
-    access_key_id = models.CharField(max_length=128)

@@ -174,12 +174,6 @@ class UserObjectMySQL(UserObject):
     def __init__(self, username):
         self.username = username
 
-        phantom_user = PhantomUser.objects.get(username=username)
-        if phantom_user is None:
-            msg = 'The user %s is not associated with an access key ID. Please contact your sysadmin' % (username)
-            raise PhantomWebException(msg)
-        self.access_key = phantom_user.access_key_id
-
         rabbit_info_objects = RabbitInfoDB.objects.all()
         if not rabbit_info_objects:
             raise PhantomWebException('The service is mis-configured.  Please contact your sysadmin')
@@ -194,11 +188,11 @@ class UserObjectMySQL(UserObject):
         self.dtrs = DTRSClient(self._dashi_conn)
 
     def describe_domain(self, username, domain):
-        describe = self.epum.describe_domain(domain, caller=self.access_key)
+        describe = self.epum.describe_domain(domain, caller=self.username)
         return describe
 
     def remove_domain(self, username, domain):
-        removed = self.epum.remove_domain(domain, caller=self.access_key)
+        removed = self.epum.remove_domain(domain, caller=self.username)
         return removed
 
     def _api_parameters_to_general_opts(self, parameters):
@@ -264,7 +258,7 @@ class UserObjectMySQL(UserObject):
         conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
-            self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.access_key)
+            self.epum.add_domain(id, PHANTOM_DOMAIN_DEFINITION, conf, caller=self.username)
             return parameters
         except Exception:
             log.exception("Problem creating domain: %s" % name)
@@ -282,14 +276,14 @@ class UserObjectMySQL(UserObject):
         conf = {'engine_conf': domain_opts, 'general': general_opts}
 
         try:
-            self.epum.reconfigure_domain(id, conf, caller=self.access_key)
+            self.epum.reconfigure_domain(id, conf, caller=self.username)
             return parameters
         except Exception:
             log.exception("Problem modifying domain: %s" % name)
             raise
 
     def get_all_domains(self, username):
-        domain_names = self.epum.list_domains(caller=self.access_key)
+        domain_names = self.epum.list_domains(caller=self.username)
         return domain_names
 
     def _sanitize_sensor_data(self, sensor_data):
@@ -306,7 +300,7 @@ class UserObjectMySQL(UserObject):
 
     def get_domain(self, username, id):
         try:
-            domain_description = self.epum.describe_domain(id, caller=self.access_key)
+            domain_description = self.epum.describe_domain(id, caller=self.username)
         except DashiError:
             return None
         engine_conf = domain_description.get('config', {}).get('engine_conf', {})
@@ -339,7 +333,7 @@ class UserObjectMySQL(UserObject):
 
     def get_domain_instances(self, username, id):
         try:
-            domain_description = self.epum.describe_domain(id, caller=self.access_key)
+            domain_description = self.epum.describe_domain(id, caller=self.username)
         except DashiError:
             return None
         instances = domain_description.get('instances', [])
@@ -362,10 +356,10 @@ class UserObjectMySQL(UserObject):
         return parsed_instances
 
     def get_all_groups(self):
-        domain_names = self.epum.list_domains(caller=self.access_key)
+        domain_names = self.epum.list_domains(caller=self.username)
         domains = []
         for domain in domain_names:
-            domain_description = self.epum.describe_domain(domain, caller=self.access_key)
+            domain_description = self.epum.describe_domain(domain, caller=self.username)
             domains.append(domain_description)
         return domains
 
@@ -429,31 +423,31 @@ class UserObjectMySQL(UserObject):
             contextualization['method'] = None
 
         if create:
-            return self.dtrs.add_dt(self.access_key, dt_name, dt)
+            return self.dtrs.add_dt(self.username, dt_name, dt)
         else:
-            return self.dtrs.update_dt(self.access_key, dt_name, dt)
+            return self.dtrs.update_dt(self.username, dt_name, dt)
 
     def get_dt(self, dt_name):
-        return self.dtrs.describe_dt(self.access_key, dt_name)
+        return self.dtrs.describe_dt(self.username, dt_name)
 
     def remove_dt(self, dt_name):
-        return self.dtrs.remove_dt(self.access_key, dt_name)
+        return self.dtrs.remove_dt(self.username, dt_name)
 
     def get_all_lcs(self):
-        dt_names = self.dtrs.list_dts(self.access_key)
+        dt_names = self.dtrs.list_dts(self.username)
         dts = []
         for dt_name in dt_names:
-            dt = self.dtrs.describe_dt(self.access_key, dt_name)
+            dt = self.dtrs.describe_dt(self.username, dt_name)
             dts.append(dt)
         return dts
 
     def _load_clouds(self):
-        sites = self.dtrs.list_credentials(self.access_key)
+        sites = self.dtrs.list_credentials(self.username)
         self.iaasclouds = {}
         for site_name in sites:
             try:
-                site_desc = self.dtrs.describe_site(self.access_key, site_name)
-                desc = self.dtrs.describe_credentials(self.access_key, site_name)
+                site_desc = self.dtrs.describe_site(self.username, site_name)
+                desc = self.dtrs.describe_credentials(self.username, site_name)
                 uci = UserCloudInfo(site_name, self.username, desc['access_key'],
                     desc['secret_key'], desc['key_name'], site_desc)
                 self.iaasclouds[site_name] = uci
@@ -473,16 +467,16 @@ class UserObjectMySQL(UserObject):
 
     def get_chef_credentials(self):
         # TODO: this needs to actually be implemented in ceictl
-        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        credential_names = self.dtrs.list_credentials(self.username, credential_type="chef")
         credentials = {}
         for credential_name in credential_names:
-            credential = self.dtrs.describe_credentials(self.access_key, credential_name, credential_type="chef")
+            credential = self.dtrs.describe_credentials(self.username, credential_name, credential_type="chef")
             credentials[credential_name] = credential
         return credentials
 
     def add_chef_credentials(self, name, url, client_name, client_key, validator_key,
             validation_client_name=None):
-        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        credential_names = self.dtrs.list_credentials(self.username, credential_type="chef")
         if name in credential_names:
             create = False
         else:
@@ -497,20 +491,20 @@ class UserObjectMySQL(UserObject):
         }
 
         if create:
-            return self.dtrs.add_credentials(self.access_key, name, credential, credential_type='chef')
+            return self.dtrs.add_credentials(self.username, name, credential, credential_type='chef')
         else:
-            return self.dtrs.update_credentials(self.access_key, name, credential, credential_type='chef')
+            return self.dtrs.update_credentials(self.username, name, credential, credential_type='chef')
 
     def delete_chef_credentials(self, name):
-        credential_names = self.dtrs.list_credentials(self.access_key, credential_type="chef")
+        credential_names = self.dtrs.list_credentials(self.username, credential_type="chef")
         if name not in credential_names:
             raise PhantomWebException("Unknown credentials %s" % name)
 
-        return self.dtrs.remove_credentials(self.access_key, name, credential_type='chef')
+        return self.dtrs.remove_credentials(self.username, name, credential_type='chef')
 
     def get_possible_sites(self, details=False):
         site_client = DTRSClient(self._dashi_conn)
-        site_names = site_client.list_sites(self.access_key)
+        site_names = site_client.list_sites(self.username)
         all_sites = {}
         for site in site_names:
             all_sites[site] = {'id': site, 'instance_types': INSTANCE_TYPES}
@@ -562,14 +556,14 @@ class UserObjectMySQL(UserObject):
         }
         self.get_clouds()
         if site_name in self.iaasclouds:
-            cred_client.update_credentials(self.access_key, site_name, site_credentials)
+            cred_client.update_credentials(self.username, site_name, site_credentials)
         else:
-            cred_client.add_credentials(self.access_key, site_name, site_credentials)
+            cred_client.add_credentials(self.username, site_name, site_credentials)
         self._load_clouds()
 
     def delete_site(self, site_name):
         cred_client = DTRSClient(self._dashi_conn)
-        cred_client.remove_credentials(self.access_key, site_name)
+        cred_client.remove_credentials(self.username, site_name)
         self._load_clouds()
 
 

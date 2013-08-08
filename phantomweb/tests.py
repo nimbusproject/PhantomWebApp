@@ -6,14 +6,12 @@ from django.utils import unittest
 from mock import patch, Mock
 from dashi.exceptions import DashiError
 
-from phantomweb.models import LaunchConfiguration, PhantomUser, RabbitInfoDB
+from phantomweb.models import LaunchConfiguration, RabbitInfoDB
 
 
 def setUpModule():
     user = User.objects.create_user('fred', password='secret')
     user.save()
-    phantom_user = PhantomUser(username='fred', access_key_id='freds_access_key_id')
-    phantom_user.save()
     rabbitmq_info = RabbitInfoDB(rabbithost='localhost',
                                  rabbituser='guest',
                                  rabbitpassword='guest',
@@ -142,7 +140,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
             mock_list_credentials.return_value = ['site1', 'site2']
 
             def describe_credentials(caller, site_name, credential_type=None):
-                if caller == "freds_access_key_id" and site_name == "site1":
+                if caller == "fred" and site_name == "site1":
                     return {
                         "url": "site1_url",
                         "client_key": "site1_client_key",
@@ -150,7 +148,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                         "validation_client_name": "fred-validator",
                         "validator_key": "site1_validator_key"
                     }
-                elif caller == "freds_access_key_id" and site_name == "site2":
+                elif caller == "fred" and site_name == "site2":
                     return {
                         "url": "site2_url",
                         "client_key": "site2_client_key",
@@ -200,7 +198,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                 mock_list_credentials.return_value = ['site1', 'site2']
 
                 def describe_credentials(caller, site_name, credential_type=None):
-                    if caller == "freds_access_key_id" and site_name == "site1":
+                    if caller == "fred" and site_name == "site1":
                         return {
                             "url": "site1_url",
                             "client_key": "site1_client_key",
@@ -208,7 +206,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             "validation_client_name": "fred-validator",
                             "validator_key": "site1_validator_key"
                         }
-                    elif caller == "freds_access_key_id" and site_name == "site2":
+                    elif caller == "fred" and site_name == "site2":
                         return {
                             "url": "site2_url",
                             "client_key": "site2_client_key",
@@ -267,7 +265,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name, credential_type=None):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "url": "site1_url",
                                 "client_key": "site1_client_key",
@@ -275,7 +273,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                 "validation_client_name": "fred-validator",
                                 "validator_key": "site1_validator_key"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "url": "site2_url",
                                 "client_key": "site2_client_key",
@@ -339,7 +337,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name, credential_type=None):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "client_key": "site1_client_key",
                                 "validator_key": "site1_validator_key",
@@ -347,7 +345,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                                 "validation_client_name": "fred-validator",
                                 "url": "site1_url"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "client_key": "site2_client_key",
                                 "validator_key": "site2_validator_key",
@@ -399,13 +397,13 @@ class ChefCredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "access_key": "site1_access_key_id",
                                 "secret_key": "site1_secret_access_key",
                                 "key_name": "site1_phantom_ssh_key"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "access_key": "site2_access_key_id",
                                 "secret_key": "site2_secret_access_key",
@@ -433,13 +431,13 @@ class CredentialsTestCase(unittest.TestCase):
                 mock_list_credentials.return_value = ['site1', 'site2']
 
                 def describe_credentials(caller, site_name):
-                    if caller == "freds_access_key_id" and site_name == "site1":
+                    if caller == "fred" and site_name == "site1":
                         return {
                             "access_key": "site1_access_key_id",
                             "secret_key": "site1_secret_access_key",
                             "key_name": "site1_phantom_ssh_key"
                         }
-                    elif caller == "freds_access_key_id" and site_name == "site2":
+                    elif caller == "fred" and site_name == "site2":
                         return {
                             "access_key": "site2_access_key_id",
                             "secret_key": "site2_secret_access_key",
@@ -483,13 +481,13 @@ class CredentialsTestCase(unittest.TestCase):
                 mock_list_credentials.return_value = ['site1', 'site2']
 
                 def describe_credentials(caller, site_name):
-                    if caller == "freds_access_key_id" and site_name == "site1":
+                    if caller == "fred" and site_name == "site1":
                         return {
                             "access_key": "site1_access_key_id",
                             "secret_key": "site1_secret_access_key",
                             "key_name": "site1_phantom_ssh_key"
                         }
-                    elif caller == "freds_access_key_id" and site_name == "site2":
+                    elif caller == "fred" and site_name == "site2":
                         return {
                             "access_key": "site2_access_key_id",
                             "secret_key": "site2_secret_access_key",
@@ -542,13 +540,13 @@ class CredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "access_key": "site1_access_key_id",
                                 "secret_key": "site1_secret_access_key",
                                 "key_name": "site1_phantom_ssh_key"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "access_key": "site2_access_key_id",
                                 "secret_key": "site2_secret_access_key",
@@ -594,13 +592,13 @@ class CredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "access_key": "site1_access_key_id",
                                 "secret_key": "site1_secret_access_key",
                                 "key_name": "site1_phantom_ssh_key"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "access_key": "site2_access_key_id",
                                 "secret_key": "site2_secret_access_key",
@@ -646,13 +644,13 @@ class CredentialsTestCase(unittest.TestCase):
                     mock_list_credentials.return_value = ['site1', 'site2']
 
                     def describe_credentials(caller, site_name):
-                        if caller == "freds_access_key_id" and site_name == "site1":
+                        if caller == "fred" and site_name == "site1":
                             return {
                                 "access_key": "site1_access_key_id",
                                 "secret_key": "site1_secret_access_key",
                                 "key_name": "site1_phantom_ssh_key"
                             }
-                        elif caller == "freds_access_key_id" and site_name == "site2":
+                        elif caller == "fred" and site_name == "site2":
                             return {
                                 "access_key": "site2_access_key_id",
                                 "secret_key": "site2_secret_access_key",
@@ -674,7 +672,7 @@ class CredentialsTestCase(unittest.TestCase):
 class LaunchConfigurationTestCase(unittest.TestCase):
     def test_get_launchconfigurations(self):
         def describe_dt(obj, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return {
                     "mappings": {
                         "site1": {
@@ -718,7 +716,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
     def test_get_launchconfiguration_resource(self):
         def describe_dt(caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return {
                     "mappings": {
                         "site1": {
@@ -764,7 +762,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
     def test_post_launchconfiguration_resource(self):
         def describe_dt(obj, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "mysecondlc":
+            if caller == "fred" and dt_name == "mysecondlc":
                 return {
                     "mappings": {
                         "hotel": {
@@ -784,25 +782,25 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
 
         def update_dt(obj, caller, dt_name, dt):
-            if caller == "freds_access_key_id" and dt_name == "mysecondlc":
+            if caller == "fred" and dt_name == "mysecondlc":
                 return
             else:
                 self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
 
         def list_credentials(self, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ['hotel', 'site2']
             else:
                 self.fail("Unknown arguments received")
 
         def describe_site(self, caller, site):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return {}
             else:
                 self.fail("Unknown arguments received")
 
         def describe_credentials(self, caller, site):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 r = {
                     'access_key': 'hello',
                     'secret_key': 'secret',
@@ -858,7 +856,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
     def test_put_launchconfiguration_resource(self):
         def describe_dt(obj, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return {
                     "mappings": {
                         "hotel": {
@@ -878,25 +876,25 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def update_dt(obj, caller, dt_name, dt):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return
             else:
                 self.fail("Unknown arguments received: %s %s" % (caller, dt_name))
 
         def list_credentials(self, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ['hotel', 'site2']
             else:
                 self.fail("Unknown arguments received")
 
         def describe_site(self, caller, site):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return {}
             else:
                 self.fail("Unknown arguments received")
 
         def describe_credentials(self, caller, site):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 r = {
                     'access_key': 'hello',
                     'secret_key': 'secret',
@@ -948,7 +946,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 
     def test_delete_launchconfiguration(self):
         def describe_dt(self, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "deletabletestlc":
+            if caller == "fred" and dt_name == "deletabletestlc":
                 return {
                     "mappings": {
                         "site1": {
@@ -965,7 +963,7 @@ class LaunchConfigurationTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def remove_dt(self, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "deletabletestlc":
+            if caller == "fred" and dt_name == "deletabletestlc":
                 return None
             else:
                 self.fail("Unknown arguments received")
@@ -989,13 +987,13 @@ class LaunchConfigurationTestCase(unittest.TestCase):
 class DomainTestCase(unittest.TestCase):
     def test_get_domains(self):
         def list_domains(self, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ["domain1", "domain2"]
             else:
                 self.fail("Unknown arguments received")
 
         def describe_domain(self, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "domain1":
+            if caller == "fred" and domain == "domain1":
                 return {
                     'name': 'this-is-a-uuid',
                     'sensor_data': {
@@ -1013,7 +1011,7 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            if caller == "freds_access_key_id" and domain == "domain2":
+            if caller == "fred" and domain == "domain2":
                 return {
                     'name': 'this-is-a-uuid-number-two',
                     'sensor_data': {
@@ -1083,19 +1081,19 @@ class DomainTestCase(unittest.TestCase):
 
     def test_post_domains(self):
         def add_domain(obj, name, definition, conf, caller=None):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return {}
             else:
                 self.fail("Unknown arguments received")
 
         def list_domains(self, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ["this-is-a-uuid", "this-is-a-uuid-number-two"]
             else:
                 self.fail("Unknown arguments received")
 
         def describe_domain(self, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     'config': {
@@ -1107,7 +1105,7 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+            if caller == "fred" and domain == "this-is-a-uuid-number-two":
                 return {
                     'name': 'this-is-a-uuid-number-two',
                     'config': {
@@ -1133,7 +1131,7 @@ class DomainTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def describe_dt(obj, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return {
                     "mappings": {
                         "site1": {
@@ -1239,13 +1237,13 @@ class DomainTestCase(unittest.TestCase):
 
     def test_get_domain_resource(self):
         def list_domains(self, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ["domain1", "domain2"]
             else:
                 self.fail("Unknown arguments received")
 
         def describe_domain(self, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     'sensor_data': {"my.domain.metric": {"Series": [0.0], "Average": 0.0}},
@@ -1258,7 +1256,7 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            elif caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+            elif caller == "fred" and domain == "this-is-a-uuid-number-two":
                 return {
                     'name': 'this-is-a-uuid-number-two',
                     'sensor_data': {"my.domain.metric": {"Series": [0.0], "Average": 0.0}},
@@ -1281,13 +1279,13 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+            elif caller == "fred" and domain == "this-is-a-bad-url":
                 raise DashiError("This domain don't exist")
             else:
                 self.fail("Unknown arguments received")
 
         def describe_dt(obj, caller, dt_name):
-            if caller == "freds_access_key_id" and dt_name == "testlc":
+            if caller == "fred" and dt_name == "testlc":
                 return {
                     "mappings": {
                         "site1": {
@@ -1333,7 +1331,7 @@ class DomainTestCase(unittest.TestCase):
     def test_delete_domain_resource(self):
 
         def describe_domain(self, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     'config': {
@@ -1345,15 +1343,15 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+            elif caller == "fred" and domain == "this-is-a-bad-url":
                 raise DashiError("This domain don't exist")
             else:
                 self.fail("Unknown arguments received")
 
         def remove_domain(self, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return None
-            elif caller == "freds_access_key_id" and domain == "this-is-a-bad-url":
+            elif caller == "fred" and domain == "this-is-a-bad-url":
                 raise DashiError("This domain don't exist")
             else:
                 self.fail("Unknown arguments received")
@@ -1371,30 +1369,30 @@ class DomainTestCase(unittest.TestCase):
 
     def test_put_domain_resource(self):
         def add_domain(obj, name, definition, conf, caller=None):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return {}
             else:
                 self.fail("Unknown arguments received")
 
         def list_domains(obj, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ["this-is-a-uuid", "this-is-a-uuid-number-two"]
             else:
                 self.fail("Unknown arguments received")
 
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return None
             else:
                 self.fail("Unknown arguments received")
 
         def reconfigure_domain(obj, domain, conf, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return None
             else:
                 self.fail("Unknown arguments received")
 
         def describe_domain(obj, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     'config': {
@@ -1406,7 +1404,7 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            elif caller == "freds_access_key_id" and domain == "this-is-a-uuid-number-two":
+            elif caller == "fred" and domain == "this-is-a-uuid-number-two":
                 return {
                     'name': 'this-is-a-uuid-number-two',
                     'config': {
@@ -1428,7 +1426,7 @@ class DomainTestCase(unittest.TestCase):
                         }
                     }
                 }
-            elif caller == "freds_access_key_id" and domain == "this-is-a-nonexistent-uuid":
+            elif caller == "fred" and domain == "this-is-a-nonexistent-uuid":
                 raise DashiError("domain doesn't exist")
             else:
                 self.fail("Unknown arguments received")
@@ -1531,7 +1529,7 @@ class InstancesTestCase(unittest.TestCase):
     def test_get_instances(self):
 
         def describe_domain(obj, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     "instances": [
@@ -1623,7 +1621,7 @@ class InstancesResourcesTestCase(unittest.TestCase):
     def test_get_instance(self):
 
         def describe_domain(obj, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     "instances": [
@@ -1714,7 +1712,7 @@ class InstancesResourcesTestCase(unittest.TestCase):
     def test_delete_instance(self):
 
         def describe_domain(obj, domain, caller=None):
-            if caller == "freds_access_key_id" and domain == "this-is-a-uuid":
+            if caller == "fred" and domain == "this-is-a-uuid":
                 return {
                     'name': 'this-is-a-uuid',
                     "instances": [
@@ -1771,17 +1769,17 @@ class InstancesResourcesTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def list_credentials(obj, caller):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return ["hotel", "site2"]
 
         def describe_credentials(obj, caller, site_name):
-            if caller == "freds_access_key_id" and site_name == "hotel":
+            if caller == "fred" and site_name == "hotel":
                 return {
                     "access_key": "site1_access_key_id",
                     "secret_key": "site1_secret_access_key",
                     "key_name": "site1_phantom_ssh_key"
                 }
-            elif caller == "freds_access_key_id" and site_name == "site2":
+            elif caller == "fred" and site_name == "site2":
                 return {
                     "access_key": "site2_access_key_id",
                     "secret_key": "site2_secret_access_key",
@@ -1791,7 +1789,7 @@ class InstancesResourcesTestCase(unittest.TestCase):
                 self.fail("Unknown arguments received")
 
         def describe_site(self, caller, site):
-            if caller == "freds_access_key_id":
+            if caller == "fred":
                 return {}
             else:
                 self.fail("Unknown arguments received")
