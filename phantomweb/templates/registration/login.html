@@ -5,7 +5,11 @@
 {% block nimbus_body %}
 
 {% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
+{% for key, err in form.errors.items %}
+<div class="alert alert-error">
+  {{ err.as_text|cut:"* " }}
+</div>
+{% endfor %}
 {% endif %}
 
 <p>Log in with your Phantom username and password.</p>
