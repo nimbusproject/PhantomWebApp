@@ -241,11 +241,14 @@ def django_sign_up(request):
             phantom_user.save()
 
             if ACTIVATE_ON_REGISTER:
+                new_user.email = email
+                new_user.save()
                 new_user = authenticate(username=username, password=password)
                 login(request, new_user)
                 return HttpResponseRedirect("/phantom/")
             else:
                 new_user.is_active = False
+                new_user.email = email
                 new_user.save()
 
                 send_mail('New Phantom User Needs Activation',
