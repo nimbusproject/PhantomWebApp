@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from django.core.context_processors import csrf
 from django.conf.urls.defaults import patterns
 from django.template import Context, loader
@@ -16,6 +17,9 @@ from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phanto
     phantom_domain_start, phantom_domain_details, phantom_instance_terminate, phantom_sensors_load
 from phantomweb.models import PhantomUser
 from django.contrib import admin
+
+ACTIVATE_ON_REGISTER = False
+ACTIVATION_EMAIL = ["nimbus@mcs.anl.gov", ]
 
 
 @LogEntryDecorator
@@ -223,20 +227,35 @@ def django_sign_up(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            if not form.cleaned_data['email']:
+            if not request.POST['email']:
                 form.errors['email'] = ['You must provide an email address']
                 return
+
             new_user = form.save()
 
             username = form.cleaned_data['username']
             password = form.cleaned_data['password1']
+            email = request.POST['email']
 
             phantom_user = PhantomUser.objects.create(username=username, access_key_id=username)
             phantom_user.save()
 
-            new_user = authenticate(username=username, password=password)
-            login(request, new_user)
-            return HttpResponseRedirect("/phantom/")
+            if ACTIVATE_ON_REGISTER:
+                new_user = authenticate(username=username, password=password)
+                login(request, new_user)
+                return HttpResponseRedirect("/phantom/")
+            else:
+                new_user.is_active = False
+                new_user.save()
+
+                send_mail('New Phantom User Needs Activation',
+                    'New user %s (%s) needs activation.' % (username, email),
+                    'nimbus@mcs.anl.gov', ACTIVATION_EMAIL, fail_silently=False)
+
+                t = loader.get_template('../templates/registration/activation.html')
+                c = Context({'user': username, 'email': email})
+                return HttpResponse(t.render(c))
+
     else:
         form = UserCreationForm()
     return render(request, "../templates/registration/signup.html", {
