@@ -1,0 +1,59 @@
+{% extends "../templates/base.html" %}
+{% load url from future %}
+{% block headscripts %} {% endblock %}
+
+{% block nimbus_body %}
+
+{% if not form.errors %}
+<span class="label label-warning">Wait! Do you have a Futuregrid account?<br><br>
+<a href="http://www.nimbusproject.org/doc/phantom/latest/webapp.html#getting-access">Sign
+  up</a> with your <a href="http://www.nimbusproject.org/doc/phantom/latest/webapp.html#getting-access">Futuregrid account</a> to have all your cloud accounts set up automatically.</span>
+<br>
+<br>
+
+<p>Register a Phantom account:</p>
+
+{% endif %}
+<form action="" method="post">{% csrf_token %}
+  <div class="control-group {% if form.errors.username %}error{% endif %}">
+    <label for="id_username" class="control-label">Username:</label>
+    <div class="controls">
+      <input id="id_username" type="text" maxlength="30" name="username"></input>
+      {% if form.errors.username %}
+      <span class="help-inline">{{ form.errors.username }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="control-group {% if form.errors.email %}error{% endif %}">
+    <label for="id_email" class="control-label">Email:</label>
+    <div class="controls">
+      <input id="id_email" type="text" maxlength="30" name="email"></input>
+      {% if form.errors.email %}
+      <span class="help-inline">{{ form.errors.email }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="control-group {% if form.errors.password1 %}error{% endif %}">
+    <label for="id_password1" class="control-label">Password:</label>
+    <div class="controls">
+      <input name="password1" id="id_password1" type="password">
+      {% if form.errors.password1 %}
+      <span class="help-inline">{{ form.errors.password1 }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="control-group {% if form.errors.password2 %}error{% endif %}">
+    <label for="id_password2" class="control-label">Password confirmation:</label>
+    <div class="controls">
+      <input name="password2" id="id_password2" type="password">
+      {% if form.errors.password2 %}
+      <span class="help-inline">{{ form.errors.password2 }}</span>
+      {% endif %}
+    </div>
+  </div>
+    <input type="submit" value="Create the account">
+</form>
+{% endblock %}
