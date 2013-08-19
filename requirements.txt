@@ -6,14 +6,14 @@ ceiclient==0.2.2
 cloudinitd==1.2
 dashi==0.3.0
 Django==1.4.5
-django-statsd==1.8.1
+django-statsd==1.9.1
 Fabric==1.3.0
 Jinja2==2.6
 kombu==2.5.8
 MySQL-python==1.2.3
 phantomsql==0.2.1
 pycrypto==2.3
-python-statsd==1.5.8
+python-statsd==1.6.0
 PyYAML==3.10
 simplejson==2.3.2
 SQLAlchemy==0.7.6
