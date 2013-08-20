@@ -20,6 +20,8 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'bresnaha@mcs.anl.gov'
 SERVER_EMAIL = 'bresnaha@mcs.anl.gov'
 
+LOGIN_REDIRECT_URL='/'
+
 MANAGERS = ADMINS
 
 DATABASES = {
