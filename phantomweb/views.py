@@ -133,6 +133,7 @@ def django_lc_html(request):
         # no need to talk to the workload app here
         response_dict = {}
         response_dict.update(csrf(request))
+        response_dict['user'] = request.user
         t = loader.get_template('../templates/launchconfig.html')
         c = Context(response_dict)
     except PhantomRedirectException, ex:
