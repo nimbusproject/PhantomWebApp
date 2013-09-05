@@ -3,6 +3,7 @@ var user_launch_configs = [];
 var lc_to_import = null;
 
 $(document).ready(function() {
+    $("#nav-appliances").addClass("active");
 
     $("#public_lc_table > tr").hide();
     $("#show-all-lc").hide();

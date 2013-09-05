@@ -27,7 +27,7 @@ urlpatterns = patterns('',
         {'next_page': '/phantom/'}),
     url(r'^accounts/signup/$', 'phantomweb.views.django_sign_up'),
 
-    url(r'^phantom/publiclaunchconfigurations/?$', 'phantomweb.views.django_publiclc_html'),
+    url(r'^phantom/appliances/?$', 'phantomweb.views.django_publiclc_html'),
 
     url(r'^phantom/profile/?$', 'phantomweb.views.django_profile_html'),
     url(r'^phantom/api/sites/load$', 'phantomweb.views.django_sites_load'),
