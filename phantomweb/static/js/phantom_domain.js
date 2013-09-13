@@ -852,7 +852,7 @@ function show_domain_details(domain_id) {
     var sensor_data = domain.domain_metrics;
     for (var metric in sensor_data) {
         for (var sensor_type in sensor_data[metric]) {
-            if (sensor_type === "Series") {
+            if (sensor_type === "series") {
                 // Ignore series data because it is ugly :)
                 continue;
             }
