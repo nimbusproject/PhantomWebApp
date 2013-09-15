@@ -2,6 +2,7 @@
 
 import os
 import sys
+
 import json
 import requests
 
@@ -25,5 +26,5 @@ new_domain = {
 }
 
 r = requests.post("%s/domains" % api_url, data=json.dumps(new_domain), auth=(user_id, token))
-if r.status_code != 200:
-    sys.exit("Error: %s" % r.text)
+if r.status_code != 201:
+    sys.exit("Error %d: %s" % (r.status_code, r.text))

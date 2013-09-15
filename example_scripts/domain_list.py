@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os
+import sys
+
 import requests
 
 user_id = os.environ['USER_ID']
@@ -8,6 +10,9 @@ token = os.environ['TOKEN']
 api_url = os.environ.get('PHANTOM_URL', "https://phantom.nimbusproject.org/api/dev")
 
 r = requests.get("%s/domains" % api_url, auth=(user_id, token))
+if r.status_code != 200:
+    sys.exit("Request failed with status code %d" % r.status_code)
+
 all_domains = r.json()
 
 for domain in all_domains:
