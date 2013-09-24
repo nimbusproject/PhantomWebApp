@@ -348,7 +348,6 @@ def terminate_domain_instance(username, domain_id, instance_id):
         iaas_connection.terminate_instances(instance_ids=[instance_iaas_id, ])
     except Exception:
         log.exception("Couldn't terminate %s" % instance_iaas_id)
-        raise PhantomWebException("Problem terminating instance %s" % instance_iaas_id)
     timer.stop('terminate_instances.timing')
     timer_cloud.stop('terminate_instances.%s.timing' % cloud_name)
 
