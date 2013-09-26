@@ -104,8 +104,11 @@ function import_lc(lc_id_to_import, new_name) {
         window.location.href = "/phantom/launchconfig#" + imported_lc.name;
     }
 
-    var import_lc_failure = function(error) {
+    var import_lc_failure = function(url, error) {
         phantom_alert("Problem importing launch config! " + error);
+        $('a').removeClass('disabled');
+        $import_lc_name.parent().parent().show()
+        $("#importing").hide();
         console.log(error);
     }
 

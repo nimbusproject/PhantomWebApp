@@ -8,7 +8,7 @@ from django.contrib.auth.views import password_reset, password_change, password_
 admin.autodiscover()
 
 DEV_VERSION = "dev"
-ACCEPTED_RESOURCE_PATTERN = "[-_.0-9A-Za-z]"
+ACCEPTED_RESOURCE_PATTERN = "[-_.0-9A-Za-z ]"
 
 urlpatterns = patterns('',
 
