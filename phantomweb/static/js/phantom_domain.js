@@ -947,7 +947,7 @@ function show_instance_details(instance_id) {
     var sensor_data = instance.sensor_data;
     for (var metric in sensor_data) {
         for (var sensor_type in sensor_data[metric]) {
-            if (sensor_type === "Series") {
+            if (sensor_type === "series" || sensor_type === "Series") {
                 // Ignore series data because it is ugly :)
                 continue;
             }
