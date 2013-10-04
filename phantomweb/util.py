@@ -10,6 +10,7 @@ from boto.exception import BotoServerError
 from ceiclient.client import DTRSClient, EPUMClient
 from ceiclient.connection import DashiCeiConnection
 from dashi.exceptions import DashiError
+from django.conf import settings
 
 from phantomweb.tevent import Pool, TimeoutError
 from phantomweb.models import RabbitInfoDB, PhantomUser
@@ -228,8 +229,8 @@ class UserObjectMySQL(UserObject):
                 domain_opts['scale_up_threshold'] = parameters['sensor_scale_up_threshold']
                 domain_opts['sample_function'] = 'Average'  # TODO: make configurable
                 domain_opts['sensor_type'] = 'opentsdb'  # TODO: make configurable
-                domain_opts['opentsdb_port'] = 4242  # TODO: make configurable
-                domain_opts['opentsdb_host'] = 'localhost'  # TODO: make configurable
+                domain_opts['opentsdb_port'] = int(settings.OPENTSDB_PORT)
+                domain_opts['opentsdb_host'] = settings.OPENTSDB_HOST
             except KeyError as k:
                 raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
 
@@ -243,8 +244,8 @@ class UserObjectMySQL(UserObject):
 
                 domain_opts['sample_function'] = 'Average'  # TODO: make configurable
                 domain_opts['sensor_type'] = 'opentsdb'  # TODO: make configurable
-                domain_opts['opentsdb_port'] = 4242  # TODO: make configurable
-                domain_opts['opentsdb_host'] = 'localhost'  # TODO: make configurable
+                domain_opts['opentsdb_port'] = int(settings.OPENTSDB_PORT)
+                domain_opts['opentsdb_host'] = settings.OPENTSDB_HOST
             except KeyError as k:
                 raise PhantomWebException("Mandatory parameter '%s' is missing" % k.args[0])
         else:
