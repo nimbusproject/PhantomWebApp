@@ -544,47 +544,6 @@ function phantom_lc_load_internal() {
                 $("#phantom_lc_appliance")
                     .append("<option>" + appliance.name + "</option>");
             }
-            
-
-            /*$("#phantom_lc_name_select").empty();
-            $("#phantom_lc_cloud").empty();
-            g_lc_info = {};
-            for(var i=0; i<launchconfigs.length; i++) {
-                var launchconfig = launchconfigs[i];
-                g_lc_info[launchconfig.name] = launchconfig;
-            }
-
-            phantom_lc_load_lc_names();
-            phantom_lc_load_cloud_names();
-            var cloud_name = g_selected_cloud;
-            phantom_lc_select_new_cloud_internal(cloud_name);
-            phantom_lc_change_image_type();
-
-            var lc_name_from_saved = $("#phantom_lc_name_input").val();
-            if (lc_name_from_saved) {
-                // if it was a saved name load up its value
-                $("#phantom_lc_name_select").val(lc_name_from_saved);
-            }
-
-            if (g_selected_lc === null) {
-                var url_lc = get_hash_lc();
-                var first_lc = $("a.launch_config").first().text();
-
-                if (g_lc_info.hasOwnProperty(url_lc)) {
-                    g_selected_lc = url_lc;
-                    phantom_lc_load_lc_names();
-                }
-                else if (first_lc) {
-                    g_selected_lc = first_lc;
-                    phantom_lc_load_lc_names();
-                }
-                else {
-                    $("#phantom_lc_info_area").hide();
-                    $("#phantom_lc_order_area").hide();
-                }
-            }
-
-            phantom_lc_buttons(true);*/
         }
         catch (err) {
             phantom_alert("There was a problem loading the page.  Please try again later. ".concat(err.message));
@@ -598,21 +557,21 @@ function phantom_lc_load_internal() {
     var sites_url = make_url('sites?details=true')
     var sites_request = phantomGET(sites_url)
 
-    var lc_url = make_url('launchconfigurations')
-    var lc_request = phantomGET(lc_url);
-
     var appliances_url = make_url('launchconfigurations?public=true')
     var appliances_request = phantomGET(appliances_url);
+
+    var lc_url = make_url('launchconfigurations')
+    var lc_request = phantomGET(lc_url);
 
     phantom_lc_buttons(false);
     phantom_info("Loading Launch Configurations");
 
-    $.when(cred_request, sites_request, lc_request, appliances_request)
-        .done(function(credentials, sites, lcs, appliances) {
+    $.when(cred_request, sites_request, appliances_request, lc_request)
+        .done(function(credentials, sites, appliances, lcs) {
             load_sites_success(sites[0]);
             load_credentials_success(credentials[0]);
-            load_lc_success(lcs[0]);
             load_appliances_success(appliances[0]);
+            load_lc_success(lcs[0]);
         })
         .fail(function(err) {
             phantom_alert("There was a problem loading your launch configs.  Please try again later. ".concat(err.message));
@@ -856,7 +815,6 @@ function phantom_lc_save_click_internal() {
         phantom_lc_buttons(true);
     }
 
-    console.log(data);
     if (g_unsaved_lcs.indexOf(lc_name) > -1) {
         var url = make_url("launchconfigurations");
         phantomPOST(url, data, success_func, error_func);
