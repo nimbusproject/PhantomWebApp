@@ -564,6 +564,7 @@ def launchconfigurations(request):
         user_data = content.get('user_data')
         chef_runlist = content.get('chef_runlist')
         chef_attributes = content.get('chef_attributes')
+        appliance = content.get('appliance')
 
         if (contextualization_method is 'none' and
                 (user_data, chef_runlist, chef_attributes) is not (None, None, None)):
@@ -584,15 +585,16 @@ def launchconfigurations(request):
             'contextualization_method': contextualization_method,
             'user_data': user_data,
             'chef_runlist': chef_runlist,
-            'chef_attributes': chef_attributes
+            'chef_attributes': chef_attributes,
         }
 
-        lc = create_launch_configuration(username, name, cloud_params, context_params)
+        lc = create_launch_configuration(username, name, cloud_params, context_params, appliance)
 
         response_dict = {
             "id": lc.id,
             "name": name,
             "owner": username,
+            'appliance': appliance,
             'contextualization_method': contextualization_method,
             "cloud_params": cloud_params,
             "uri": "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id),
@@ -651,6 +653,7 @@ def launchconfiguration_resource(request, id):
         user_data = content.get('user_data')
         chef_runlist = content.get('chef_runlist')
         chef_attributes = content.get('chef_attributes')
+        appliance = content.get('appliance')
 
         if (contextualization_method is 'none' and
                 (user_data, chef_runlist, chef_attributes) is not (None, None, None)):
@@ -674,7 +677,7 @@ def launchconfiguration_resource(request, id):
             'chef_attributes': content.get('chef_attributes')
         }
 
-        response_dict = update_launch_configuration(lc.id, cloud_params, context_params)
+        response_dict = update_launch_configuration(lc.id, cloud_params, context_params, appliance)
         response_dict['uri'] = "/api/%s/launchconfigurations/%s" % (API_VERSION, lc.id)
         response_dict['contextualization_method'] = contextualization_method
 

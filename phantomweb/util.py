@@ -370,7 +370,7 @@ class UserObjectMySQL(UserObject):
             domains.append(domain_description)
         return domains
 
-    def create_dt(self, dt_name, cloud_params, context_params):
+    def create_dt(self, dt_name, cloud_params, context_params, appliance=None):
         dt = self.get_dt(dt_name)
         if dt is None:
             dt = {}
@@ -428,6 +428,12 @@ class UserObjectMySQL(UserObject):
         elif context_params.get('contextualization_method') == 'none':
             contextualization = dt['contextualization'] = {}
             contextualization['method'] = None
+
+        if appliance is not None:
+            dt['appliance'] = appliance
+        else:
+            if 'appliance' in dt:
+                del dt['appliance']
 
         if create:
             return self.dtrs.add_dt(self.access_key, dt_name, dt)

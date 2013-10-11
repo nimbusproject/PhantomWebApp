@@ -132,18 +132,18 @@ def upload_key(cloud, name, key):
     cloud.upload_key(name, key)
 
 
-def create_launch_configuration(username, name, cloud_params, context_params):
+def create_launch_configuration(username, name, cloud_params, context_params, appliance=None):
     lc = LaunchConfiguration.objects.create(name=name, username=username)
 
     user_obj = get_user_object(username)
-    user_obj.create_dt(name, cloud_params, context_params)
+    user_obj.create_dt(name, cloud_params, context_params, appliance)
 
     lc.save()
 
     return lc
 
 
-def update_launch_configuration(id, cloud_params, context_params):
+def update_launch_configuration(id, cloud_params, context_params, appliance=None):
     lc = get_launch_configuration(id)
     if lc is None:
         raise PhantomWebException("Trying to update lc %s that doesn't exist?" % id)
@@ -151,7 +151,7 @@ def update_launch_configuration(id, cloud_params, context_params):
     username = lc.get('owner')
     name = lc.get('name')
     user_obj = get_user_object(username)
-    user_obj.create_dt(name, cloud_params, context_params)
+    user_obj.create_dt(name, cloud_params, context_params, appliance)
 
     return lc
 
@@ -212,6 +212,10 @@ def get_launch_configuration(id):
             lc_dict["chef_attributes"] = attributes
         elif method is None:
             lc_dict["contextualization_method"] = 'none'
+
+    appliance = dt.get('appliance')
+    if appliance:
+        lc_dict['appliance'] = appliance
 
     for cloud, mapping in dt.get('mappings', {}).iteritems():
 
