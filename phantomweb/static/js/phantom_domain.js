@@ -938,6 +938,8 @@ function show_instance_details(instance_id) {
 
     var data = make_row("Instance ID", instance.iaas_instance_id) +
     make_row("Hostname", instance.hostname) +
+    make_row("Public IP", instance.public_ip) +
+    make_row("Private IP", instance.private_ip) +
     make_row("State", instance.lifecycle_state) +
     make_row("Cloud", instance_cloud) +
     make_row("Image", instance.image_id) +

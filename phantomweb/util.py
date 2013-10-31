@@ -352,6 +352,8 @@ class UserObjectMySQL(UserObject):
                 'iaas_instance_id': i.get('iaas_id', ''),
                 'lifecycle_state': i.get('state', ''),
                 'hostname': i.get('hostname', ''),
+                'public_ip': i.get('public_ip', ''),
+                'private_ip': i.get('private_ip', ''),
                 'cloud': i.get('site', ''),
                 'image_id': i.get('iaas_image', ''),
                 'instance_type': i.get('iaas_allocation', ''),
