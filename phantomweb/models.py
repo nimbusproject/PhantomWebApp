@@ -68,3 +68,58 @@ class UserPhantomInfoDB(models.Model):
 class PhantomUser(models.Model):
     username = models.CharField(max_length=128, primary_key=True)
     access_key_id = models.CharField(max_length=128)
+
+
+class PackerCredential(models.Model):
+    username = models.CharField(max_length=128)
+    cloud = models.CharField(max_length=128)
+    canonical_id = models.CharField(max_length=128)
+    certificate = models.TextField()
+    key = models.TextField()
+    username = models.CharField(max_length=128)
+    cloud = models.CharField(max_length=128)
+    openstack_login = models.CharField(max_length=128)
+    openstack_password = models.CharField(max_length=128)
+    openstack_project = models.CharField(max_length=128)
+
+    class Meta(object):
+        unique_together = ("username", "cloud")
+
+
+class ImageGenerator(RandomPrimaryIdModel):
+    name = models.CharField(max_length=128)
+    username = models.CharField(max_length=128)
+
+    class Meta(object):
+        unique_together = ("name", "username")
+
+
+class ImageGeneratorScript(models.Model):
+    image_generator = models.ForeignKey(ImageGenerator)
+    script_content = models.TextField()
+
+
+class ImageGeneratorCloudConfig(models.Model):
+    image_generator = models.ForeignKey(ImageGenerator)
+    cloud_name = models.CharField(max_length=128)
+    image_name = models.CharField(max_length=128)
+    ssh_username = models.CharField(max_length=128)
+    instance_type = models.CharField(max_length=128)
+    common_image = models.BooleanField()
+    new_image_name = models.CharField(max_length=128)
+
+
+class ImageBuild(models.Model):
+    image_generator = models.ForeignKey(ImageGenerator)
+    celery_task_id = models.CharField(max_length=128)
+    status = models.CharField(max_length=128)
+    returncode = models.IntegerField()
+    full_output = models.TextField()
+    owner = models.CharField(max_length=128)
+    cloud_name = models.CharField(max_length=128)
+
+
+class ImageBuildArtifact(models.Model):
+    image_build = models.ForeignKey(ImageBuild)
+    cloud_name = models.CharField(max_length=128)
+    image_name = models.CharField(max_length=128)

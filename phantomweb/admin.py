@@ -1,7 +1,9 @@
 from django.contrib import admin
 
 from phantomweb.models import RabbitInfoDB, LaunchConfigurationDB,\
-    HostMaxPairDB, PhantomUser, LaunchConfiguration, PublicLaunchConfiguration
+    HostMaxPairDB, PhantomUser, LaunchConfiguration, PublicLaunchConfiguration, \
+    ImageGenerator, ImageGeneratorScript, ImageGeneratorCloudConfig, ImageBuild, \
+    PackerCredential, ImageBuildArtifact
 
 
 class RabbitInfoAdmin(admin.ModelAdmin):
@@ -38,3 +40,39 @@ class PhantomUserAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(PhantomUser, PhantomUserAdmin)
+
+
+class PackerCredentialAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(PackerCredential, PackerCredentialAdmin)
+
+
+class ImageGeneratorAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ImageGenerator, ImageGeneratorAdmin)
+
+
+class ImageGeneratorScriptAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ImageGeneratorScript, ImageGeneratorScriptAdmin)
+
+
+class ImageGeneratorCloudConfigAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ImageGeneratorCloudConfig, ImageGeneratorCloudConfigAdmin)
+
+
+class ImageBuildAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ImageBuild, ImageBuildAdmin)
+
+
+class ImageBuildArtifactAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ImageBuildArtifact, ImageBuildArtifactAdmin)

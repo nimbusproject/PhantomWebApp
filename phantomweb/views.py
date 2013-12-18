@@ -94,6 +94,17 @@ def django_publiclc_html(request):
 
 
 @LogEntryDecorator
+@login_required
+def django_imagegenerators_html(request):
+    response_dict = {}
+    response_dict.update(csrf(request))
+    response_dict['user'] = request.user
+    t = loader.get_template('../templates/imagegenerators.html')
+    c = Context(response_dict)
+
+    return HttpResponse(t.render(c))
+
+
 def django_sign_up(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)

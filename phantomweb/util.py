@@ -535,9 +535,20 @@ class UserObjectMySQL(UserObject):
             for site in site_names:
                 try:
                     site_description = instance_types_results[site].get(IAAS_TIMEOUT)
+
                     instance_types = site_description.get("instance_types")
                     if instance_types is not None:
                         all_sites[site]['instance_types'] = instance_types
+
+                    cloud_type = site_description.get("type")
+                    if cloud_type is not None:
+                        all_sites[site]['type'] = cloud_type
+
+                    image_generation = site_description.get("image_generation")
+                    if image_generation:
+                        all_sites[site]['image_generation'] = True
+                    else:
+                        all_sites[site]['image_generation'] = False
                 except TimeoutError:
                     log.exception("Timed out getting list of instance types for %s" % site)
                 except Exception:

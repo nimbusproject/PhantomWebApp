@@ -468,6 +468,16 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     var credentials = g_cloud_map[selected_cloud_name];
 
+    if (credentials["type"] == "nimbus") {
+      document.getElementById("phantom_cloud_div_nimbus_usercert").style.display = 'block';
+      document.getElementById("phantom_cloud_div_nimbus_userkey").style.display = 'block';
+      document.getElementById("phantom_cloud_div_nimbus_canonical_id").style.display = 'block';
+    } else {
+      document.getElementById("phantom_cloud_div_nimbus_usercert").style.display = 'none';
+      document.getElementById("phantom_cloud_div_nimbus_userkey").style.display = 'none';
+      document.getElementById("phantom_cloud_div_nimbus_canonical_id").style.display = 'none';
+    }
+
     $("#phantom_cloud_edit_key_message").text("");
     $("#phantom_cloud_edit_keyname_list").empty();
     if (!credentials || !credentials['access_key'] || !credentials['secret_key']) {
@@ -479,6 +489,15 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
         $("#phantom_cloud_edit_keyname_list").parent().parent().show();
         $("#phantom_cloud_edit_access").val(credentials['access_key']);
         $("#phantom_cloud_edit_secret").val(credentials['secret_key']);
+        if ("nimbus_user_cert" in credentials) {
+          $("#phantom_cloud_edit_nimbus_usercert").text(credentials['nimbus_user_cert']);
+        }
+        if ("nimbus_user_key" in credentials) {
+          $("#phantom_cloud_edit_nimbus_userkey").text(credentials['nimbus_user_key']);
+        }
+        if ("nimbus_canonical_id" in credentials) {
+          $("#phantom_cloud_edit_nimbus_canonical_id").val(credentials['nimbus_canonical_id']);
+        }
         if (credentials.status_msg) {
             phantom_alert(val.status_msg);
         }
@@ -505,7 +524,6 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 function show_cloud_edit_guides() {
         $("#phantom_cloud_edit_access")
             .after('<span class="help-inline">Password Changed</span>');
-    
 }
 
 function phantom_cloud_edit_change_cloud (cloud_name) {
@@ -565,6 +583,16 @@ function phantom_cloud_edit_load_sites() {
                 g_cloud_map[credential.id]["access_key"] = credential["access_key"];
                 g_cloud_map[credential.id]["secret_key"] = credential["secret_key"];
                 g_cloud_map[credential.id]["keyname_list"] = credential["available_keys"];
+
+                if (credential.hasOwnProperty("nimbus_user_cert")) {
+                  g_cloud_map[credential.id]["nimbus_user_cert"] = credential["nimbus_user_cert"];
+                }
+                if (credential.hasOwnProperty("nimbus_user_key")) {
+                  g_cloud_map[credential.id]["nimbus_user_key"] = credential["nimbus_user_key"];
+                }
+                if (credential.hasOwnProperty("nimbus_canonical_id")) {
+                  g_cloud_map[credential.id]["nimbus_canonical_id"] = credential["nimbus_canonical_id"];
+                }
             }
         }
 
@@ -596,13 +624,16 @@ function phantom_cloud_edit_load_sites() {
         for (var i = 0; i < sites.length; i++) {
             var site = sites[i];
             if (site.hasOwnProperty("id")) {
-                g_cloud_map[site.id] = {}
+                g_cloud_map[site.id] = {};
+              if (site.hasOwnProperty("type")) {
+                  g_cloud_map[site.id]["type"] = site.type;
+              }
             }
         }
 
     }
 
-    var sites_url = make_url('sites');
+    var sites_url = make_url('sites?details=true');
     var sites_request = phantomGET(sites_url);
 
     var credentials_url = make_url('credentials/sites?details=true');
