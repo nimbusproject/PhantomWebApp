@@ -19,7 +19,9 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     update_launch_configuration, get_all_domains, create_domain, get_domain_by_name, get_domain, \
     remove_domain, modify_domain, get_domain_instances, get_domain_instance, \
     terminate_domain_instance, get_sensors, remove_launch_configuration, \
-    get_launch_configuration_object, get_all_keys, upload_key
+    get_launch_configuration_object, get_all_keys, upload_key, get_all_image_generators, create_image_generator, \
+    get_image_generator, get_image_generator_by_name, modify_image_generator, remove_image_generator, \
+    create_image_build, get_image_build, get_all_image_builds, remove_image_build
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -900,3 +902,178 @@ def sensor_resource(request, sensor_id):
         }
 
         return HttpResponse(json.dumps(sensor), mimetype='application/javascript')
+
+
+@token_or_logged_in_required
+@optional_pretty_print
+@require_http_methods(["GET", "POST"])
+def imagegenerators(request):
+    if request.method == "GET":
+        username = request.user.username
+        imagegenerators = get_all_image_generators(username)
+        response = []
+        for ig_id in imagegenerators:
+            ig_dict = get_image_generator(ig_id)
+            ig_dict['uri'] = "/api/%s/imagegenerators/%s" % (API_VERSION, ig_dict.get('id'))
+            response.append(ig_dict)
+
+        h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
+        return h
+    elif request.method == "POST":
+        try:
+            content = json.loads(request.body)
+        except:
+            return HttpResponseBadRequest()
+        username = request.user.username
+        name = content.get('name')
+        cloud_params = content.get('cloud_params')
+        script = content.get('script')
+
+        if name is None:
+            return HttpResponseBadRequest("You must provide a name for your image generator")
+        if cloud_params is None:
+            return HttpResponseBadRequest("You must provide cloud parameters for your image generator")
+
+        imagegenerator = get_image_generator_by_name(username, name)
+        if imagegenerator is not None:
+            # image generator already exists, redirect to existing one
+            return HttpResponseRedirect("/api/%s/imagegenerators/%s" % (API_VERSION, imagegenerator.id))
+
+        try:
+            image_generator = create_image_generator(username, name, cloud_params, script)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        response_dict = {
+            "id": image_generator.id,
+            "name": name,
+            "owner": username,
+            "uri": "/api/%s/imagegenerators/%s" % (API_VERSION, image_generator.id)
+        }
+
+        h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
+        return h
+
+
+@token_or_logged_in_required
+@optional_pretty_print
+@require_http_methods(["GET", "PUT", "DELETE"])
+def imagegenerator_resource(request, id):
+    if request.method == "GET":
+        image_generator = get_image_generator(id)
+        if image_generator is not None and image_generator.get('owner') == request.user.username:
+            image_generator['uri'] = "/api/%s/imagegenerators/%s" % (API_VERSION, image_generator.get('id'))
+            return HttpResponse(json.dumps(image_generator), mimetype='application/javascript')
+        else:
+            return HttpResponseNotFound('Image generator %s not found' % id, mimetype='application/javascript')
+
+    elif request.method == "PUT":
+        username = request.user.username
+        response = get_image_generator(id)
+        if response is None or response.get('owner') != username:
+            return HttpResponseNotFound('Image generator %s not found' % id, mimetype='application/javascript')
+
+        try:
+            content = json.loads(request.body)
+        except:
+            return HttpResponseBadRequest()
+
+        try:
+            response = modify_image_generator(id, content)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        response['uri'] = "/api/%s/imagegenerators/%s" % (API_VERSION, response['id'])
+
+        h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
+        return h
+
+    elif request.method == "DELETE":
+        username = request.user.username
+        image_generator = get_image_generator(id)
+        if image_generator is not None and image_generator.get('owner') == request.user.username:
+            remove_image_generator(id)
+            h = HttpResponse(status=204)
+        else:
+            h = HttpResponseNotFound('Image generator %s not found' % id, mimetype='application/javascript')
+        return h
+
+
+@token_or_logged_in_required
+@optional_pretty_print
+@require_http_methods(["GET", "POST"])
+def image_builds(request, image_generator_id):
+    username = request.user.username
+    image_generator = get_image_generator(image_generator_id)
+    if image_generator is None:
+        # image generator does not exists, so return 404
+        return HttpResponseNotFound('Image generator %s not found' % image_generator_id, mimetype='application/javascript')
+
+    if request.method == "GET":
+        image_builds = get_all_image_builds(username, image_generator_id)
+        response = []
+        for ib_id in image_builds:
+            ib_dict = get_image_build(username, ib_id)
+            ib_dict['uri'] = "/api/%s/imagegenerators/%s/builds/%s" % (API_VERSION, image_generator["id"], ib_dict.get('id'))
+            response.append(ib_dict)
+
+        h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
+        return h
+    elif request.method == "POST":
+
+        try:
+            image_build = create_image_build(username, image_generator)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        image_build["owner"] = username
+        image_build["uri"] = "/api/%s/imagegenerators/%s/builds/%s" % (API_VERSION, image_generator["id"], image_build["id"])
+
+        h = HttpResponse(json.dumps(image_build), status=201, mimetype='application/javascript')
+        return h
+
+
+@token_or_logged_in_required
+@optional_pretty_print
+@require_http_methods(["GET", "PUT", "DELETE"])
+def image_build_resource(request, image_generator_id, build_id):
+    username = request.user.username
+    image_generator = get_image_generator(image_generator_id)
+    if image_generator is None or image_generator.get('owner') != request.user.username:
+        return HttpResponseNotFound('Image generator %s not found' % image_generator_id, mimetype='application/javascript')
+
+    if request.method == "GET":
+        image_build = get_image_build(username, build_id)
+        if image_build is None:
+            return HttpResponseNotFound('Image build %s not found' % build_id, mimetype='application/javascript')
+        image_build['uri'] = "/api/%s/imagegenerators/%s/builds/%s" % (API_VERSION, image_generator["id"], image_build.get('id'))
+        return HttpResponse(json.dumps(image_build), mimetype='application/javascript')
+
+    elif request.method == "PUT":
+        # TO IMPLEMENT OR REMOVE
+        response = get_image_generator(image_generator_id)
+        if response is None or response.get('owner') != username:
+            return HttpResponseNotFound('Image generator %s not found' % image_generator_id, mimetype='application/javascript')
+
+        try:
+            content = json.loads(request.body)
+        except:
+            return HttpResponseBadRequest()
+
+        try:
+            response = modify_image_generator(image_generator_id, content)
+        except PhantomWebException as p:
+            return HttpResponseBadRequest(p.message)
+
+        response['uri'] = "/api/%s/imagegenerators/%s" % (API_VERSION, response['id'])
+
+        h = HttpResponse(json.dumps(response), status=200, mimetype='application/javascript')
+        return h
+
+    elif request.method == "DELETE":
+        image_build = get_image_build(username, build_id)
+        if image_build is None:
+            h = HttpResponseNotFound('Image build %s not found' % build_id, mimetype='application/javascript')
+
+        remove_image_build(username, build_id)
+        return HttpResponse(status=204)

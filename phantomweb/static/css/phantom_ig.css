@@ -1,0 +1,133 @@
+
+.context-details {
+    display: none;
+}
+
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+@media (min-width: 768px) {
+    .ig-well {
+        min-height: 400px;
+    }
+}
+
+#ig_config {
+    display: table;
+}
+
+#phantom_ig_heading_div
+{
+    padding-bottom: 5px;
+}
+
+#phantom_ig_order_area {
+    display: none;
+}
+
+#phantom_ig_info_area {
+    display: none;
+}
+
+#phantom_ig_heading_label
+{
+}
+
+#phantom_ig_name_select
+{
+    width: 150px;
+}
+
+.phantom_ig_name_item
+{
+}
+
+#phantom_ig_header_table
+{
+}
+
+#phantom_ig_name_input
+{
+    width: 150px;
+}
+
+.phantom_ig_checkbox_label
+{
+}
+
+.phantom_ig_checkbox
+{
+}
+
+
+.phantom_ig_info_label
+{
+    width: 50%;
+    float: left;
+    text-align: left;
+    margin-top: 5px;
+}
+
+.phantom_ig_info_combo
+{
+    width: 50%;
+}
+
+#phantom_ig_max_vm
+{
+    width: 10%;
+}
+
+#phantom_ig_cloud
+{
+}
+
+.phantom_ig_info_row
+{
+    width: 100%;
+    padding-top: 5px;
+    display: table;
+}
+
+.phantom_ig_button_row
+{
+    width: 100%;
+    padding-top: 10px;
+    display: table;
+}
+
+.phantom_ig_area_row
+{
+    width: 100%;
+    padding-top: 1px;
+    display: table;
+}
+
+
+.phantom_ig_button
+{
+    width: 90px;
+}
+
+#phantom_ig_order
+{
+    margin-bottom: 25px;
+    width: 100%;
+    height: 100%;
+}
+
+
+#phantom_ig_name_combo_div
+{
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: table;
+}
+
+#phantom_ig_name_label_div
+{
+    padding-top: 10px;
+    padding-right: 25px;
+}
