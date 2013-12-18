@@ -331,7 +331,7 @@ def chef_credentials_resource(request, site):
             log.exception("Failed to add credentials for site %s" % site)
             return HttpResponseServerError()
 
-        h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
+        h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
 
         return h
 
@@ -493,7 +493,7 @@ def credentials_resource(request, site):
             log.exception("Failed to add credentials for site %s" % site)
             return HttpResponseServerError()
 
-        h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
+        h = HttpResponse(json.dumps(response_dict), mimetype='application/javascript')
     elif request.method == "DELETE":
         # Check that credentials exist
         clouds = user_obj.get_clouds()
