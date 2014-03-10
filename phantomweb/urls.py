@@ -3,8 +3,6 @@ from django.contrib import admin
 from django.contrib.auth.views import password_reset, password_change, password_change_done, \
     password_reset_confirm, password_reset_done, password_reset_complete
 
-# Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
 admin.autodiscover()
 
 DEV_VERSION = "dev"
