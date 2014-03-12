@@ -1,13 +1,7 @@
 from django.contrib import admin
 
-from phantomweb.models import PhantomInfoDB, RabbitInfoDB, LaunchConfigurationDB,\
+from phantomweb.models import RabbitInfoDB, LaunchConfigurationDB,\
     HostMaxPairDB, PhantomUser, LaunchConfiguration, PublicLaunchConfiguration
-
-
-class PhantomInfoAdmin(admin.ModelAdmin):
-    pass
-
-admin.site.register(PhantomInfoDB, PhantomInfoAdmin)
 
 
 class RabbitInfoAdmin(admin.ModelAdmin):
