@@ -11,24 +11,11 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render
 from phantomweb.phantom_web_exceptions import PhantomRedirectException
 from phantomweb.util import get_user_object, LogEntryDecorator
-from phantomweb.workload import terminate_iaas_instance, phantom_lc_load, phantom_sites_add,\
-    phantom_sites_delete, phantom_sites_load, phantom_lc_delete, phantom_lc_save,\
-    phantom_domain_load, phantom_domain_terminate, phantom_domain_resize,\
-    phantom_domain_start, phantom_domain_details, phantom_instance_terminate, phantom_sensors_load
 from phantomweb.models import PhantomUser
 from django.contrib import admin
 
 ACTIVATE_ON_REGISTER = False
 ACTIVATION_EMAIL = ["nimbus@mcs.anl.gov", ]
-
-
-@LogEntryDecorator
-@login_required
-def django_terminate_iaas_instance(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = terminate_iaas_instance(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
 
 
 @LogEntryDecorator
@@ -44,69 +31,6 @@ def django_domain_html(request):
     except PhantomRedirectException, ex:
         return HttpResponseRedirect(ex.redir)
     return HttpResponse(t.render(c))
-
-
-@LogEntryDecorator
-@login_required
-def django_sensors_load(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_sensors_load(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_domain_load(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_domain_load(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_domain_start(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_domain_start(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_domain_resize(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_domain_resize(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_domain_details(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_domain_details(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_domain_terminate(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_domain_terminate(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_instance_terminate(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_instance_terminate(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
 
 
 @LogEntryDecorator
@@ -141,33 +65,6 @@ def django_lc_html(request):
     return HttpResponse(t.render(c))
 
 
-@LogEntryDecorator
-@login_required
-def django_lc_load(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_lc_load(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_lc_delete(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_lc_delete(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_lc_save(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_lc_save(request.POST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
 #
 #  manage cloud functions
 #
@@ -194,33 +91,6 @@ def django_publiclc_html(request):
     c = Context(response_dict)
 
     return HttpResponse(t.render(c))
-
-
-@LogEntryDecorator
-@login_required
-def django_sites_load(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_sites_load(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_sites_delete(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_sites_delete(request.GET, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
-
-
-@LogEntryDecorator
-@login_required
-def django_sites_add(request):
-    user_obj = get_user_object(request.user.username)
-    response_dict = phantom_sites_add(request.REQUEST, user_obj)
-    h = HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript')
-    return h
 
 
 @LogEntryDecorator

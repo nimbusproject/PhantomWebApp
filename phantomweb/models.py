@@ -48,11 +48,6 @@ class HostMaxPairDB(models.Model):
         unique_together = ("cloud_name", "launch_config")
 
 
-class PhantomInfoDB(models.Model):
-    phantom_url = models.CharField(max_length=128)
-    dburl = models.CharField(max_length=128)
-
-
 class RabbitInfoDB(models.Model):
     rabbithost = models.CharField(max_length=128)
     rabbituser = models.CharField(max_length=128)

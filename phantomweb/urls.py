@@ -28,28 +28,13 @@ urlpatterns = patterns('',
     url(r'^phantom/appliances/?$', 'phantomweb.views.django_publiclc_html'),
 
     url(r'^phantom/profile/?$', 'phantomweb.views.django_profile_html'),
-    url(r'^phantom/api/sites/load$', 'phantomweb.views.django_sites_load'),
-    url(r'^phantom/api/sites/delete$', 'phantomweb.views.django_sites_delete'),
-    url(r'^phantom/api/sites/add$', 'phantomweb.views.django_sites_add'),
 
     url(r'^phantom/?$', 'phantomweb.views.django_phantom_html'),
     url(r'^$', 'phantomweb.views.django_phantom_html'),
 
     url(r'^phantom/launchconfig/?$', 'phantomweb.views.django_lc_html'),
-    url(r'^phantom/api/launchconfig/load$', 'phantomweb.views.django_lc_load'),
-    url(r'^phantom/api/launchconfig/save$', 'phantomweb.views.django_lc_save'),
-    url(r'^phantom/api/launchconfig/delete$', 'phantomweb.views.django_lc_delete'),
-
-    url(r'^phantom/api/sensors/load$', 'phantomweb.views.django_sensors_load'),
 
     url(r'^phantom/domain/?$', 'phantomweb.views.django_domain_html'),
-    url(r'^phantom/api/domain/load$', 'phantomweb.views.django_domain_load'),
-    url(r'^phantom/api/domain/start$', 'phantomweb.views.django_domain_start'),
-    url(r'^phantom/api/domain/terminate$', 'phantomweb.views.django_domain_terminate'),
-    url(r'^phantom/api/domain/resize$', 'phantomweb.views.django_domain_resize'),
-    url(r'^phantom/api/domain/details$', 'phantomweb.views.django_domain_details'),
-
-    url(r'^phantom/api/instance/terminate$', 'phantomweb.views.django_instance_terminate'),
 
     # API dev version
     url(r'^api/%s/token$' % DEV_VERSION, 'tokenapi.views.token_new', name='api_token_new'),
