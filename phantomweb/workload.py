@@ -19,16 +19,6 @@ from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_obj
 IAAS_TIMEOUT = 5
 log = logging.getLogger('phantomweb.general')
 
-# at some point this should come from some sort of DB
-g_instance_types = ["m1.small", "m1.large", "m1.xlarge"]
-
-g_engine_to_phantom_de_map = {
-    "epu.decisionengine.impls.phantom_multi_site_overflow.PhantomMultiSiteOverflowEngine": "multicloud",
-    "epu.decisionengine.impls.sensor.SensorEngine": "sensor",
-}
-
-PHANTOM_REGION = 'phantom'
-
 OPENTSDB_METRICS = [
     "df.1kblocks.free", "df.1kblocks.total", "df.1kblocks.used",
     "df.inodes.free", "df.inodes.total", "df.inodes.used", "iostat.part.ios_in_progress",
