@@ -527,6 +527,24 @@ class UserObjectMySQL(UserObject):
         if details is True:
             pool = Pool()
 
+            instance_types_results = {}
+            for site in site_names:
+                instance_types_results[site] = pool.apply_async(site_client.describe_site, [self.access_key, site])
+            pool.close()
+
+            for site in site_names:
+                try:
+                    site_description = instance_types_results[site].get(IAAS_TIMEOUT)
+                    instance_types = site_description.get("instance_types")
+                    if instance_types is not None:
+                        all_sites[site]['instance_types'] = instance_types
+                except TimeoutError:
+                    log.exception("Timed out getting list of instance types for %s" % site)
+                except Exception:
+                    log.exception("Unexpected error getting list of instance types for %s" % site)
+
+            pool = Pool()
+
             public_results = {}
             user_results = {}
             clouds = self.get_clouds()
