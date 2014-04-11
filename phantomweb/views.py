@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 from django.core.context_processors import csrf
 from django.conf.urls.defaults import patterns
 from django.template import Context, loader
-import simplejson
+import json
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -148,13 +148,14 @@ def django_change_password(request):
         except User.DoesNotExist:
             return HttpResponse("USER_NOT_FOUND", status=500)
 
-        old_password = request.POST.get('old_password')
+        request_json = json.loads(request.body)
 
+        old_password = request_json.get('old_password')
         if not user.check_password(old_password):
             return HttpResponse("BAD_OLD_PASSWORD", status=500)
 
-        new_password = request.POST.get('new_password')
-        new_password_confirmation = request.POST.get('new_password_confirmation')
+        new_password = request_json.get('new_password')
+        new_password_confirmation = request_json.get('new_password_confirmation')
 
         if new_password != new_password_confirmation:
             return HttpResponse("PASSWORDS_DO_NOT_MATCH", status=500)
