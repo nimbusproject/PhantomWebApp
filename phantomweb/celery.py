@@ -15,7 +15,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'phantomweb.settings')
 
 cloud_client_path = settings.NIMBUS_CLOUD_CLIENT_PATH
 
-broker = 'amqp://%s:%s/%s:%s//' % (settings.RABBITMQ_USERNAME, settings.RABBITMQ_PASSWORD, settings.RABBITMQ_HOSTNAME, settings.RABBITMQ_PORT)
+broker = 'amqp://%s:%s@%s:%s//' % (settings.RABBITMQ_USERNAME, settings.RABBITMQ_PASSWORD, settings.RABBITMQ_HOSTNAME, settings.RABBITMQ_PORT)
 app = Celery('phantomweb', backend='amqp', broker=broker)
 
 # Using a string here means the worker will not have to

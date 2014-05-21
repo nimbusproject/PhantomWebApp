@@ -113,6 +113,21 @@ def get_all_packer_credentials(username, clouds):
     return packer_credentials_dict
 
 
+def add_packer_credentials(username, cloud, nimbus_user_cert=None, nimbus_user_key=None, nimbus_canonical_id=None):
+    try:
+        pc = PackerCredential.objects.get(username=username, cloud=cloud)
+        pc.certificate = nimbus_user_cert
+        pc.key = nimbus_user_key
+        pc.canonical_id = nimbus_canonical_id
+    except PackerCredential.DoesNotExist:
+        pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=nimbus_user_cert,
+                key=nimbus_user_key, canonical_id=nimbus_canonical_id, openstack_login=" ", openstack_password=" ",
+                openstack_project=" ")
+
+    pc.save()
+    return pc
+
+
 def get_all_keys(clouds):
     """get all ssh keys from a dictionary of UserCloudInfo objects
     """

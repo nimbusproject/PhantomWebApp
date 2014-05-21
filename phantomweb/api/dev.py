@@ -21,7 +21,8 @@ from phantomweb.workload import phantom_get_sites, get_all_launch_configurations
     terminate_domain_instance, get_sensors, remove_launch_configuration, \
     get_launch_configuration_object, get_all_keys, upload_key, get_all_image_generators, create_image_generator, \
     get_image_generator, get_image_generator_by_name, modify_image_generator, remove_image_generator, \
-    create_image_build, get_image_build, get_all_image_builds, remove_image_build, get_all_packer_credentials
+    create_image_build, get_image_build, get_all_image_builds, remove_image_build, get_all_packer_credentials, \
+    add_packer_credentials
 
 log = logging.getLogger('phantomweb.api.dev')
 
@@ -405,6 +406,9 @@ def credentials(request):
         access_key = content["access_key"]
         secret_key = content["secret_key"]
         key_name = content["key_name"]
+        nimbus_user_cert = content.get("nimbus_user_cert")
+        nimbus_user_key = content.get("nimbus_user_key")
+        nimbus_canonical_id = content.get("nimbus_canonical_id")
 
         # Check that the site exists
         all_sites = phantom_get_sites(request.POST, user_obj)
@@ -430,6 +434,15 @@ def credentials(request):
         except:
             log.exception("Failed to add credentials for site %s" % site)
             return HttpResponseServerError()
+
+        # Add image generation credentials to DB
+        if nimbus_user_cert is not None:
+            add_packer_credentials(username=request.user.username, cloud=site, nimbus_user_cert=nimbus_user_cert,
+                    nimbus_user_key=nimbus_user_key, nimbus_canonical_id=nimbus_canonical_id)
+
+        response_dict["nimbus_user_cert"] = nimbus_user_cert
+        response_dict["nimbus_user_key"] = nimbus_user_key
+        response_dict["nimbus_canonical_id"] = nimbus_canonical_id
 
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
 

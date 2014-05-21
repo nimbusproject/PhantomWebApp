@@ -408,6 +408,11 @@ function phantom_cloud_edit_add_click() {
     var secretCtl = $("#phantom_cloud_edit_secret").val().trim();
     var keyCtl = $("#phantom_cloud_edit_keyname_list").val();
 
+    // Nimbus credentials for image generation
+    var nimbusUserCert = $("#phantom_cloud_edit_nimbus_usercert").val();
+    var nimbusUserKey = $("#phantom_cloud_edit_nimbus_userkey").val();
+    var nimbusCanonicalId = $("#phantom_cloud_edit_nimbus_canonical_id").val();
+
     var error_msg = undefined;
     if(! nameCtl) {
         error_msg = "You must name your cloud."
@@ -428,6 +433,27 @@ function phantom_cloud_edit_add_click() {
         keyCtl = "";
     }
 
+    if (nimbusUserCert || nimbusUserKey || nimbusCanonicalId) {
+      if (!nimbusUserCert) {
+        $("#phantom_cloud_edit_nimbus_usercert")
+            .after('<span class="help-inline">You must set a Nimbus user certificate</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!nimbusUserKey) {
+        $("#phantom_cloud_edit_nimbus_userkey")
+            .after('<span class="help-inline">You must set a Nimbus user key</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!nimbusCanonicalId) {
+        $("#phantom_cloud_edit_nimbus_canonical_id")
+            .after('<span class="help-inline">You must set a Nimbus canonical ID</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+    }
+
     if (error_msg) {
         phantom_alert(error_msg);
         return;
@@ -445,7 +471,17 @@ function phantom_cloud_edit_add_click() {
 
     var url = make_url('credentials/sites');
     phantom_cloud_edit_enable(false);
-    phantomPOST(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
+    payload = {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}
+    if (nimbusUserCert) {
+      payload['nimbus_user_cert'] = nimbusUserCert;
+    }
+    if (nimbusUserKey) {
+      payload['nimbus_user_key'] = nimbusUserKey;
+    }
+    if (nimbusUserCert) {
+      payload['nimbus_canonical_id'] = nimbusCanonicalId;
+    }
+    phantomPOST(url, payload, success_func, error_func);
 }
 
 
