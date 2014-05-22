@@ -175,8 +175,6 @@ def packer_build(self, params, sites, credentials):
             cloud = m.group(1)
             artifacts[cloud] = m.group(2)
 
-    print artifacts
-
     return {
         "returncode": returncode,
         "artifacts": artifacts,
