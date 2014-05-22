@@ -438,6 +438,7 @@ def create_image_generator(username, name, cloud_params, script):
         ssh_username = params.get("ssh_username")
         common_image = params.get("common")
         new_image_name = params.get("new_image_name")
+        public_image = params.get("public_image")
 
         if image_name is None:
             raise PhantomWebException("You must provide an image_id in the cloud parameters")
@@ -449,6 +450,8 @@ def create_image_generator(username, name, cloud_params, script):
             raise PhantomWebException("You must provide a common boolean in the cloud parameters")
         if new_image_name is None:
             raise PhantomWebException("You must provide a new_image_name in the cloud parameters")
+        if public_image is None:
+            raise PhantomWebException("You must provide a public_image boolean in the cloud parameters")
 
         igcc = ImageGeneratorCloudConfig.objects.create(
             image_generator=image_generator,
@@ -457,7 +460,8 @@ def create_image_generator(username, name, cloud_params, script):
             ssh_username=ssh_username,
             instance_type=instance_type,
             common_image=common_image,
-            new_image_name=new_image_name)
+            new_image_name=new_image_name,
+            public_image=public_image)
         igcc.save()
 
         igs = ImageGeneratorScript.objects.create(
@@ -490,7 +494,8 @@ def get_image_generator(id):
             "ssh_username": cc.ssh_username,
             "instance_type": cc.instance_type,
             "common": cc.common_image,
-            "new_image_name": cc.new_image_name
+            "new_image_name": cc.new_image_name,
+            "public_image": cc.public_image
         }
 
     scripts = image_generator.imagegeneratorscript_set.all()

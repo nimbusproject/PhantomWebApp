@@ -262,6 +262,16 @@ function phantom_ig_select_new_cloud_internal(cloud_name) {
     $("#phantom_ig_ssh_username").val("");
     $("#phantom_ig_new_image_name").val("");
 
+    if (cloud_data.type != "nimbus") {
+      // Disable the public image checkbox
+      if ($("#phantom_ig_public_image").is(':checked')) {
+        $("#phantom_ig_public_image").attr('checked', false);
+      }
+      $("#phantom_ig_public_image").attr("disabled", "disabled");
+    } else {
+      $("#phantom_ig_public_image").removeAttr("disabled");
+    }
+
     if (cloud_data.type != "ec2") {
       // Disable the instance type selection field
       $("#phantom_ig_instance").attr("disabled", "disabled");
@@ -297,7 +307,6 @@ function phantom_ig_load_cloud_names() {
         if (!cloud_data) {
             phantom_alert("There was an error communicating with ".concat(site).concat(". You may still use the remaining clouds. Refresh later when the cloud is available."))        }
         else {
-            console.log(cloud_data);
             var new_opt = $('<option>', {'name': site, value: site, text: site});
             $("#phantom_ig_cloud").append(new_opt);
         }
@@ -767,6 +776,7 @@ function save_ig_values() {
     var instance_type = ($("#phantom_ig_instance").val() || "").trim();
     var ssh_username = $("#phantom_ig_ssh_username").val().trim();
     var new_image_name = $("#phantom_ig_new_image_name").val().trim();
+    var public_image = $("#phantom_ig_public_image").is(':checked');
     var common;
     var image_id = "";
     if ($("#phantom_ig_common_choice_checked").is(':checked')) {
@@ -817,6 +827,7 @@ function save_ig_values() {
         'common': common,
         'ssh_username': ssh_username,
         'new_image_name': new_image_name,
+        'public_image': public_image,
     };
 
     g_arranged_cloud_values[cloud_name] = entry;
@@ -877,6 +888,7 @@ function phantom_ig_save_click_internal() {
         site['instance_type'] = cloud_data['instance_type'];
         site['ssh_username'] = cloud_data['ssh_username'];
         site['new_image_name'] = cloud_data['new_image_name'];
+        site['public_image'] = cloud_data['public_image'];
         site['common'] = cloud_data['common'];
     });
 
@@ -923,7 +935,6 @@ function reset_cloud_and_options() {
     $("#phantom_ig_instance").empty();
     $("#phantom_ig_script").val("");
     $("#phantom_ig_common_image_input").val("");
-    $("#phantom_ig_instance").empty();
     $("#phantom_ig_ssh_username").val("");
     $("#phantom_ig_new_image_name").val("");
     $("#phantom_ig_user_images_choices").empty();
@@ -1086,6 +1097,7 @@ function phantom_ig_order_selected_click(cloud_name) {
             $("#phantom_ig_instance").val(cloud_val_dict['instance_type']);
             $("#phantom_ig_ssh_username").val(cloud_val_dict['ssh_username']);
             $("#phantom_ig_new_image_name").val(cloud_val_dict['new_image_name']);
+            $("#phantom_ig_public_image").attr('checked', cloud_val_dict['public_image']);
 
             if (cloud_val_dict['common'] === true) {
                 $("#phantom_ig_common_image_input").val(cloud_val_dict['image_id']);

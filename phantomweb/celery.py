@@ -97,6 +97,10 @@ def nimbus_builder_config(cloud_name, site, site_credentials, config):
     if mount_as is not None:
         builder_config["mount_as"] = mount_as
 
+    public_image = config.get("public_image")
+    if public_image is not None:
+        builder_config["public_image"] = public_image
+
     return builder_config
 
 

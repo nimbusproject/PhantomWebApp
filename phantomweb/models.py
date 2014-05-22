@@ -107,6 +107,7 @@ class ImageGeneratorCloudConfig(models.Model):
     instance_type = models.CharField(max_length=128)
     common_image = models.BooleanField()
     new_image_name = models.CharField(max_length=128)
+    public_image = models.BooleanField()
 
 
 class ImageBuild(models.Model):
