@@ -104,7 +104,7 @@ def get_all_packer_credentials(username, clouds):
             packer_credentials_dict[cloud_name]["canonical_id"] = packer_credentials.canonical_id
             packer_credentials_dict[cloud_name]["usercert"] = packer_credentials.certificate
             packer_credentials_dict[cloud_name]["userkey"] = packer_credentials.key
-            packer_credentials_dict[cloud_name]["openstack_username"] = packer_credentials.openstack_login
+            packer_credentials_dict[cloud_name]["openstack_username"] = packer_credentials.openstack_username
             packer_credentials_dict[cloud_name]["openstack_password"] = packer_credentials.openstack_password
             packer_credentials_dict[cloud_name]["openstack_project"] = packer_credentials.openstack_project
         except PackerCredential.DoesNotExist:
@@ -113,16 +113,27 @@ def get_all_packer_credentials(username, clouds):
     return packer_credentials_dict
 
 
-def add_packer_credentials(username, cloud, nimbus_user_cert=None, nimbus_user_key=None, nimbus_canonical_id=None):
+def add_packer_credentials(username, cloud, nimbus_user_cert=None, nimbus_user_key=None, nimbus_canonical_id=None,
+        openstack_username=None, openstack_password=None, openstack_project=None):
     try:
         pc = PackerCredential.objects.get(username=username, cloud=cloud)
-        pc.certificate = nimbus_user_cert
-        pc.key = nimbus_user_key
-        pc.canonical_id = nimbus_canonical_id
+        if nimbus_user_cert:
+            pc.certificate = nimbus_user_cert
+            pc.key = nimbus_user_key
+            pc.canonical_id = nimbus_canonical_id
+        elif openstack_username is not None:
+            pc.openstack_username = openstack_username
+            pc.openstack_password = openstack_password
+            pc.openstack_project = openstack_project
     except PackerCredential.DoesNotExist:
-        pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=nimbus_user_cert,
-                key=nimbus_user_key, canonical_id=nimbus_canonical_id, openstack_login=" ", openstack_password=" ",
-                openstack_project=" ")
+        if nimbus_user_cert is not None:
+            pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=nimbus_user_cert,
+                    key=nimbus_user_key, canonical_id=nimbus_canonical_id, openstack_username=" ", openstack_password=" ",
+                    openstack_project=" ")
+        elif openstack_username is not None:
+            pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=" ",
+                    key=" ", canonical_id=" ", openstack_username=openstack_username,
+                    openstack_password=openstack_password, openstack_project=openstack_project)
 
     pc.save()
     return pc
@@ -613,7 +624,7 @@ def create_image_build(username, image_generator, additional_credentials={}):
             elif sites[site]["type"] == "openstack":
                 try:
                     packer_credentials = PackerCredential.objects.get(username=username, cloud=site)
-                    credentials[site]["openstack_username"] = packer_credentials.openstack_login
+                    credentials[site]["openstack_username"] = packer_credentials.openstack_username
                     credentials[site]["openstack_password"] = packer_credentials.openstack_password
                     credentials[site]["openstack_project"] = packer_credentials.openstack_project
                 except PackerCredential.DoesNotExist:

@@ -389,7 +389,14 @@ def credentials(request):
                     credentials_dict["nimbus_user_key"] = packer_cloud_creds["userkey"]
                 if "canonical_id" in packer_cloud_creds:
                     credentials_dict["nimbus_canonical_id"] = packer_cloud_creds["canonical_id"]
+                if "openstack_username" in packer_cloud_creds:
+                    credentials_dict["openstack_username"] = packer_cloud_creds["openstack_username"]
+                if "openstack_password" in packer_cloud_creds:
+                    credentials_dict["openstack_password"] = packer_cloud_creds["openstack_password"]
+                if "openstack_project" in packer_cloud_creds:
+                    credentials_dict["openstack_project"] = packer_cloud_creds["openstack_project"]
             response_list.append(credentials_dict)
+        log.info(response_list)
         h = HttpResponse(json.dumps(response_list), mimetype='application/javascript')
     elif request.method == "POST":
         try:
@@ -409,6 +416,9 @@ def credentials(request):
         nimbus_user_cert = content.get("nimbus_user_cert")
         nimbus_user_key = content.get("nimbus_user_key")
         nimbus_canonical_id = content.get("nimbus_canonical_id")
+        openstack_username = content.get("openstack_username")
+        openstack_password = content.get("openstack_password")
+        openstack_project = content.get("openstack_project")
 
         # Check that the site exists
         all_sites = phantom_get_sites(request.POST, user_obj)
@@ -440,9 +450,16 @@ def credentials(request):
             add_packer_credentials(username=request.user.username, cloud=site, nimbus_user_cert=nimbus_user_cert,
                     nimbus_user_key=nimbus_user_key, nimbus_canonical_id=nimbus_canonical_id)
 
+        if openstack_username is not None:
+            add_packer_credentials(username=request.user.username, cloud=site, openstack_username=openstack_username,
+                    openstack_password=openstack_password, openstack_project=openstack_project)
+
         response_dict["nimbus_user_cert"] = nimbus_user_cert
         response_dict["nimbus_user_key"] = nimbus_user_key
         response_dict["nimbus_canonical_id"] = nimbus_canonical_id
+        response_dict["openstack_username"] = openstack_username
+        response_dict["openstack_password"] = openstack_password
+        response_dict["openstack_project"] = openstack_project
 
         h = HttpResponse(json.dumps(response_dict), status=201, mimetype='application/javascript')
 

@@ -78,7 +78,7 @@ class PackerCredential(models.Model):
     key = models.TextField()
     username = models.CharField(max_length=128)
     cloud = models.CharField(max_length=128)
-    openstack_login = models.CharField(max_length=128)
+    openstack_username = models.CharField(max_length=128)
     openstack_password = models.CharField(max_length=128)
     openstack_project = models.CharField(max_length=128)
 
