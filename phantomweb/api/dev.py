@@ -1042,7 +1042,13 @@ def image_builds(request, image_generator_id):
         return h
     elif request.method == "POST":
         try:
-            image_build = create_image_build(username, image_generator)
+            content = json.loads(request.body)
+            credentials = content.get("credentials", {})
+        except:
+            return HttpResponseBadRequest()
+
+        try:
+            image_build = create_image_build(username, image_generator, additional_credentials=credentials)
         except PhantomWebException as p:
             return HttpResponseBadRequest(p.message)
 

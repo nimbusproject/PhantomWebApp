@@ -8,6 +8,7 @@ var g_selected_ig = null;
 var g_selected_cloud = null;
 var g_current_builds_timer = null;
 var g_current_builds_request = null;
+var g_openstack_password = null;
 var MAX_PUBLIC_IMAGES_ITEMS = 200;
 var BUILDS_TIMER_MS = 5000;
 
@@ -91,7 +92,7 @@ $(document).ready(function() {
     });
 
     $("#phantom_image_generator_run").click(function() {
-        phantom_image_generator_run();
+        phantom_image_generator_prepare_run();
         return false;
     });
 
@@ -1020,15 +1021,8 @@ function check_phantom_image_build(ig_id, ib_id) {
     var image_build = phantomGET(url, success_func, error_func);
 }
 
-function phantom_image_generator_run() {
-  var ig_name = g_selected_ig;
-  if (!ig_name) {
-      phantom_warning("You must select an existing image generator name to run.")
-      return;
-  }
-
-  var ig_id = g_ig_info[ig_name]['id']
-
+function phantom_image_generator_run(ig_id, ig_name)
+{
   var success_func = function(new_image_build) {
       clear_phantom_alerts();
       phantom_info("Starting image generator " + ig_name);
@@ -1045,7 +1039,49 @@ function phantom_image_generator_run() {
 
   var url = make_url("imagegenerators/" + ig_id + "/builds");
   var data = {}
+  if (g_openstack_password != null) {
+    data['credentials'] = { 'hotel-openstack': { 'openstack_password': g_openstack_password }};
+    g_openstack_password = null;
+  }
   phantomPOST(url, data, success_func, error_func);
+}
+
+function phantom_image_generator_prepare_run() {
+  var ig_name = g_selected_ig;
+  if (!ig_name) {
+      phantom_warning("You must select an existing image generator name to run.")
+      return;
+  }
+
+  var openstack_clouds = {}
+
+  var ig = g_ig_info[ig_name]
+  g_arranged_cloud_values = ig['cloud_params'];
+  var ig_id = ig['id']
+
+  for (var site in g_arranged_cloud_values) {
+    var cloud_data = g_cloud_map[site];
+
+    if (!cloud_data || cloud_data['status'] != 0) {
+        return;
+    }
+
+    if (cloud_data['type'] == 'openstack') {
+      openstack_clouds[site] = null;
+    }
+  }
+
+  if ("hotel-openstack" in openstack_clouds) {
+    $('#build-with-openstack-password').on("click", function() {
+      g_openstack_password = $('#openstack-password').val();
+      phantom_image_generator_run(ig_id, ig_name);
+    });
+
+    $('#enter-openstack-password-prompt').text("Please enter OpenStack password for hotel-openstack");
+    $('#enter-openstack-password-modal').modal();
+  } else {
+    phantom_image_generator_run(ig_id, ig_name);
+  }
 }
 
 function phantom_ig_delete_click() {

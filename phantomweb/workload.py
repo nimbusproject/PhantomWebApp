@@ -588,7 +588,7 @@ def remove_image_generator(id):
     image_generator.delete()
 
 
-def create_image_build(username, image_generator):
+def create_image_build(username, image_generator, additional_credentials={}):
     user_obj = get_user_object(username)
     all_clouds = user_obj.get_clouds()
     sites = {}
@@ -618,6 +618,10 @@ def create_image_build(username, image_generator):
                     credentials[site]["openstack_project"] = packer_credentials.openstack_project
                 except PackerCredential.DoesNotExist:
                     raise PhantomWebException("Could not find extra OpenStack credentials for image generation.")
+                if site in additional_credentials:
+                    openstack_password = additional_credentials[site].get("openstack_password")
+                    if openstack_password is not None:
+                        credentials[site]["openstack_password"] = openstack_password
         except KeyError:
             raise PhantomWebException("Could not get cloud %s" % site)
 

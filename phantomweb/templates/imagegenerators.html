@@ -17,6 +17,34 @@
 {% block bodytag %}{% endblock %}
 {% block nimbus_body  %}
 
+<div class="modal hide fade" id="enter-openstack-password-modal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Enter your OpenStack password</h3>
+  </div>
+  <div class="modal-body">
+    <div id="alert-container">
+    </div>
+    <form class="form" id="enter-openstack-password-form">
+      <fieldset>
+        <div class="control-group" >
+          <div class="controls">
+            <label id="enter-openstack-password-prompt">PLACEHOLDER</label>
+            <input id="openstack-password" class="span6" type="password" placeholder="" required="required" />
+          </div>
+        </div>
+      </fieldset>
+    </form>
+    <div id="importing" class="progress progress-striped active" style="display: none">
+      <div class="bar" style="width: 100%"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Close</a>
+    <a href="#" class="btn btn-primary" data-dismiss="modal" id="build-with-openstack-password">Build</a>
+  </div>
+</div>
+
 <div class="container-fluid inner-container">
   <div class="row-fluid">
     <div class="span2">
