@@ -94,7 +94,7 @@
 
           <form class="form-horizontal">
 
-            <div class="control-group">
+            <div id="phantom_cloud_div_instance_type" class="control-group">
               <label for="phantom_ig_instance" class="phantom_ig_info_label">Instance Type (EC2 only):</label>
               <select id="phantom_ig_instance" class="span6 pull-right">
               </select>
@@ -127,8 +127,8 @@
               <input type=text id="phantom_ig_new_image_name" class="pull-right span6">
             </div>
 
-            <div class="control-group">
-              <label for="phantom_ig_public_image" class="phantom_ig_info_label">Make new image public (Nimbus only):</label>
+            <div id="phantom_cloud_div_make_public_image" class="control-group" style="display: none">
+              <label for="phantom_ig_public_image" class="phantom_ig_info_label">Make new image public:</label>
               <input type="checkbox" id="phantom_ig_public_image" class="pull-right span6">
             </div>
 

@@ -235,13 +235,15 @@ function phantom_ig_select_new_cloud() {
 }
 
 function phantom_ig_change_image_type() {
-    if ($("#phantom_ig_common_choice_checked").is(':checked')) {
-        $("#phantom_ig_common_image_input").removeAttr("disabled", "disabled");
-        $("#phantom_ig_user_images_choices").attr("disabled", "disabled");
-    }
-    else {
-        $("#phantom_ig_user_images_choices").removeAttr("disabled", "disabled");
-        $("#phantom_ig_common_image_input").attr("disabled", "disabled");
+    if (document.getElementById("phantom_cloud_div_image_id").style.display == 'none') {
+      if ($("#phantom_ig_common_choice_checked").is(':checked')) {
+          $("#phantom_ig_common_image_input").removeAttr("disabled", "disabled");
+          $("#phantom_ig_user_images_choices").attr("disabled", "disabled");
+      }
+      else {
+          $("#phantom_ig_user_images_choices").removeAttr("disabled", "disabled");
+          $("#phantom_ig_common_image_input").attr("disabled", "disabled");
+      }
     }
 }
 
@@ -273,9 +275,11 @@ function phantom_ig_select_new_cloud_internal(cloud_name) {
     }
 
     if (cloud_data.type != "ec2") {
+      document.getElementById("phantom_cloud_div_instance_type").style.display = 'none';
       // Disable the instance type selection field
-      $("#phantom_ig_instance").attr("disabled", "disabled");
+      //$("#phantom_ig_instance").attr("disabled", "disabled");
     } else {
+      document.getElementById("phantom_cloud_div_instance_type").style.display = 'block';
       for (instance in cloud_data.instance_types) {
           var i = cloud_data.instance_types[instance];
           var new_opt = $('<option>', {'name': i, value: i, text: i});
@@ -283,6 +287,7 @@ function phantom_ig_select_new_cloud_internal(cloud_name) {
       }
     }
     $("#phantom_ig_common_image_input").val("");
+    $("#phantom_ig_image_id_input").val("");
 
     $("#phantom_ig_user_images_choices").empty();
     for (personal in cloud_data.user_images) {
@@ -297,6 +302,12 @@ function phantom_ig_select_new_cloud_internal(cloud_name) {
       } else {
         public_images_typeahead.source = null;
       }
+    }
+
+    if (cloud_data.type == "nimbus") {
+      document.getElementById("phantom_cloud_div_make_public_image").style.display = 'block';
+    } else {
+      document.getElementById("phantom_cloud_div_make_public_image").style.display = 'none';
     }
 
     if (cloud_data.type == "openstack") {
@@ -810,14 +821,18 @@ function save_ig_values() {
         return false;
     }
     if (!image_id) {
+      if (document.getElementById("phantom_cloud_div_image_id").style.display == 'block') {
+        $("#phantom_ig_image_id_input").parent().addClass("error");
+      } else {
         if ($("#phantom_ig_common_choice_checked").is(":checked")) {
             $("#phantom_ig_common_image_input").parent().addClass("error");
         }
         else {
             $("#phantom_ig_user_images_choices").parent().addClass("error");
         }
-        phantom_warning("You must select an image.");
-        return false;
+      }
+      phantom_warning("You must select an image.");
+      return false;
     }
     if (!instance_type) {
       if (cloud_data.type == "ec2") {
@@ -951,6 +966,7 @@ function reset_cloud_and_options() {
     $("#cloud_table_body").empty();
     $("#phantom_ig_instance").empty();
     $("#phantom_ig_script").val("");
+    $("#phantom_ig_image_id_input").val("");
     $("#phantom_ig_common_image_input").val("");
     $("#phantom_ig_ssh_username").val("");
     $("#phantom_ig_new_image_name").val("");
@@ -1151,17 +1167,21 @@ function phantom_ig_order_selected_click(cloud_name) {
             $("#phantom_ig_new_image_name").val(cloud_val_dict['new_image_name']);
             $("#phantom_ig_public_image").attr('checked', cloud_val_dict['public_image']);
 
-            if (cloud_val_dict['common'] === true) {
+            if (document.getElementById("phantom_cloud_div_image_id").style.display == 'block') {
+              $("#phantom_ig_image_id_input").val(cloud_val_dict['image_id']);
+            } else {
+              if (cloud_val_dict['common'] === true) {
                 $("#phantom_ig_common_image_input").val(cloud_val_dict['image_id']);
                 $("#phantom_ig_common_choice_checked").attr('checked',true);
-            }
-            else {
+              }
+              else {
                 $("#phantom_ig_user_images_choices").val(cloud_val_dict['image_id']);
                 $("#phantom_ig_user_choice_checked").attr('checked',true);
+              }
+              phantom_ig_change_image_type();
+              $("#cloud-disable-buttons").show();
+              $("#cloud-enable-buttons").hide();
             }
-            phantom_ig_change_image_type();
-            $("#cloud-disable-buttons").show();
-            $("#cloud-enable-buttons").hide();
         }
         else {
             phantom_ig_select_new_cloud_internal(cloud_name);
