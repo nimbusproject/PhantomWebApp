@@ -180,16 +180,15 @@ function show_image_build_details(image_build_id) {
 }
 
 function phantom_ig_buttons(enabled) {
-
     if (enabled) {
-        $("button, input, select").removeAttr("disabled");
+        //$("button, input, select").removeAttr("disabled");
         $("#phantom_ig_button_add").removeAttr("disabled")
             .parent().removeClass("disabled");
         phantom_ig_change_image_type();
         $('#loading').hide();
     }
     else {
-        $("button, input, select").attr("disabled", true);
+        //$("button, input, select").attr("disabled", true);
         $("#phantom_ig_button_add").attr("disabled", true)
             .parent().addClass("disabled");
         $('#loading').show();
