@@ -298,6 +298,18 @@ function phantom_ig_select_new_cloud_internal(cloud_name) {
         public_images_typeahead.source = null;
       }
     }
+
+    if (cloud_data.type == "openstack") {
+      document.getElementById("phantom_cloud_div_public_image").style.display = 'none';
+      document.getElementById("phantom_cloud_div_personal_image").style.display = 'none';
+      document.getElementById("phantom_cloud_div_image_id").style.display = 'block';
+      $("#phantom_ig_user_images_choices").attr("disabled", "disabled");
+    } else {
+      document.getElementById("phantom_cloud_div_public_image").style.display = 'block';
+      document.getElementById("phantom_cloud_div_personal_image").style.display = 'block';
+      document.getElementById("phantom_cloud_div_image_id").style.display = 'none';
+      $("#phantom_ig_user_images_choices").removeAttr("disabled");
+    }
 }
 
 function phantom_ig_load_cloud_names() {
@@ -779,13 +791,18 @@ function save_ig_values() {
     var public_image = $("#phantom_ig_public_image").is(':checked');
     var common;
     var image_id = "";
-    if ($("#phantom_ig_common_choice_checked").is(':checked')) {
-        image_id = $("#phantom_ig_common_image_input").val().trim();
-        common = true;
-    }
-    else {
-        image_id = ($("#phantom_ig_user_images_choices").val() || "").trim();
-        common = false;
+    if (document.getElementById("phantom_cloud_div_image_id").style.display == 'block') {
+      image_id = ($("#phantom_ig_image_id_input").val() || "").trim();
+      common = true;
+    } else {
+      if ($("#phantom_ig_common_choice_checked").is(':checked')) {
+          image_id = $("#phantom_ig_common_image_input").val().trim();
+          common = true;
+      }
+      else {
+          image_id = ($("#phantom_ig_user_images_choices").val() || "").trim();
+          common = false;
+      }
     }
 
     if (!cloud_name) {

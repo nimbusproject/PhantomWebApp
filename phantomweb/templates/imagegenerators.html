@@ -100,17 +100,20 @@
               </select>
             </div>
 
-            <div class="control-group form-inline">
+            <div id="phantom_cloud_div_image_id" class="control-group" style="display: none">
+              <label for="phantom_ig_image_id_input" class="phantom_ig_info_label">Image ID:</label>
+              <input type="text" id="phantom_ig_image_id_input" class="pull-right span6"/>
+            </div>
+
+            <div id="phantom_cloud_div_public_image" class="control-group form-inline">
               <label class="radio" for="phantom_ig_common_choice_checked">
-                <input id="phantom_ig_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_ig_change_image_type()"/>Public Image
-              </label>
+                <input id="phantom_ig_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_ig_change_image_type()"/>Public Image</label>
               <input type="text" id="phantom_ig_common_image_input" class="pull-right span6"/>
             </div>
 
-            <div class="control-group form-inline">
+            <div id="phantom_cloud_div_personal_image" class="control-group form-inline">
               <label class="radio" for="phantom_ig_user_choice_checked">
-                <input class="" id="phantom_ig_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_ig_change_image_type()"/>Personal Image
-              </label>
+                <input class="" id="phantom_ig_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_ig_change_image_type()"/>Personal Image</label>
               <select name="user_images" id="phantom_ig_user_images_choices" class="pull-right span6"></select>
             </div>
 
