@@ -514,7 +514,7 @@ function phantom_cloud_edit_add_click() {
       payload['openstack_password'] = openstackPassword;
     }
     if (openstackProject) {
-      payload['openstack_project'] = openstack_project;
+      payload['openstack_project'] = openstackProject;
     }
     phantomPOST(url, payload, success_func, error_func);
 }
