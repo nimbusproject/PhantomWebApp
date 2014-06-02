@@ -466,7 +466,7 @@ function phantom_cloud_edit_add_click() {
             .parent().parent().addClass("error");
         return;
       }
-      if (!openstackPassword) {
+      if (!openstackPassword && nameCtl != "hotel-openstack") {
         $("#phantom_cloud_edit_openstack_password")
             .after('<span class="help-inline">You must set an OpenStack password</span>')
             .parent().parent().addClass("error");
