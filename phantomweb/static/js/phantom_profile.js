@@ -768,6 +768,12 @@ function phantom_cloud_edit_load_sites() {
         });
 
     phantom_cloud_edit_enable(false);
+
+    if (g_selected_cloud == "hotel-openstack") {
+      $("#phantom_cloud_edit_openstack_password").attr("disabled", "disabled");
+    } else {
+      $("#phantom_cloud_edit_openstack_password").removeAttr("disabled", "disabled");
+    }
 }
 
 function phantom_cloud_edit_load_page() {
