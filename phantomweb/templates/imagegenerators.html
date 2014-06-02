@@ -1,0 +1,192 @@
+{% extends "../templates/base.html" %}
+{% block title %}Image Generators - Phantom{% endblock %}
+
+{% block headcss %}
+    <link rel='stylesheet' type='text/css' media='all' href='/static/css/phantom_ig.css' />
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+    <!--
+    var csrf_token = "{{ csrf_token }}";
+    // -->
+    </script>
+    <script src="/static/js/phantom_common.js"></script>
+    <script src="/static/js/phantom_image_generators.js"></script>
+{% endblock %}
+{% block bodytag %}{% endblock %}
+{% block nimbus_body  %}
+
+<div class="modal hide fade" id="enter-openstack-password-modal">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Enter your OpenStack password</h3>
+  </div>
+  <div class="modal-body">
+    <div id="alert-container">
+    </div>
+    <form class="form" id="enter-openstack-password-form">
+      <fieldset>
+        <div class="control-group" >
+          <div class="controls">
+            <label id="enter-openstack-password-prompt">PLACEHOLDER</label>
+            <input id="openstack-password" class="span6" type="password" placeholder="" required="required" />
+          </div>
+        </div>
+      </fieldset>
+    </form>
+    <div id="importing" class="progress progress-striped active" style="display: none">
+      <div class="bar" style="width: 100%"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Close</a>
+    <a href="#" class="btn btn-primary" data-dismiss="modal" id="build-with-openstack-password">Build</a>
+  </div>
+</div>
+
+<div class="container-fluid inner-container">
+  <div class="row-fluid">
+    <div class="span2">
+      <div id="loading" class="progress progress-striped progress-phantom active">
+        <div class="bar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="span10" id="alert-container">
+    </div>
+  </div>
+</div>
+
+<div id="phantom_ig_content" class="container-fluid inner-container">
+  <div class="row-fluid">
+
+    <div class="span2">
+      <div class="well well-small sidebar-nav ig-well">
+        <ul class="nav nav-list" id="ig-nav">
+          <li class=""><a id="phantom_ig_button_add" href="#">Add Image Generator</a></li>
+          <li class="divider"></li>
+          <li class="nav-header" id="ig-header">Image Generators</li>
+        </ul>
+      </div><!--/.well -->
+    </div><!--/span-->
+
+    <div class="span5">
+      <div class="well well-small ig-well">
+        <h5 class="phantom_area_header magic-underline">Clouds
+          <a class="pull-right" href="#" id="ig-help" rel="popover" data-content="Virtual machines are launched on your
+            enabled clouds in order to generate a new virtual machine on each cloud."
+            data-original-title="Image Generator Help" data-placement="left"><i class="icon-question-sign" ></i></a></h5>
+        <div>
+          <table class="table table-condensed table-bordered table-hover table-white" id="clouds_table">
+            <thead>
+              <tr>
+                <th>Cloud</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="cloud_table_body">
+            </tbody>
+          </table>
+        </div>
+        <div id="phantom_ig_info_area">
+
+          <h5 class="phantom_area_header magic-underline"><span id="cloud_options_name">Cloud</span> Options</h5>
+
+          <form class="form-horizontal">
+
+            <div id="phantom_cloud_div_instance_type" class="control-group">
+              <label for="phantom_ig_instance" class="phantom_ig_info_label">Instance Type (EC2 only):</label>
+              <select id="phantom_ig_instance" class="span6 pull-right">
+              </select>
+            </div>
+
+            <div id="phantom_cloud_div_image_id" class="control-group" style="display: none">
+              <label for="phantom_ig_image_id_input" class="phantom_ig_info_label">Image ID:</label>
+              <input type="text" id="phantom_ig_image_id_input" class="pull-right span6"/>
+            </div>
+
+            <div id="phantom_cloud_div_public_image" class="control-group form-inline">
+              <label class="radio" for="phantom_ig_common_choice_checked">
+                <input id="phantom_ig_common_choice_checked" type="radio" name="common_or_user" value="common_image_selected" checked="checked" onchange="phantom_ig_change_image_type()"/>Public Image</label>
+              <input type="text" id="phantom_ig_common_image_input" class="pull-right span6"/>
+            </div>
+
+            <div id="phantom_cloud_div_personal_image" class="control-group form-inline">
+              <label class="radio" for="phantom_ig_user_choice_checked">
+                <input class="" id="phantom_ig_user_choice_checked" type="radio" name="common_or_user" value="user_image_selected" onchange="phantom_ig_change_image_type()"/>Personal Image</label>
+              <select name="user_images" id="phantom_ig_user_images_choices" class="pull-right span6"></select>
+            </div>
+
+            <div class="control-group">
+              <label for="phantom_ig_ssh_username" class="phantom_ig_info_label">Username for SSH:</label>
+              <input type=text id="phantom_ig_ssh_username" class="pull-right span6">
+            </div>
+
+            <div class="control-group">
+              <label for="phantom_ig_new_image_name" class="phantom_ig_info_label">New image name:</label>
+              <input type=text id="phantom_ig_new_image_name" class="pull-right span6">
+            </div>
+
+            <div id="phantom_cloud_div_make_public_image" class="control-group" style="display: none">
+              <label for="phantom_ig_public_image" class="phantom_ig_info_label">Make new image public:</label>
+              <input type="checkbox" id="phantom_ig_public_image" class="pull-right span6">
+            </div>
+
+            <div class="control-group" id="cloud-enable-buttons" style="display: none">
+              <input id="phantom_ig_add" class="btn btn-primary" type="button" value="Enable Site"/>
+            </div>
+
+            <div class="control-group" id="cloud-disable-buttons" style="display: none">
+              <input id="phantom_ig_disable_cloud" class="btn btn-danger" type="button" value="Disable Site"/>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="span5">
+      <div class="well well-small ig-well">
+        <div id="phantom_ig_order_area">
+          <h5 class="phantom_area_header magic-underline" id="image_generator_options_head">Image Generator</h5>
+
+          <form class="form-horizontal">
+            <div class="control-group context-details">
+              <label class="" for="phantom_ig_script">Script</label>
+              <textarea class="span12" rows="5" id="phantom_ig_script"></textarea>
+            </div>
+          </form>
+
+          <div class="pull-right">
+            <div id="ig-buttons" class="btn-toolbar">
+              <button id="phantom_ig_save" type="button" class="btn btn-primary">Save</button>
+              <button id="phantom_ig_delete" type="button" class="btn btn-danger">Delete</button>
+              <button id="phantom_image_generator_run" type="button" class="btn btn-primary">Build</button>
+            </div>
+          </div>
+          <div>
+            <table class="table table-condensed table-bordered table-hover table-white" id="image_builds_table">
+              <thead>
+                <tr>
+                  <th>Build</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="image_build_table_body">
+              </tbody>
+            </table>
+          </div>
+
+          <table class="table table-condensed" id="image_build_details_table">
+            <tbody id="image_build_details_table_body">
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+{% endblock %}

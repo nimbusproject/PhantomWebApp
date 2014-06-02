@@ -1,17 +1,23 @@
+from __future__ import absolute_import
+
 import json
 import logging
 import urlparse
+import celery
 
 from boto.ec2.autoscale import Tag
 from boto.exception import EC2ResponseError
 from boto.regioninfo import RegionInfo
+from celery.result import AsyncResult
 from phantomweb.tevent import Pool, TimeoutError
 import boto
 import boto.ec2.autoscale
 import statsd
 
+from phantomweb.celery import packer_build
 from phantomweb.models import LaunchConfiguration, LaunchConfigurationDB, HostMaxPairDB, \
-    PublicLaunchConfiguration
+    PublicLaunchConfiguration, ImageGenerator, ImageGeneratorCloudConfig, ImageGeneratorScript, \
+    ImageBuild, ImageBuildArtifact, PackerCredential
 from phantomweb.phantom_web_exceptions import PhantomWebException
 from phantomweb.util import PhantomWebDecorator, LogEntryDecorator, get_user_object
 
@@ -88,6 +94,50 @@ def _get_launch_configuration(phantom_con, lc_db_object):
 ########
 
 # New implementation for the Phantom API
+def get_all_packer_credentials(username, clouds):
+    """get all packer credentials"""
+    packer_credentials_dict = {}
+    for cloud_name, cloud in clouds.iteritems():
+        packer_credentials_dict[cloud_name] = {}
+        try:
+            packer_credentials = PackerCredential.objects.get(username=username, cloud=cloud_name)
+            packer_credentials_dict[cloud_name]["canonical_id"] = packer_credentials.canonical_id
+            packer_credentials_dict[cloud_name]["usercert"] = packer_credentials.certificate
+            packer_credentials_dict[cloud_name]["userkey"] = packer_credentials.key
+            packer_credentials_dict[cloud_name]["openstack_username"] = packer_credentials.openstack_username
+            packer_credentials_dict[cloud_name]["openstack_password"] = packer_credentials.openstack_password
+            packer_credentials_dict[cloud_name]["openstack_project"] = packer_credentials.openstack_project
+        except PackerCredential.DoesNotExist:
+            pass
+
+    return packer_credentials_dict
+
+
+def add_packer_credentials(username, cloud, nimbus_user_cert=None, nimbus_user_key=None, nimbus_canonical_id=None,
+        openstack_username=None, openstack_password=None, openstack_project=None):
+    try:
+        pc = PackerCredential.objects.get(username=username, cloud=cloud)
+        if nimbus_user_cert:
+            pc.certificate = nimbus_user_cert
+            pc.key = nimbus_user_key
+            pc.canonical_id = nimbus_canonical_id
+        elif openstack_username is not None:
+            pc.openstack_username = openstack_username
+            pc.openstack_password = openstack_password
+            pc.openstack_project = openstack_project
+    except PackerCredential.DoesNotExist:
+        if nimbus_user_cert is not None:
+            pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=nimbus_user_cert,
+                    key=nimbus_user_key, canonical_id=nimbus_canonical_id, openstack_username=" ", openstack_password=" ",
+                    openstack_project=" ")
+        elif openstack_username is not None:
+            pc = PackerCredential.objects.create(username=username, cloud=cloud, certificate=" ",
+                    key=" ", canonical_id=" ", openstack_username=openstack_username,
+                    openstack_password=openstack_password, openstack_project=openstack_project)
+
+    pc.save()
+    return pc
+
 
 def get_all_keys(clouds):
     """get all ssh keys from a dictionary of UserCloudInfo objects
@@ -380,6 +430,293 @@ def modify_domain(username, id, parameters):
 
 def get_sensors(username):
     return OPENTSDB_METRICS
+
+def get_all_image_generators(username):
+    image_generators = []
+    all_image_generators = ImageGenerator.objects.filter(username=username)
+    for ig in all_image_generators:
+        image_generators.append(ig.id)
+    return image_generators
+
+
+def create_image_generator(username, name, cloud_params, script):
+    image_generator = ImageGenerator.objects.create(name=name, username=username)
+    image_generator.save()
+    for cloud_name in cloud_params:
+        params = cloud_params[cloud_name]
+        image_name = params.get("image_id")
+        instance_type = params.get("instance_type")
+        ssh_username = params.get("ssh_username")
+        common_image = params.get("common")
+        new_image_name = params.get("new_image_name")
+        public_image = params.get("public_image")
+
+        if image_name is None:
+            raise PhantomWebException("You must provide an image_id in the cloud parameters")
+        if instance_type is None:
+            raise PhantomWebException("You must provide an instance_type in the cloud parameters")
+        if ssh_username is None:
+            raise PhantomWebException("You must provide an ssh_username in the cloud parameters")
+        if common_image is None:
+            raise PhantomWebException("You must provide a common boolean in the cloud parameters")
+        if new_image_name is None:
+            raise PhantomWebException("You must provide a new_image_name in the cloud parameters")
+        if public_image is None:
+            raise PhantomWebException("You must provide a public_image boolean in the cloud parameters")
+
+        igcc = ImageGeneratorCloudConfig.objects.create(
+            image_generator=image_generator,
+            cloud_name=cloud_name,
+            image_name=image_name,
+            ssh_username=ssh_username,
+            instance_type=instance_type,
+            common_image=common_image,
+            new_image_name=new_image_name,
+            public_image=public_image)
+        igcc.save()
+
+        igs = ImageGeneratorScript.objects.create(
+            image_generator=image_generator,
+            script_content=script)
+        igs.save()
+
+    return image_generator
+
+
+def get_image_generator(id):
+    try:
+        image_generator = ImageGenerator.objects.get(id=id)
+    except ImageGenerator.DoesNotExist:
+        return None
+
+    image_generator_dict = {
+        "id": image_generator.id,
+        "name": image_generator.name,
+        "owner": image_generator.username,
+        "cloud_params": {},
+        "script": None,
+    }
+
+    cloud_configs = image_generator.imagegeneratorcloudconfig_set.all()
+    for cc in cloud_configs:
+        cloud_name = cc.cloud_name
+        image_generator_dict["cloud_params"][cloud_name] = {
+            "image_id": cc.image_name,
+            "ssh_username": cc.ssh_username,
+            "instance_type": cc.instance_type,
+            "common": cc.common_image,
+            "new_image_name": cc.new_image_name,
+            "public_image": cc.public_image
+        }
+
+    scripts = image_generator.imagegeneratorscript_set.all()
+    if len(scripts) != 1:
+        raise PhantomWebException("There should be only 1 script, not %d" % len(scripts))
+
+    image_generator_dict["script"] = scripts[0].script_content
+
+    return image_generator_dict
+
+
+def get_image_generator_by_name(username, name):
+    image_generators = ImageGenerator.objects.filter(name=name, username=username)
+    if len(image_generators) == 0:
+        return None
+    else:
+        return image_generators[0]
+
+
+def modify_image_generator(id, image_generator_params):
+    try:
+        image_generator = ImageGenerator.objects.get(id=id)
+    except ImageGenerator.DoesNotExist:
+        raise PhantomWebException("Trying to update image generator %s that doesn't exist?" % id)
+
+    # Required params: name, script, cloud_params
+    name = image_generator_params.get("name")
+    if name is None:
+        raise PhantomWebException("Must provide 'name' element to update an image generator")
+
+    script = image_generator_params.get("script")
+    if script is None:
+        raise PhantomWebException("Must provide 'script' element to update an image generator")
+
+    cloud_params = image_generator_params.get("cloud_params")
+    if cloud_params is None:
+        raise PhantomWebException("Must provide 'cloud_params' element to update an image generator")
+
+    image_generator.name = name
+    image_generator.save()
+
+    scripts = image_generator.imagegeneratorscript_set.all()
+    if len(scripts) != 1:
+        raise PhantomWebException("There should be only 1 script, not %d" % len(scripts))
+    scripts[0].script_content = script
+    scripts[0].save()
+
+    cloud_configs = image_generator.imagegeneratorcloudconfig_set.all()
+    for cc in cloud_configs:
+        cc.delete()
+
+    for cloud_name in cloud_params:
+        params = cloud_params[cloud_name]
+        image_name = params.get("image_id")
+        instance_type = params.get("instance_type")
+        ssh_username = params.get("ssh_username")
+        common_image = params.get("common")
+        new_image_name = params.get("new_image_name")
+
+        if image_name is None:
+            raise PhantomWebException("You must provide an image_id in the cloud parameters")
+        if instance_type is None:
+            raise PhantomWebException("You must provide an instance_type in the cloud parameters")
+        if ssh_username is None:
+            raise PhantomWebException("You must provide an ssh_username in the cloud parameters")
+        if common_image is None:
+            raise PhantomWebException("You must provide a common boolean in the cloud parameters")
+        if new_image_name is None:
+            raise PhantomWebException("You must provide a new_image_name in the cloud parameters")
+
+        igcc = ImageGeneratorCloudConfig.objects.create(
+            image_generator=image_generator,
+            cloud_name=cloud_name,
+            image_name=image_name,
+            ssh_username=ssh_username,
+            instance_type=instance_type,
+            common_image=common_image,
+            new_image_name=new_image_name)
+        igcc.save()
+
+    return get_image_generator(id)
+
+
+def remove_image_generator(id):
+    try:
+        image_generator = ImageGenerator.objects.get(id=id)
+    except ImageGenerator.DoesNotExist:
+        raise PhantomWebException("Could not delete image generator %s. Doesn't exist." % id)
+
+    image_generator.delete()
+
+
+def create_image_build(username, image_generator, additional_credentials={}):
+    user_obj = get_user_object(username)
+    all_clouds = user_obj.get_clouds()
+    sites = {}
+    credentials = {}
+    for site in image_generator["cloud_params"]:
+        try:
+            cloud = all_clouds[site]
+            sites[site] = cloud.site_desc
+            credentials[site] = {
+                "access_key": cloud.iaas_key,
+                "secret_key": cloud.iaas_secret,
+            }
+
+            if sites[site]["type"] == "nimbus":
+                try:
+                    packer_credentials = PackerCredential.objects.get(username=username, cloud=site)
+                    credentials[site]["canonical_id"] = packer_credentials.canonical_id
+                    credentials[site]["usercert"] = packer_credentials.certificate
+                    credentials[site]["userkey"] = packer_credentials.key
+                except PackerCredential.DoesNotExist:
+                    raise PhantomWebException("Could not find extra Nimbus credentials for image generation.")
+            elif sites[site]["type"] == "openstack":
+                try:
+                    packer_credentials = PackerCredential.objects.get(username=username, cloud=site)
+                    credentials[site]["openstack_username"] = packer_credentials.openstack_username
+                    credentials[site]["openstack_password"] = packer_credentials.openstack_password
+                    credentials[site]["openstack_project"] = packer_credentials.openstack_project
+                except PackerCredential.DoesNotExist:
+                    raise PhantomWebException("Could not find extra OpenStack credentials for image generation.")
+                if site in additional_credentials:
+                    openstack_password = additional_credentials[site].get("openstack_password")
+                    if openstack_password is not None:
+                        credentials[site]["openstack_password"] = openstack_password
+        except KeyError:
+            raise PhantomWebException("Could not get cloud %s" % site)
+
+    result = packer_build.delay(image_generator, sites, credentials)
+
+    image_build = ImageBuild.objects.create(
+        image_generator_id=image_generator["id"],
+        celery_task_id=result.id,
+        status='submitted',
+        returncode=-1,
+        full_output="",
+        cloud_name=site,
+        owner=username)
+    image_build.save()
+
+    return {"id": image_build.id, "ready": result.ready(), "owner": username}
+
+
+def get_all_image_builds(username, image_generator_id):
+    image_builds = []
+    all_image_builds = ImageBuild.objects.filter(owner=username, image_generator_id=image_generator_id)
+    for ib in all_image_builds:
+        image_builds.append(ib.id)
+    return image_builds
+
+
+def get_image_build(username, image_build_id):
+    try:
+        image_build = ImageBuild.objects.get(id=image_build_id, owner=username)
+    except ImageBuild.DoesNotExist:
+        raise PhantomWebException("Could not find image build %s. Doesn't exist." % image_build_id)
+
+    ret = {"id": image_build.id, "owner": username, "cloud_name": image_build.cloud_name}
+    if image_build.status == "successful":
+        ret["ready"] = True
+    elif image_build.status == "submitted":
+        result = AsyncResult(image_build.celery_task_id)
+        ready = result.ready()
+        ret["ready"] = ready
+        if ready:
+            if result.successful():
+                image_build.returncode = result.result["returncode"]
+                if image_build.returncode == 0:
+                    image_build.status = "successful"
+                else:
+                    image_build.status = "failed"
+
+                for cloud_name in result.result["artifacts"]:
+                    image_build_artifact = ImageBuildArtifact.objects.create(
+                        image_build_id=image_build.id,
+                        cloud_name=cloud_name,
+                        image_name=result.result["artifacts"][cloud_name])
+                    image_build_artifact.save()
+
+                image_build.full_output = result.result["full_output"]
+                image_build.save()
+            else:
+                image_build.status = "failed"
+                image_build.returncode = -1
+                image_build.full_output = str(result.result)
+                image_build.save()
+
+    ret["status"] = image_build.status
+    if image_build.status != "submitted":
+        ret["returncode"] = image_build.returncode
+        ret["full_output"] = image_build.full_output
+        ret["artifacts"] = {}
+        try:
+            artifacts = ImageBuildArtifact.objects.filter(image_build_id=image_build_id)
+            for artifact in artifacts:
+                ret["artifacts"][artifact.cloud_name] = artifact.image_name
+        except ImageBuildArtifact.DoesNotExist:
+            raise PhantomWebException("Could not find image build artifact for image build id %s. Doesn't exist." % image_build_id)
+
+    return ret
+
+
+def remove_image_build(username, image_build_id):
+    try:
+        image_build = ImageBuild.objects.get(id=image_build_id, owner=username)
+    except ImageBuild.DoesNotExist:
+        raise PhantomWebException("Could not find image build %s. Doesn't exist." % image_build_id)
+
+    image_build.delete()
 
 #
 #  cloud site management pages

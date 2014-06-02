@@ -27,6 +27,8 @@ urlpatterns = patterns('',
 
     url(r'^phantom/appliances/?$', 'phantomweb.views.django_publiclc_html'),
 
+    url(r'^phantom/imagegenerators$', 'phantomweb.views.django_imagegenerators_html'),
+
     url(r'^phantom/profile/?$', 'phantomweb.views.django_profile_html'),
 
     url(r'^phantom/?$', 'phantomweb.views.django_phantom_html'),
@@ -69,4 +71,9 @@ urlpatterns = patterns('',
             'phantomweb.api.dev.instance_resource'),
     url(r'^api/%s/sensors$' % DEV_VERSION, 'phantomweb.api.dev.sensors'),
     url(r'^api/%s/sensors/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.sensor_resource'),
+
+    url(r'^api/%s/imagegenerators$' % DEV_VERSION, 'phantomweb.api.dev.imagegenerators'),
+    url(r'^api/%s/imagegenerators/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.imagegenerator_resource'),
+    url(r'^api/%s/imagegenerators/(%s+)/builds$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.image_builds'),
+    url(r'^api/%s/imagegenerators/(%s+)/builds/(%s+)$' % (DEV_VERSION, ACCEPTED_RESOURCE_PATTERN, ACCEPTED_RESOURCE_PATTERN), 'phantomweb.api.dev.image_build_resource'),
 )

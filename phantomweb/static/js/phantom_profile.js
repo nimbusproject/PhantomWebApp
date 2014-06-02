@@ -408,6 +408,16 @@ function phantom_cloud_edit_add_click() {
     var secretCtl = $("#phantom_cloud_edit_secret").val().trim();
     var keyCtl = $("#phantom_cloud_edit_keyname_list").val();
 
+    // Nimbus credentials for image generation
+    var nimbusUserCert = $("#phantom_cloud_edit_nimbus_usercert").val();
+    var nimbusUserKey = $("#phantom_cloud_edit_nimbus_userkey").val();
+    var nimbusCanonicalId = $("#phantom_cloud_edit_nimbus_canonical_id").val();
+
+    // OpenStack credentials for image generation
+    var openstackUsername = $("#phantom_cloud_edit_openstack_username").val();
+    var openstackPassword = $("#phantom_cloud_edit_openstack_password").val();
+    var openstackProject = $("#phantom_cloud_edit_openstack_project").val();
+
     var error_msg = undefined;
     if(! nameCtl) {
         error_msg = "You must name your cloud."
@@ -428,6 +438,48 @@ function phantom_cloud_edit_add_click() {
         keyCtl = "";
     }
 
+    if (nimbusUserCert || nimbusUserKey || nimbusCanonicalId) {
+      if (!nimbusUserCert) {
+        $("#phantom_cloud_edit_nimbus_usercert")
+            .after('<span class="help-inline">You must set a Nimbus user certificate</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!nimbusUserKey) {
+        $("#phantom_cloud_edit_nimbus_userkey")
+            .after('<span class="help-inline">You must set a Nimbus user key</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!nimbusCanonicalId) {
+        $("#phantom_cloud_edit_nimbus_canonical_id")
+            .after('<span class="help-inline">You must set a Nimbus canonical ID</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+    }
+
+    if (openstackUsername || openstackPassword || openstackProject) {
+      if (!openstackUsername) {
+        $("#phantom_cloud_edit_openstack_username")
+            .after('<span class="help-inline">You must set an OpenStack username</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!openstackPassword) {
+        $("#phantom_cloud_edit_openstack_password")
+            .after('<span class="help-inline">You must set an OpenStack password</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+      if (!openstackProject) {
+        $("#phantom_cloud_edit_openstack_project")
+            .after('<span class="help-inline">You must set an OpenStack project</span>')
+            .parent().parent().addClass("error");
+        return;
+      }
+    }
+
     if (error_msg) {
         phantom_alert(error_msg);
         return;
@@ -445,7 +497,26 @@ function phantom_cloud_edit_add_click() {
 
     var url = make_url('credentials/sites');
     phantom_cloud_edit_enable(false);
-    phantomPOST(url, {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}, success_func, error_func);
+    payload = {'id': nameCtl, 'access_key': accessCtl, 'secret_key': secretCtl, 'key_name': keyCtl}
+    if (nimbusUserCert) {
+      payload['nimbus_user_cert'] = nimbusUserCert;
+    }
+    if (nimbusUserKey) {
+      payload['nimbus_user_key'] = nimbusUserKey;
+    }
+    if (nimbusUserCert) {
+      payload['nimbus_canonical_id'] = nimbusCanonicalId;
+    }
+    if (openstackUsername) {
+      payload['openstack_username'] = openstackUsername;
+    }
+    if (openstackPassword) {
+      payload['openstack_password'] = openstackPassword;
+    }
+    if (openstackProject) {
+      payload['openstack_project'] = openstack_project;
+    }
+    phantomPOST(url, payload, success_func, error_func);
 }
 
 
@@ -468,6 +539,31 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 
     var credentials = g_cloud_map[selected_cloud_name];
 
+    document.getElementById("phantom_cloud_div_nimbus_usercert").style.display = 'none';
+    document.getElementById("phantom_cloud_div_nimbus_userkey").style.display = 'none';
+    document.getElementById("phantom_cloud_div_nimbus_canonical_id").style.display = 'none';
+    document.getElementById("phantom_cloud_div_openstack_username").style.display = 'none';
+    document.getElementById("phantom_cloud_div_openstack_password").style.display = 'none';
+    document.getElementById("phantom_cloud_div_openstack_project").style.display = 'none';
+
+    if (credentials["image_generation"]) {
+      if (credentials["type"] == "nimbus") {
+        document.getElementById("phantom_cloud_div_nimbus_usercert").style.display = 'block';
+        document.getElementById("phantom_cloud_div_nimbus_userkey").style.display = 'block';
+        document.getElementById("phantom_cloud_div_nimbus_canonical_id").style.display = 'block';
+      } else if (credentials["type"] == "openstack") {
+        document.getElementById("phantom_cloud_div_openstack_username").style.display = 'block';
+        document.getElementById("phantom_cloud_div_openstack_password").style.display = 'block';
+        document.getElementById("phantom_cloud_div_openstack_project").style.display = 'block';
+      }
+    }
+
+    if (g_selected_cloud == "hotel-openstack") {
+      $("#phantom_cloud_edit_openstack_password").attr("disabled", "disabled");
+    } else {
+      $("#phantom_cloud_edit_openstack_password").removeAttr("disabled", "disabled");
+    }
+
     $("#phantom_cloud_edit_key_message").text("");
     $("#phantom_cloud_edit_keyname_list").empty();
     if (!credentials || !credentials['access_key'] || !credentials['secret_key']) {
@@ -479,6 +575,24 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
         $("#phantom_cloud_edit_keyname_list").parent().parent().show();
         $("#phantom_cloud_edit_access").val(credentials['access_key']);
         $("#phantom_cloud_edit_secret").val(credentials['secret_key']);
+        if ("nimbus_user_cert" in credentials) {
+          $("#phantom_cloud_edit_nimbus_usercert").text(credentials['nimbus_user_cert']);
+        }
+        if ("nimbus_user_key" in credentials) {
+          $("#phantom_cloud_edit_nimbus_userkey").text(credentials['nimbus_user_key']);
+        }
+        if ("nimbus_canonical_id" in credentials) {
+          $("#phantom_cloud_edit_nimbus_canonical_id").val(credentials['nimbus_canonical_id']);
+        }
+        if ("openstack_username" in credentials) {
+          $("#phantom_cloud_edit_openstack_username").val(credentials['openstack_username']);
+        }
+        if ("openstack_password" in credentials) {
+          $("#phantom_cloud_edit_openstack_password").val(credentials['openstack_password']);
+        }
+        if ("openstack_project" in credentials) {
+          $("#phantom_cloud_edit_openstack_project").val(credentials['openstack_project']);
+        }
         if (credentials.status_msg) {
             phantom_alert(val.status_msg);
         }
@@ -505,7 +619,6 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
 function show_cloud_edit_guides() {
         $("#phantom_cloud_edit_access")
             .after('<span class="help-inline">Password Changed</span>');
-    
 }
 
 function phantom_cloud_edit_change_cloud (cloud_name) {
@@ -565,6 +678,25 @@ function phantom_cloud_edit_load_sites() {
                 g_cloud_map[credential.id]["access_key"] = credential["access_key"];
                 g_cloud_map[credential.id]["secret_key"] = credential["secret_key"];
                 g_cloud_map[credential.id]["keyname_list"] = credential["available_keys"];
+
+                if (credential.hasOwnProperty("nimbus_user_cert")) {
+                  g_cloud_map[credential.id]["nimbus_user_cert"] = credential["nimbus_user_cert"];
+                }
+                if (credential.hasOwnProperty("nimbus_user_key")) {
+                  g_cloud_map[credential.id]["nimbus_user_key"] = credential["nimbus_user_key"];
+                }
+                if (credential.hasOwnProperty("nimbus_canonical_id")) {
+                  g_cloud_map[credential.id]["nimbus_canonical_id"] = credential["nimbus_canonical_id"];
+                }
+                if (credential.hasOwnProperty("openstack_username")) {
+                  g_cloud_map[credential.id]["openstack_username"] = credential["openstack_username"];
+                }
+                if (credential.hasOwnProperty("openstack_password")) {
+                  g_cloud_map[credential.id]["openstack_password"] = credential["openstack_password"];
+                }
+                if (credential.hasOwnProperty("openstack_project")) {
+                  g_cloud_map[credential.id]["openstack_project"] = credential["openstack_project"];
+                }
             }
         }
 
@@ -596,13 +728,18 @@ function phantom_cloud_edit_load_sites() {
         for (var i = 0; i < sites.length; i++) {
             var site = sites[i];
             if (site.hasOwnProperty("id")) {
-                g_cloud_map[site.id] = {}
+                g_cloud_map[site.id] = {};
+              if (site.hasOwnProperty("type")) {
+                  g_cloud_map[site.id]["type"] = site.type;
+              }
+              if (site.hasOwnProperty("image_generation")) {
+                g_cloud_map[site.id]["image_generation"] = site.image_generation;
+              }
             }
         }
-
     }
 
-    var sites_url = make_url('sites');
+    var sites_url = make_url('sites?details=true');
     var sites_request = phantomGET(sites_url);
 
     var credentials_url = make_url('credentials/sites?details=true');
