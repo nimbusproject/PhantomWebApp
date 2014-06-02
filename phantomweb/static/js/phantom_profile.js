@@ -588,7 +588,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
         if ("nimbus_canonical_id" in credentials) {
           $("#phantom_cloud_edit_nimbus_canonical_id").val(credentials['nimbus_canonical_id']);
         } else {
-          $("#nimbus_canonical_id").val("");
+          $("#phantom_cloud_edit_nimbus_canonical_id").val("");
         }
         if ("openstack_username" in credentials) {
           $("#phantom_cloud_edit_openstack_username").val(credentials['openstack_username']);
