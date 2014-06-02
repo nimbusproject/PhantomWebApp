@@ -577,21 +577,33 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
         $("#phantom_cloud_edit_secret").val(credentials['secret_key']);
         if ("nimbus_user_cert" in credentials) {
           $("#phantom_cloud_edit_nimbus_usercert").text(credentials['nimbus_user_cert']);
+        } else {
+          $("#phantom_cloud_edit_nimbus_usercert").text("");
         }
         if ("nimbus_user_key" in credentials) {
           $("#phantom_cloud_edit_nimbus_userkey").text(credentials['nimbus_user_key']);
+        } else {
+          $("#phantom_cloud_edit_nimbus_userkey").text("");
         }
         if ("nimbus_canonical_id" in credentials) {
           $("#phantom_cloud_edit_nimbus_canonical_id").val(credentials['nimbus_canonical_id']);
+        } else {
+          $("#nimbus_canonical_id").val("");
         }
         if ("openstack_username" in credentials) {
           $("#phantom_cloud_edit_openstack_username").val(credentials['openstack_username']);
+        } else {
+          $("#phantom_cloud_edit_openstack_username").val("");
         }
         if ("openstack_password" in credentials) {
           $("#phantom_cloud_edit_openstack_password").val(credentials['openstack_password']);
+        } else {
+          $("#phantom_cloud_edit_openstack_password").val("");
         }
         if ("openstack_project" in credentials) {
           $("#phantom_cloud_edit_openstack_project").val(credentials['openstack_project']);
+        } else {
+          $("#phantom_cloud_edit_openstack_project").val("");
         }
         if (credentials.status_msg) {
             phantom_alert(val.status_msg);
