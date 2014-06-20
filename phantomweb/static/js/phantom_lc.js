@@ -8,6 +8,51 @@ var g_selected_lc = null;
 var g_selected_cloud = null;
 var MAX_PUBLIC_IMAGES_ITEMS = 200;
 
+var PHANTOMIZE_USER_DATA_PART1 = '#!/bin/bash\n\
+\n\
+mkdir -p /etc/chef /var/log/chef /var/chef/cookbooks /var/cache/chef /var/backups/chef /var/run/chef\n\
+\n\
+cat > /etc/chef/solo.rb <<END\n\
+log_level              :debug\n\
+log_location           \"/var/log/chef/client.log\"\n\
+environment            \"_default\"\n\
+cookbook_path          \"/var/chef/cookbooks\"\n\
+file_cache_path        \"/var/cache/chef\"\n\
+file_backup_path       \"/var/backups/chef\"\n\
+pid_file               \"/var/run/chef/client.pid\"\n\
+ssl_verify_mode        :verify_peer\n\
+Chef::Log::Formatter.show_time = true\n\
+END\n\
+\n\
+true && curl -L https://www.opscode.com/chef/install.sh | bash\n\
+wget -q https://github.com/nimbusproject/phantom-cookbooks/archive/tcollector.tar.gz\n\
+tar -C /var/chef/cookbooks -xvzf tcollector.tar.gz --strip-components=1\n\
+\n\
+cat > /etc/chef/node.json <<END\n\
+{\n\
+  \"tcollector\": {\n\
+';
+
+var PHANTOMIZE_USER_DATA_PART2 = '},\n\
+  "run_list": [ "recipe[git]", "recipe[tcollector]" ]\n\
+}\n\
+END\n\
+\n\
+chef-solo -l debug -j /etc/chef/node.json';
+
+function create_phantomize_user_data(use_openstack_script) {
+  script = PHANTOMIZE_USER_DATA_PART1;
+
+  if (use_openstack_script) {
+    script += '    "use_openstack_script": true\n';
+  } else {
+    script += '    "use_openstack_script": false\n';
+  }
+
+  script += PHANTOMIZE_USER_DATA_PART2;
+  return script;
+}
+
 $(document).ready(function() {
     $("#nav-launchconfig").addClass("active");
 
@@ -161,6 +206,10 @@ function select_contextualization_method(context_type) {
         $(".context-details").hide();
         $("#phantom_lc_userdata").parent().show();
         $("#phantom_lc_contextualization").val("user_data");
+    }
+    else if (context_type == "phantomize") {
+        $(".context-details").hide();
+        $("#phantom_lc_contextualization").val("phantomize");
     }
     else {
         $(".context-details").hide();
@@ -387,13 +436,21 @@ function phantom_lc_change_lc_internal(lc_name) {
             select_contextualization_method('user_data');
         }
         else if (lc['contextualization_method'] == 'user_data') {
+          if (typeof lc['user_data'] == 'string') {
             $("#phantom_lc_userdata").val(lc['user_data']);
             select_contextualization_method('user_data');
+          } else {
+            lc['contextualization_method'] = 'phantomize';
+            select_contextualization_method('phantomize');
+          }
         }
         else if (lc['contextualization_method'] == 'chef') {
             $("#phantom_lc_chef_runlist").val(JSON.stringify(lc['chef_runlist']));
             $("#phantom_lc_chef_attributes").val(JSON.stringify(lc['chef_attributes']));
             select_contextualization_method('chef');
+        }
+        else if (lc['contextualization_method'] == 'phantomize') {
+            select_contextualization_method('phantomize');
         }
         else {
             select_contextualization_method('none');
@@ -401,7 +458,7 @@ function phantom_lc_change_lc_internal(lc_name) {
     }
 
     $("#phantom_lc_max_vm").val("");
-    
+
     $("#phantom_lc_order").empty();
     var ordered = Array();
     for (var site in g_arranged_cloud_values) {
@@ -470,6 +527,7 @@ function phantom_lc_load_internal() {
             g_cloud_map[site.id]['user_images'] = site['user_images'];
             g_cloud_map[site.id]['public_images'] = site['public_images'];
             g_cloud_map[site.id]['instance_types'] = site['instance_types'];
+            g_cloud_map[site.id]['type'] = site['type'];
         }
     }
 
@@ -650,6 +708,12 @@ function save_lc_values() {
         delete lc['chef_runlist'];
         delete lc['chef_attributes'];
     }
+    else if(contextualization_method == 'phantomize') {
+        lc['contextualization_method'] = 'phantomize';
+        delete lc['chef_runlist'];
+        delete lc['chef_attributes'];
+        delete lc['user_data'];
+    }
     else {
         lc['contextualization_method'] = 'none';
         delete lc['chef_runlist'];
@@ -774,6 +838,10 @@ function phantom_lc_save_click_internal() {
         data['chef_runlist'] = lc['chef_runlist'];
         data['chef_attributes'] = lc['chef_attributes'];
     }
+    else if (lc['contextualization_method'] == 'phantomize') {
+        data['contextualization_method'] = 'user_data';
+        data['user_data'] = {};
+    }
     else {
         data['contextualization_method'] = 'none';
     }
@@ -798,6 +866,11 @@ function phantom_lc_save_click_internal() {
         site['instance_type'] = cloud_data['instance_type'];
         site['max_vms'] = cloud_data['max_vms'];
         site['common'] = cloud_data['common'];
+
+        if (lc['contextualization_method'] == 'phantomize') {
+          var cloud_description = g_cloud_map[site_name];
+          data['user_data'][site_name] = create_phantomize_user_data(cloud_description['type'] == 'openstack' && site_name != 'hotel-openstack');
+        }
     });
 
     var success_func = function(new_lc) {
