@@ -25,7 +25,7 @@ Chef::Log::Formatter.show_time = true\n\
 END\n\
 \n\
 true && curl -L https://www.opscode.com/chef/install.sh | bash\n\
-wget -q https://github.com/nimbusproject/phantom-cookbooks/archive/tcollector.tar.gz || curl -O https://github.com/nimbusproject/phantom-cookbooks/archive/tcollector.tar.gz\n\
+wget -q https://github.com/nimbusproject/phantom-cookbooks/archive/tcollector.tar.gz || curl -L -O https://github.com/nimbusproject/phantom-cookbooks/archive/tcollector.tar.gz\n\
 tar -C /var/chef/cookbooks -xvzf tcollector.tar.gz --strip-components=1\n\
 \n\
 cat > /etc/chef/node.json <<END\n\
