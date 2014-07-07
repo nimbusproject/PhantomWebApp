@@ -1,7 +1,8 @@
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls import patterns, url, include
 from django.contrib import admin
 from django.contrib.auth.views import password_reset, password_change, password_change_done, \
     password_reset_confirm, password_reset_done, password_reset_complete
+from django.views.generic import RedirectView
 
 admin.autodiscover()
 
@@ -11,7 +12,7 @@ ACCEPTED_RESOURCE_PATTERN = "[-_.0-9A-Za-z ]"
 urlpatterns = patterns('',
 
     url(r'^accounts/password/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$', password_reset_confirm),
-    url(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/static/img/favicon.ico'}),
+    url(r'^favicon\.ico$', RedirectView.as_view(url='/static/img/favicon.ico')),
     url(r'^accounts/ajax_change_password/$', 'phantomweb.views.django_change_password'),
     url(r'^accounts/change_password/$', password_change, {
         'post_change_redirect': '/accounts/change_password/done/'}),

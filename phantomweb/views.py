@@ -1,6 +1,6 @@
 from django.core.mail import send_mail
 from django.core.context_processors import csrf
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns, url, include
 from django.template import Context, loader
 import json
 from django.http import HttpResponse, HttpResponseRedirect
