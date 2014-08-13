@@ -374,7 +374,7 @@ class ChefCredentialsTestCase(unittest.TestCase):
                             }
                             response = c.put('/api/dev/credentials/chef/site2', json.dumps(post_content),
                                 content_type='application/json')
-                            self.assertEqual(response.status_code, 201)
+                            self.assertEqual(response.status_code, 200)
                             content = json.loads(response.content)
                             self.assertEqual(
                                 {
@@ -623,7 +623,7 @@ class CredentialsTestCase(unittest.TestCase):
                             }
                             response = c.put('/api/dev/credentials/sites/site2', json.dumps(post_content),
                                 content_type='application/json')
-                            self.assertEqual(response.status_code, 201)
+                            self.assertEqual(response.status_code, 200)
                             content = json.loads(response.content)
                             self.assertEqual(
                                 {
