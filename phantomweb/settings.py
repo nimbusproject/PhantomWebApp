@@ -2,9 +2,6 @@
 import os
 import django
 
-import djcelery
-djcelery.setup_loader()
-
 DJANGO_ROOT = os.path.dirname(os.path.realpath(django.__file__))
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 
@@ -22,6 +19,13 @@ EMAIL_PORT = 465
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'bresnaha@mcs.anl.gov'
 SERVER_EMAIL = 'bresnaha@mcs.anl.gov'
+
+RABBITMQ_USERNAME = 'guest'
+RABBITMQ_PASSWORD = 'guest'
+RABBITMQ_HOSTNAME = 'localhost'
+RABBITMQ_PORT = '5672'
+
+NIMBUS_CLOUD_CLIENT_PATH = 'nimbus-cloud-client-022'
 
 LOGIN_REDIRECT_URL='/'
 
