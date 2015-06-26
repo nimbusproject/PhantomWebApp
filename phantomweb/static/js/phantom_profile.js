@@ -546,7 +546,7 @@ function phantom_cloud_edit_change_cloud_internal(selected_cloud_name)  {
     document.getElementById("phantom_cloud_div_openstack_password").style.display = 'none';
     document.getElementById("phantom_cloud_div_openstack_project").style.display = 'none';
 
-    if (credentials["image_generation"]) {
+    if (credentials && credentials["image_generation"]) {
       if (credentials["type"] == "nimbus") {
         document.getElementById("phantom_cloud_div_nimbus_usercert").style.display = 'block';
         document.getElementById("phantom_cloud_div_nimbus_userkey").style.display = 'block';
